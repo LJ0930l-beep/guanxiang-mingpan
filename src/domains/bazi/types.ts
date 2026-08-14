@@ -22,14 +22,20 @@ export const DEFAULT_BAZI_CALCULATION_SETTINGS: BaziCalculationSettings = {
   trueSolarTime: false,
   solarTimeModel: 'none',
   locationDatasetVersion: 'china-cities-p1a-sparse-v1',
-  calendarResolverVersion: 'scaffold-p1a-v1',
+  calendarResolverVersion: 'solar-terms-p1b-v1',
 };
+
+export interface BaziBoundaryWindow {
+  start: string;
+  end: string;
+  precisionSeconds: number;
+}
 
 export interface SolarTermBoundaryEvidence {
   status: 'pending' | 'resolved';
   recentTerm?: string;
   nextTerm?: string;
-  boundaryWindow?: string;
+  boundaryWindow?: BaziBoundaryWindow;
   currentMonthBasis?: string;
   note: string;
 }
@@ -63,4 +69,3 @@ export interface BaziCalculationEvidence {
   locationUsed?: BaziLocationEvidence;
   warnings: string[];
 }
-

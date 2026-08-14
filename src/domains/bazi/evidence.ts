@@ -1,5 +1,6 @@
 import type { BirthProfile } from '@/types/domain';
-import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
+import { resolveSolarTermBoundary } from '@/domains/bazi/solar-terms';
+import type { BaziCalculationEvidence, BaziCalculationSettings, SolarTermBoundaryEvidence } from '@/domains/bazi/types';
 
 function normalizedCivilTime(profile: BirthProfile): string {
   const time = profile.birthTime ?? '00:00';
@@ -11,12 +12,27 @@ export function createBaziCalculationEvidence(
   settings: BaziCalculationSettings,
 ): BaziCalculationEvidence {
   const civilTime = normalizedCivilTime(profile);
-  const warnings = [
-    'P1-A：节气边界解析尚未启用，当前月柱沿用排盘引擎结果；不得将此字段当作边界校准证明。',
-    'P1-A：真太阳时尚未启用，当前有效计算时刻与输入民用时刻相同。',
-  ];
+  const warnings = ['P1-B：真太阳时尚未启用，当前有效计算时刻与输入民用时刻相同。'];
+  let solarTermBoundary: SolarTermBoundaryEvidence = {
+    status: 'pending',
+    note: '当前为农历输入，公历换算与节气证据将在 P1-E 补齐。',
+  };
   if (profile.calendar === 'lunar') {
-    warnings.push('农历转公历的独立换算证据将在 P1-E 补齐。');
+    warnings.push('农历转公历的独立换算证据将在 P1-E 写入。');
+  } else {
+    try {
+      const resolution = resolveSolarTermBoundary(civilTime);
+      solarTermBoundary = {
+        status: 'resolved',
+        recentTerm: `${resolution.recentTerm.name} · ${resolution.recentTerm.civilTime}`,
+        nextTerm: `${resolution.nextTerm.name} · ${resolution.nextTerm.civilTime}`,
+        boundaryWindow: resolution.boundaryWindow,
+        currentMonthBasis: resolution.currentMonthBasis.explanation,
+        note: `数据源 ${resolution.dataSource}@${resolution.dataVersion}；精度 ${resolution.precisionSeconds} 秒；业务时区 ${resolution.timezone}。`,
+      };
+    } catch (error) {
+      warnings.push(error instanceof Error ? `节气边界暂时无法解析：${error.message}` : '节气边界暂时无法解析。');
+    }
   }
   if (profile.latitude == null || profile.longitude == null) {
     warnings.push('出生地没有可用经纬度，位置证据暂不声明坐标精度。');
@@ -27,10 +43,7 @@ export function createBaziCalculationEvidence(
     normalizedCivilTime: civilTime,
     effectiveCalculationTime: civilTime,
     timezone: settings.timezone,
-    solarTermBoundary: {
-      status: 'pending',
-      note: 'P1-B 将写入最近节气、下一节气、边界窗口与当前月柱依据。',
-    },
+    solarTermBoundary,
     dayBoundaryRule: settings.dayBoundary,
     trueSolarCorrection: {
       applied: false,

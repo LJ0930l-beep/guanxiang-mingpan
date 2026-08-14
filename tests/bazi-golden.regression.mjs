@@ -41,10 +41,10 @@ test('P1-A 八字 Golden Cases 同时通过独立来源与应用适配层', () =
     assert.deepEqual(result.calculationSettings, goldenCase.calculationSettings);
     assert.equal(result.calculationEvidence.timezone, 'Asia/Shanghai');
     assert.equal(result.calculationEvidence.dayBoundaryRule, 'midnight');
-    assert.equal(result.calculationEvidence.solarTermBoundary.status, 'pending');
+    assert.equal(result.calculationEvidence.solarTermBoundary.status, 'resolved');
     assert.equal(result.calculationEvidence.trueSolarCorrection.applied, false);
     assert.equal(result.calculationEvidence.trueSolarCorrection.correctionMinutes, 0);
-    assert.ok(result.calculationEvidence.warnings.length >= 2);
+    assert.ok(result.calculationEvidence.warnings.length >= 1);
   }
 });
 
@@ -60,4 +60,3 @@ test('P1-A 未实现的子初与真太阳时设置不会被静默当成已生效
     /真太阳时将在 P1-D 开放/,
   );
 });
-

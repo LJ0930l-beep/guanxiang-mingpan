@@ -58,7 +58,7 @@ export const BAZI_GOLDEN_CASES: readonly BaziGoldenCase[] = [
       trueSolarTime: false,
       solarTimeModel: 'none',
       locationDatasetVersion: 'china-cities-p1a-sparse-v1',
-      calendarResolverVersion: 'scaffold-p1a-v1',
+      calendarResolverVersion: 'solar-terms-p1b-v1',
     },
     expectedFourPillars: {
       year: { stem: '丙', branch: '寅' },
@@ -90,7 +90,7 @@ export const BAZI_GOLDEN_CASES: readonly BaziGoldenCase[] = [
       trueSolarTime: false,
       solarTimeModel: 'none',
       locationDatasetVersion: 'china-cities-p1a-sparse-v1',
-      calendarResolverVersion: 'scaffold-p1a-v1',
+      calendarResolverVersion: 'solar-terms-p1b-v1',
     },
     expectedFourPillars: {
       year: { stem: '甲', branch: '辰' },

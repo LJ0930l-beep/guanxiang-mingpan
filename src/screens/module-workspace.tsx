@@ -237,6 +237,10 @@ function BaziResult({ result }: { result: BaziChartView }) {
         ))}
       </View>
       <View style={styles.evidenceStrip}><Text style={styles.evidenceLabel}>旬空</Text><Text style={styles.evidenceValue}>{result.kongWang}</Text></View>
+      <View style={styles.evidenceStrip}>
+        <Text style={styles.evidenceLabel}>月柱依据</Text>
+        <Text style={styles.evidenceValue}>{result.calculationEvidence.solarTermBoundary.currentMonthBasis ?? result.calculationEvidence.solarTermBoundary.note}</Text>
+      </View>
       {!!result.relations.length && <View style={styles.tagWrap}>{result.relations.map((item, index) => <Text key={`${item}-${index}`} style={styles.evidenceTag}>{item}</Text>)}</View>}
       <FocusList items={result.focus} />
       <Caveats items={result.caveats} />
