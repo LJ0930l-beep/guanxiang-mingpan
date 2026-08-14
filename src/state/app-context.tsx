@@ -4,6 +4,7 @@ import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useRe
 import { resolveCityCoordinates } from '@/data/china-cities';
 import { createLocalBackupText, parseLocalBackupText } from '@/storage/backup';
 import { createEncryptedLocalBackupText, parseEncryptedLocalBackupText } from '@/storage/encrypted-backup';
+import { createBaziHistorySnapshot } from '@/domains/bazi/interpretation/history';
 import {
   decodeStorageValue,
   encodeStorageValue,
@@ -268,6 +269,7 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const saveReading: AppContextValue['saveReading'] = async ({ profile, title, summary, payload }) => {
     assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+    const baziSnapshot = createBaziHistorySnapshot(payload);
     const reading: SavedReading = {
       id: createId('reading'),
       profileId: profile.id,
@@ -277,7 +279,9 @@ export function AppProvider({ children }: PropsWithChildren) {
       summary,
       createdAt: payload.generatedAt,
       engineVersion: payload.engineVersion,
-      interpretationVersion: 'rules-v1',
+      interpretationVersion: payload.module === 'bazi' && payload.interpretation
+        ? payload.interpretation.interpretationVersion
+        : 'rules-v1',
       snapshotMeta: snapshotMetaFromPayload(payload),
       inputSnapshot: payload.inputSnapshot,
       favorite: false,
@@ -287,6 +291,13 @@ export function AppProvider({ children }: PropsWithChildren) {
             seed: payload.seed,
             date: payload.date,
             seedScope: payload.seedScope,
+        }
+        : {}),
+      ...(baziSnapshot
+        ? {
+            normalizedChartSnapshot: baziSnapshot.normalizedChart,
+            evidenceGraphSnapshot: baziSnapshot.evidenceGraph,
+            interpretationSnapshot: baziSnapshot.interpretation,
           }
         : {}),
       payload,

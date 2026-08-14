@@ -1,4 +1,5 @@
 import type { ChartInputSnapshot, ChartPayload, ChartSnapshotMeta } from '@/types/charts';
+import type { BaziHistorySnapshot } from '@/domains/bazi/interpretation/history';
 
 export type DivinationModule = 'bazi' | 'liuyao' | 'ziwei' | 'astrology';
 
@@ -62,6 +63,10 @@ export interface SavedReading {
   seed?: string;
   date?: string;
   seedScope?: string;
+  /** Phase 2 deep-result snapshots. These are absent on legacy records by design. */
+  normalizedChartSnapshot?: BaziHistorySnapshot['normalizedChart'];
+  evidenceGraphSnapshot?: BaziHistorySnapshot['evidenceGraph'];
+  interpretationSnapshot?: BaziHistorySnapshot['interpretation'];
   favorite: boolean;
   feedback: ReadingFeedback[];
   payload: ChartPayload;

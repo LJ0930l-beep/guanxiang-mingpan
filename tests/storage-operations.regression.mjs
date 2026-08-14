@@ -6,6 +6,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 import { __storage } from '../scripts/test-shims/async-storage.mjs';
+import { calculateBaziView } from '../src/services/chart-engine.ts';
 import { AppProvider, useApp } from '../src/state/app-context.tsx';
 import { STORAGE_SCHEMA_VERSION } from '../src/storage/schema.ts';
 
@@ -135,6 +136,43 @@ test('排盘记录支持收藏、事实反馈，并持久化到同一条记录',
   const afterDelete = JSON.parse(__storage.get(READINGS_KEY));
   assert.equal(afterDelete.value[0].favorite, true);
   assert.deepEqual(afterDelete.value[0].feedback, []);
+
+  await act(async () => {
+    renderer.unmount();
+  });
+});
+
+test('新八字记录显式保存 Phase 2 深度快照而不是只保存展示摘要', async () => {
+  __storage.clear();
+  const { app, renderer } = await mountApp();
+  const profile = {
+    id: 'profile-p2-f',
+    name: 'Phase 2 命主',
+    relationship: '本人',
+    birthDate: '1980-01-01',
+    birthTime: '12:00',
+    birthCity: '北京市',
+    timeKnown: true,
+    calendar: 'solar',
+    gender: 'male',
+    latitude: 39.9042,
+    longitude: 116.4074,
+    createdAt: '2026-08-15T00:00:00.000Z',
+    updatedAt: '2026-08-15T00:00:00.000Z',
+  };
+  const payload = calculateBaziView(profile, undefined, { generatedAt: '2026-08-15T00:00:00.000Z' });
+  let saved;
+  await act(async () => {
+    saved = await app.saveReading({ profile, title: '深度快照', summary: payload.focus[0], payload });
+  });
+
+  assert.equal(saved.interpretationVersion, 'bazi-rules-v2');
+  assert.deepEqual(saved.normalizedChartSnapshot, payload.normalizedChart);
+  assert.deepEqual(saved.evidenceGraphSnapshot, payload.evidenceGraph);
+  assert.deepEqual(saved.interpretationSnapshot, payload.interpretation);
+  const persisted = JSON.parse(__storage.get(READINGS_KEY)).value[0];
+  assert.equal(persisted.interpretationSnapshot.interpretationVersion, 'bazi-rules-v2');
+  assert.equal(persisted.evidenceGraphSnapshot.evidenceVersion, 'bazi-evidence-v1');
 
   await act(async () => {
     renderer.unmount();

@@ -9,7 +9,9 @@ import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
 import { moduleBySlug } from '@/data/modules';
+import { diffBaziInterpretations } from '@/domains/bazi/interpretation/history';
 import { useScrollToTopOnMount } from '@/hooks/use-scroll-to-top-on-mount';
+import { calculateBaziView } from '@/services/chart-engine';
 import { useApp } from '@/state/app-context';
 import type { ReadingFeedbackStatus } from '@/types/domain';
 
@@ -33,7 +35,7 @@ function todayShanghai() {
 
 export function RecordsScreen() {
   useScrollToTopOnMount();
-  const { readings, toggleFavorite, addFeedback, deleteFeedback, deleteReading, clearReadings, storageBlockedKeys } = useApp();
+  const { readings, profiles, toggleFavorite, addFeedback, deleteFeedback, deleteReading, clearReadings, storageBlockedKeys } = useApp();
   const [expandedId, setExpandedId] = useState<string | null>(readings[0]?.id ?? null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [feedbackTargetId, setFeedbackTargetId] = useState<string | null>(null);
@@ -41,6 +43,8 @@ export function RecordsScreen() {
   const [feedbackObservedAt, setFeedbackObservedAt] = useState(todayShanghai());
   const [feedbackNote, setFeedbackNote] = useState('');
   const [feedbackError, setFeedbackError] = useState('');
+  const [diffByReadingId, setDiffByReadingId] = useState<Record<string, ReturnType<typeof diffBaziInterpretations>>>({});
+  const [diffError, setDiffError] = useState('');
   const recordsReadOnly = storageBlockedKeys.includes('@guanxiang/readings');
   const visibleReadings = favoritesOnly ? readings.filter((reading) => reading.favorite) : readings;
 
@@ -60,6 +64,52 @@ export function RecordsScreen() {
       setFeedbackError('');
     } catch (operationError) {
       setFeedbackError(operationError instanceof Error ? operationError.message : '保存反馈失败，请稍后重试。');
+    }
+  };
+
+  const runBaziDiff = (readingId: string) => {
+    const reading = readings.find((item) => item.id === readingId);
+    if (!reading || reading.module !== 'bazi' || !reading.interpretationSnapshot || !reading.evidenceGraphSnapshot) return;
+    const input = reading.inputSnapshot;
+    if (input.type !== 'birth') {
+      setDiffError('这条记录缺少可复核的出生输入快照。');
+      return;
+    }
+    const profile = profiles.find((item) => item.id === reading.profileId);
+    if (!profile) {
+      setDiffError('找不到这条记录对应的命主资料，无法主动复核。');
+      return;
+    }
+    try {
+      const replayProfile = {
+        ...profile,
+        birthDate: input.birthDate,
+        birthTime: input.birthTime,
+        timeKnown: input.timeKnown,
+        birthCity: input.birthCity,
+        calendar: input.calendar,
+        isLeapMonth: input.isLeapMonth,
+        gender: input.gender ?? profile.gender,
+        locationId: input.locationId ?? profile.locationId,
+        locationDatasetVersion: input.locationDatasetVersion ?? profile.locationDatasetVersion,
+        latitude: input.latitude ?? profile.latitude,
+        longitude: input.longitude ?? profile.longitude,
+      };
+      const current = calculateBaziView(replayProfile, input.gender, {
+        timezone: reading.snapshotMeta.calculationSettings.timezone,
+        bazi: reading.payload.module === 'bazi' ? reading.payload.calculationSettings : undefined,
+      });
+      const oldStrength = reading.evidenceGraphSnapshot.strengthAssessment;
+      const diff = diffBaziInterpretations(
+        reading.interpretationSnapshot,
+        current.interpretation,
+        oldStrength ? { status: oldStrength.status, confidence: oldStrength.confidence } : undefined,
+        { status: current.strengthAssessment.status, confidence: current.strengthAssessment.confidence },
+      );
+      setDiffByReadingId((currentDiffs) => ({ ...currentDiffs, [readingId]: diff }));
+      setDiffError('');
+    } catch (operationError) {
+      setDiffError(operationError instanceof Error ? operationError.message : '复核失败，请检查命主资料和快照。');
     }
   };
 
@@ -179,10 +229,34 @@ export function RecordsScreen() {
                       <Text style={styles.cardTitle}>{reading.title}</Text>
                       <Text style={styles.cardSummary}>{reading.summary}</Text>
                       {expanded && (
-                        <View style={styles.detail}>
-                          {reading.payload.focus.map((item, itemIndex) => <View key={item} style={styles.focusRow}><Text style={styles.focusIndex}>{itemIndex + 1}</Text><Text style={styles.focusText}>{item}</Text></View>)}
-                          <View style={styles.versionRow}><Text style={styles.version}>算法 {reading.engineVersion}</Text><Text style={styles.version}>解读 {reading.interpretationVersion}</Text></View>
-                          <View style={styles.detailActions}>
+                          <View style={styles.detail}>
+                            {reading.payload.focus.map((item, itemIndex) => <View key={item} style={styles.focusRow}><Text style={styles.focusIndex}>{itemIndex + 1}</Text><Text style={styles.focusText}>{item}</Text></View>)}
+                            <View style={styles.versionRow}><Text style={styles.version}>算法 {reading.engineVersion}</Text><Text style={styles.version}>解读 {reading.interpretationVersion}</Text></View>
+                            {reading.module === 'bazi' && (
+                              <View style={styles.snapshotCard}>
+                                <Text style={styles.snapshotTitle}>深度结果快照</Text>
+                                {reading.interpretationSnapshot ? (
+                                  <>
+                                    <Text style={styles.snapshotMeta}>已保存归一化命盘、EvidenceGraph 与 Interpretation（{reading.interpretationSnapshot.interpretationVersion}）。</Text>
+                                    <Pressable accessibilityLabel={`按当前规则复核${reading.title}`} accessibilityRole="button" onPress={() => runBaziDiff(reading.id)} style={({ pressed }) => [styles.snapshotButton, pressed && styles.pressed]}>
+                                      <Text style={styles.snapshotButtonText}>按当前规则复核并生成 Diff</Text>
+                                    </Pressable>
+                                    {!!diffByReadingId[reading.id] && (
+                                      <View style={styles.diffCard}>
+                                        <Text style={styles.snapshotTitle}>old vs new</Text>
+                                        <Text style={styles.diffText}>规则版本：{diffByReadingId[reading.id].oldInterpretationVersion} → {diffByReadingId[reading.id].newInterpretationVersion}</Text>
+                                        <Text style={styles.diffText}>结论变化 {diffByReadingId[reading.id].changedConclusions.length} 条 · 新增证据 {diffByReadingId[reading.id].addedEvidenceRefs.length} 条 · 删除证据 {diffByReadingId[reading.id].removedEvidenceRefs.length} 条</Text>
+                                        <Text style={styles.diffText}>强弱状态变化：{diffByReadingId[reading.id].strengthChanged ? '是' : '否'}</Text>
+                                      </View>
+                                    )}
+                                  </>
+                                ) : (
+                                  <Text style={styles.snapshotMeta}>这是旧记录，未保存 Phase 2 深度快照；打开记录不会用新规则静默重算。</Text>
+                                )}
+                              </View>
+                            )}
+                            {!!diffError && <Text style={styles.feedbackError}>{diffError}</Text>}
+                            <View style={styles.detailActions}>
                             <Pressable accessibilityLabel={reading.favorite ? `取消收藏${reading.title}` : `收藏${reading.title}`} accessibilityRole="button" disabled={recordsReadOnly} onPress={() => toggleFavorite(reading.id)} style={({ pressed }) => [styles.favoriteButton, reading.favorite && styles.favoriteButtonActive, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
                               <MaterialCommunityIcons color={reading.favorite ? palette.brass : palette.ashGreen} name={reading.favorite ? 'star' : 'star-outline'} size={16} />
                               <Text style={[styles.favoriteButtonText, reading.favorite && styles.favoriteButtonTextActive]}>{reading.favorite ? '已收藏' : '收藏'}</Text>
@@ -287,6 +361,13 @@ const styles = StyleSheet.create({
   focusText: { flex: 1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   versionRow: { marginTop: spacing.x2, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x3 },
   version: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
+  snapshotCard: { marginTop: spacing.x4, borderWidth: 1, borderColor: 'rgba(204, 166, 92, 0.32)', borderRadius: radii.input, backgroundColor: 'rgba(204, 166, 92, 0.06)', padding: spacing.x3 },
+  snapshotTitle: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 13 },
+  snapshotMeta: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
+  snapshotButton: { minHeight: 34, alignSelf: 'flex-start', marginTop: spacing.x3, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
+  snapshotButtonText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10 },
+  diffCard: { marginTop: spacing.x3, borderLeftWidth: 2, borderLeftColor: palette.brass, paddingLeft: spacing.x3 },
+  diffText: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9, lineHeight: 15 },
   detailActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x4 },
   favoriteButton: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: spacing.x1, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   favoriteButtonActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },

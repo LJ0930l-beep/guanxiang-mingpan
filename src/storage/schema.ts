@@ -321,6 +321,25 @@ function migrateReading(value: unknown): SavedReading | null {
         calculationSettingsOrigin: hasBaziSettings ? 'current' : 'legacy-default',
       };
   const liuyaoPayload = module === 'liuyao' && payload.module === 'liuyao' ? payload : null;
+  const baziSnapshots = module === 'bazi'
+    ? {
+        ...(isRecord(value.normalizedChartSnapshot)
+          ? { normalizedChartSnapshot: value.normalizedChartSnapshot }
+          : isRecord(rawPayload.normalizedChart)
+            ? { normalizedChartSnapshot: rawPayload.normalizedChart }
+            : {}),
+        ...(isRecord(value.evidenceGraphSnapshot)
+          ? { evidenceGraphSnapshot: value.evidenceGraphSnapshot }
+          : isRecord(rawPayload.evidenceGraph)
+            ? { evidenceGraphSnapshot: rawPayload.evidenceGraph }
+            : {}),
+        ...(isRecord(value.interpretationSnapshot)
+          ? { interpretationSnapshot: value.interpretationSnapshot }
+          : isRecord(rawPayload.interpretation)
+            ? { interpretationSnapshot: rawPayload.interpretation }
+            : {}),
+      }
+    : {};
 
   return {
     ...value,
@@ -339,6 +358,7 @@ function migrateReading(value: unknown): SavedReading | null {
           seedScope: liuyaoPayload.seedScope,
         }
       : {}),
+    ...baziSnapshots,
     payload,
   } as unknown as SavedReading;
 }

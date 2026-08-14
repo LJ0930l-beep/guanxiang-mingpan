@@ -124,6 +124,10 @@ test('当前 schema 读取旧版字段时会保留有效反馈并补齐收藏默
   }]);
   assert.equal(reading.payload.calculationEvidence.solarTermBoundary.status, 'pending');
   assert.equal(reading.payload.calculationEvidence.calendarConversion.resolverVersion, 'legacy-default');
+  assert.equal(reading.normalizedChartSnapshot, undefined);
+  assert.equal(reading.evidenceGraphSnapshot, undefined);
+  assert.equal(reading.interpretationSnapshot, undefined);
+  assert.equal(reading.interpretationVersion, 'rules-v1');
   assert.match(reading.payload.calculationEvidence.warnings[0], /历史记录/);
 });
 
