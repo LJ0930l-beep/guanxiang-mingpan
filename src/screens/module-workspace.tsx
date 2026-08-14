@@ -125,7 +125,7 @@ function ProfileBanner({ module, profile }: { module: ModuleDefinition; profile:
         <View style={styles.profileBannerCopy}>
           <Text style={styles.profileLabel}>当前命主</Text>
           <Text style={styles.profileName}>{profile.name}</Text>
-          <Text style={styles.profileMeta}>{profile.birthDate} · {profile.birthTime ?? '时辰未知'} · {profile.birthCity}</Text>
+          <Text style={styles.profileMeta}>{profile.birthDate} · {profile.birthTime ?? '时辰未提供'} · {profile.birthCity}</Text>
         </View>
         <Pressable accessibilityLabel="切换命主" accessibilityRole="button" onPress={() => router.push('/profiles')} style={({ pressed }) => [styles.switchProfile, pressed && styles.pressed]}>
           <Text style={styles.switchProfileText}>切换</Text>
@@ -395,7 +395,7 @@ function AstrologyWorkspace({ profile }: { profile: BirthProfile }) {
   return (
     <WorkspacePanel>
       <View style={styles.workspaceHeading}><View><Text style={styles.workspaceKicker}>TROPICAL ZODIAC</Text><Text style={styles.workspaceTitle}>校准黄道、宫位与相位</Text></View><Text style={styles.workspaceMeta}>行星 · 宫位 · 相位</Text></View>
-      <Text style={styles.workspaceDescription}>完整盘需要准确时刻与出生地坐标。内置城市可本地匹配；未匹配时只生成近似盘，并明确隐藏上升与宫位。</Text>
+      <Text style={styles.workspaceDescription}>准确时刻用于判断宫位与上升。未提供时辰不会猜测；内置城市可本地匹配，未匹配时只生成近似盘，并明确隐藏上升与宫位。</Text>
       <ErrorNotice message={error} />
       <ActionButton accessibilityLabel="生成西方占星本命盘" onPress={run}>{result ? '重新校准' : '生成本命星盘'}</ActionButton>
       {result && <AstrologyResult key={result.generatedAt} result={result} />}

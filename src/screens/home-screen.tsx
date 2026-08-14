@@ -122,7 +122,7 @@ export function HomeScreen() {
               </Text>
               <Text style={styles.profileDescription}>
                 {selectedProfile
-                  ? `${selectedProfile.name} · ${selectedProfile.birthCity || '地点待补充'} · ${selectedProfile.timeKnown ? '时辰完整' : '时辰未知，部分结果会有偏差'}`
+                  ? `${selectedProfile.name} · ${selectedProfile.birthCity || '地点待补充'} · ${selectedProfile.timeKnown ? '时辰完整' : '时辰未提供 · 仅显示日级别内容，需时模块不会猜测'}`
                   : '出生日期、时辰与地点只保存在当前设备，可随时导出加密备份。'}
               </Text>
             </View>

@@ -6,6 +6,7 @@
     "@expo/ui": "~57.0.7",
     "@expo/vector-icons": "^15.0.2",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "circular-natal-horoscope-js": "1.1.0",
     "expo": "~57.0.7",
     "expo-constants": "~57.0.6",
     "expo-device": "~57.0.1",
@@ -19,6 +20,7 @@
     "expo-symbols": "~57.0.1",
     "expo-system-ui": "~57.0.1",
     "expo-web-browser": "~57.0.1",
+    "iztro": "2.5.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-native": "0.86.0",
@@ -44,6 +46,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --experimental-loader ./scripts/ts-path-loader.mjs --test tests/chart-engine.regression.mjs tests/storage-schema.regression.mjs",
     "test:charts": "node --experimental-strip-types --experimental-loader ./scripts/ts-path-loader.mjs --test tests/chart-engine.regression.mjs",
     "build:web": "expo export --platform web",
     "postinstall": "node scripts/patch-iztro.cjs"

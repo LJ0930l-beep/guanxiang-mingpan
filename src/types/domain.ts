@@ -1,4 +1,4 @@
-import type { ChartPayload } from '@/types/charts';
+import type { ChartInputSnapshot, ChartPayload, ChartSnapshotMeta } from '@/types/charts';
 
 export type DivinationModule = 'bazi' | 'liuyao' | 'ziwei' | 'astrology';
 
@@ -39,5 +39,11 @@ export interface SavedReading {
   createdAt: string;
   engineVersion: string;
   interpretationVersion: string;
+  snapshotMeta: ChartSnapshotMeta;
+  inputSnapshot: ChartInputSnapshot;
+  /** Replay inputs are kept at the record boundary for quick inspection/export. */
+  seed?: string;
+  date?: string;
+  seedScope?: string;
   payload: ChartPayload;
 }

@@ -1,9 +1,47 @@
-import type { DivinationModule } from '@/types/domain';
+import type { DivinationModule, Gender } from '@/types/domain';
 
-export interface ChartMeta {
+export const CHART_SNAPSHOT_VERSION = 1 as const;
+
+export interface BirthInputSnapshot {
+  type: 'birth';
+  profileId: string;
+  birthDate: string;
+  birthTime?: string;
+  timeKnown: boolean;
+  birthCity: string;
+  calendar: 'solar' | 'lunar';
+  isLeapMonth?: boolean;
+  gender?: Gender;
+  latitude?: number;
+  longitude?: number;
+}
+
+export interface LiuyaoInputSnapshot {
+  type: 'liuyao';
+  question: string;
+  target: string;
+  seed: string;
+  date: string;
+  seedScope: string;
+}
+
+export interface LegacyInputSnapshot {
+  type: 'legacy';
   module: DivinationModule;
+  reason: string;
+}
+
+export type ChartInputSnapshot = BirthInputSnapshot | LiuyaoInputSnapshot | LegacyInputSnapshot;
+
+export interface ChartSnapshotMeta {
+  snapshotVersion: typeof CHART_SNAPSHOT_VERSION;
   generatedAt: string;
   engineVersion: string;
+  inputSnapshot: ChartInputSnapshot;
+}
+
+export interface ChartMeta extends ChartSnapshotMeta {
+  module: DivinationModule;
   completeness: 'complete' | 'partial';
   caveats: string[];
 }
@@ -44,6 +82,9 @@ export interface LiuyaoLineView {
 export interface LiuyaoChartView extends ChartMeta {
   module: 'liuyao';
   question: string;
+  seed: string;
+  date: string;
+  seedScope: string;
   hexagramName: string;
   changedHexagramName?: string;
   hexagramGong: string;

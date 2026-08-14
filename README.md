@@ -39,7 +39,7 @@ npm run web
 ```bash
 npm run typecheck
 npm run lint
-npm run test:charts
+npm test
 npm run build:web
 ```
 

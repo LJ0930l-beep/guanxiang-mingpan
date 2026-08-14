@@ -65,8 +65,8 @@
 | 登录入口 | 已有原型 | 手机验证码、Apple、微信三种入口均可走通本地会话；没有真实短信、Apple 或微信服务端认证。 |
 | 首页与导航 | 已完成 | 深色观象仪首页、四术入口、命主与记录入口；具备响应式 Web 布局。 |
 | 多命主 | 已完成 | 可新建、切换多个命主；采集姓名/关系、日期、时辰、城市、历法、农历闰月与性别。 |
-| 本地保存 | 已完成 | 命主、当前选择、登录原型和排盘记录存入 AsyncStorage；最近保留 100 条记录。 |
-| 记录复查 | 已完成 | 生成结果自动归档，记录页可展开查看保存的结构化结果、基础观察和引擎版本。 |
+| 本地保存 | 已完成 | 命主、当前选择、登录原型和排盘记录存入带 schema version 的 AsyncStorage；最近保留 100 条记录，旧版数据会启动时迁移。 |
+| 记录复查 | 已完成 | 生成结果自动归档，记录页可展开查看保存的结构化结果、基础观察、引擎版本和快照元数据。 |
 | 进入动效与无障碍 | 已完成基线 | 有内容进入与模块视觉动效；读取“减少动态效果”偏好；按键提供可访问标签。 |
 
 ### 3.2 四个排盘模块
@@ -86,7 +86,9 @@
 
 - **客户端框架**：Expo SDK 57、React Native 0.86、React 19、Expo Router；同一套代码支持 Web 和 iPhone 目标。
 - **状态与存储**：`src/state/app-context.tsx` 负责本地会话、命主、当前命主和排盘记录。键名为 `@guanxiang/user`、`@guanxiang/profiles`、`@guanxiang/selected-profile`、`@guanxiang/readings`。
-- **排盘适配层**：`src/services/chart-engine.ts` 将不同开源引擎的输出统一为应用自己的 `ChartPayload`。页面只消费这个统一数据协议，后续替换引擎时应先维护该协议。
+- **排盘适配层**：`src/services/chart-engine.ts` 是稳定的公共 facade；四个独立计算器位于 `src/services/engines/`，将不同开源引擎的输出统一为应用自己的 `ChartPayload`。页面只消费这个统一数据协议，后续替换引擎时应先维护该协议。
+- **可复现快照**：`ChartSnapshotMeta`、`snapshotVersion` 和 `inputSnapshot` 会随每个 `ChartPayload` 保存；六爻还会保留 `seed`、`date` 与 `seedScope`。`SavedReading` 同步保存 `snapshotMeta`，便于迁移、导出和复盘。
+- **本地存储迁移**：`src/storage/schema.ts` 为每个 AsyncStorage 值写入 `STORAGE_SCHEMA_VERSION` 包装，兼容首版未版本化数据、未来版本阻断写回，并为旧记录补齐快照字段。
 - **坐标数据**：`src/data/china-cities.ts` 内置少量常用中国城市坐标，用于西方本命盘是否可以计算角点和宫位的判断；不是全国城市库。
 - **路由/页面**：模块工作台集中在 `src/screens/module-workspace.tsx`，记录页在 `src/screens/records-screen.tsx`，命主页在 `src/screens/profiles-screen.tsx`。
 
@@ -94,9 +96,10 @@
 
 | 用途 | 当前来源 | 许可证/使用说明 |
 |---|---|---|
-| 八字、六爻 | `taibu-core@3.4.0` | 使用其 MIT 核心包，不复制 Taibu 应用层代码。Taibu 整仓应用层为 AGPL，不能将整个应用层直接用于闭源产品。 |
-| 紫微斗数 | `iztro` 浏览器 UMD 构建 | MIT；经本地兼容适配后在 Expo/浏览器中使用。 |
-| 西方本命盘 | `circular-natal-horoscope-js@1.1.0` | Unlicense；用于本地星体、相位和宫位计算。 |
+| 八字 | `taibu-core@3.4.0/bazi` | 使用 MIT 核心包，不复制 Taibu 应用层代码。 |
+| 六爻 | `taibu-core@3.4.0/liuyao+guanxiang-rng-v1` | 使用 MIT 核心包，并记录浏览器兼容的确定性随机种子实现。 |
+| 紫微斗数 | `iztro@2.5.8` 浏览器 UMD 构建 | MIT；已作为直接依赖固定版本。 |
+| 西方本命盘 | `circular-natal-horoscope-js@1.1.0` | Unlicense；已作为直接依赖固定版本，用于本地星体、相位和宫位计算。 |
 | 研究备选 | `lunar-javascript` 等 | 许可证与固定提交记录见 [SOURCE_MANIFEST.md](../../metaphysics-app-research/SOURCE_MANIFEST.md)。 |
 
 安装依赖后会运行 `scripts/patch-iztro.cjs`。该脚本做了两类兼容处理：
@@ -116,7 +119,7 @@
 
 ### 尚未落实，不能对外承诺
 
-- AsyncStorage 是持久化存储，不是加密保险箱；当前出生资料和记录在本机以未加密键值形式存储。
+- AsyncStorage 是持久化存储，不是加密保险箱；当前出生资料和记录在本机以未加密键值形式存储。schema version 只解决结构迁移，不等于加密。
 - 没有用户可操作的导出、导入、加密备份、清除全部本地数据或迁移工具。
 - 没有正式隐私政策、用户协议、注销流程、数据导出流程、服务端审计日志或内容审核规则。
 - 当前“登录”只是本地体验层，不能用于真实身份、跨端权益或找回账号。
@@ -129,7 +132,7 @@
 |---|---:|---|---|
 | M0：跨端体验骨架 | 100% | 路由、视觉系统、模块入口、本地命主、基础工程检查。 | 无。 |
 | M1：确定性排盘核心 | 75% | 四类本地排盘、统一结果协议、输入边界、基础规则观察，以及首批固定样例回归测试。 | 全国城市库、真太阳时/子初换日/流派设置、节气/闰月/子初/夏令时等完整金标准回归测试。 |
-| M2：本地档案与备份 | 30% | 命主与结果自动归档、记录展开查看、版本字段。 | 收藏、反馈复盘、编辑/删除、加密备份、导入导出、迁移策略。 |
+| M2：本地档案与备份 | 40% | 命主与结果自动归档、记录展开查看、版本字段、快照元数据、Storage Schema Version 与首版迁移。 | 收藏、反馈复盘、编辑/删除、加密备份、导入导出、完整迁移策略。 |
 | M3：中国大陆真实账号 | 5% | 三种登录入口的界面与本地流程。 | 短信、Apple、微信认证，手机号绑定，权益同步，账户安全与注销。 |
 | M4：商业化和 AI | 0% | 产品边界已确定。 | 支付、订阅、单次付费、服务端权益、AI 成本控制、内容安全。 |
 | 正式公开上线准备度 | 约 35% | 可演示、可进行小范围内部体验。 | 账号、隐私合规、数据保护、设备发布、质量基线和运营能力均未闭环。 |
@@ -140,8 +143,9 @@
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm run test:charts`（四模块固定样例与输入边界，共 5 项测试）
+- `npm test`（四模块固定样例、输入边界与存储迁移，共 8 项测试）
 - `npm run build:web`（静态 Web 构建成功，8 条路由）
+- GitHub Actions CI：安装依赖后自动执行 typecheck、lint、npm test 和 Web 构建。
 - 浏览器手工走查：首页、八字落柱、六爻起卦、紫微十二宫、星盘精确/近似分支、自动保存及记录展开。
 - 视觉与响应式基线已检查过 375px、手机横屏和 1440px；正式发布前仍必须在实际 iPhone 上做全量回归。
 

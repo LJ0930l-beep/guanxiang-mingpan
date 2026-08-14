@@ -2,7 +2,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 import { resolveCityCoordinates } from '@/data/china-cities';
-import { BirthProfile, Gender, LocalUser, SavedReading } from '@/types/domain';
+import {
+  decodeStorageValue,
+  encodeStorageValue,
+  migrateProfiles,
+  migrateReadings,
+  migrateSelectedProfile,
+  migrateUser,
+  snapshotMetaFromPayload,
+} from '@/storage/schema';
+import type { BirthProfile, Gender, LocalUser, SavedReading } from '@/types/domain';
 import type { ChartPayload } from '@/types/charts';
 
 const STORAGE = {
@@ -48,6 +57,10 @@ function createId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function setStoredValue<T>(key: string, value: T) {
+  return AsyncStorage.setItem(key, encodeStorageValue(value));
+}
+
 export function AppProvider({ children }: PropsWithChildren) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<LocalUser | null>(null);
@@ -64,12 +77,23 @@ export function AppProvider({ children }: PropsWithChildren) {
       AsyncStorage.getItem(STORAGE.selectedProfile),
       AsyncStorage.getItem(STORAGE.readings),
     ])
-      .then(([storedUser, storedProfiles, storedSelectedProfile, storedReadings]) => {
+      .then(async ([storedUser, storedProfiles, storedSelectedProfile, storedReadings]) => {
         if (!active) return;
-        if (storedUser) setUser(JSON.parse(storedUser));
-        if (storedProfiles) setProfiles(JSON.parse(storedProfiles));
-        if (storedSelectedProfile) setSelectedProfileId(storedSelectedProfile);
-        if (storedReadings) setReadings(JSON.parse(storedReadings));
+        const userState = decodeStorageValue(storedUser, null, migrateUser);
+        const profilesState = decodeStorageValue(storedProfiles, [], migrateProfiles);
+        const selectedProfileState = decodeStorageValue(storedSelectedProfile, null, migrateSelectedProfile);
+        const readingsState = decodeStorageValue(storedReadings, [], migrateReadings);
+        setUser(userState.value);
+        setProfiles(profilesState.value);
+        setSelectedProfileId(selectedProfileState.value);
+        setReadings(readingsState.value);
+
+        const migrations: [string, string][] = [];
+        if (storedUser && userState.needsRewrite && !userState.blocked) migrations.push([STORAGE.user, encodeStorageValue(userState.value)]);
+        if (storedProfiles && profilesState.needsRewrite && !profilesState.blocked) migrations.push([STORAGE.profiles, encodeStorageValue(profilesState.value)]);
+        if (storedSelectedProfile && selectedProfileState.needsRewrite && !selectedProfileState.blocked) migrations.push([STORAGE.selectedProfile, encodeStorageValue(selectedProfileState.value)]);
+        if (storedReadings && readingsState.needsRewrite && !readingsState.blocked) migrations.push([STORAGE.readings, encodeStorageValue(readingsState.value)]);
+        if (migrations.length) await AsyncStorage.multiSet(migrations);
       })
       .finally(() => {
         if (active) setReady(true);
@@ -96,7 +120,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       provider: 'phone',
     };
     setUser(nextUser);
-    await AsyncStorage.setItem(STORAGE.user, JSON.stringify(nextUser));
+    await setStoredValue(STORAGE.user, nextUser);
     return { ok: true };
   };
 
@@ -107,7 +131,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       provider,
     };
     setUser(nextUser);
-    await AsyncStorage.setItem(STORAGE.user, JSON.stringify(nextUser));
+    await setStoredValue(STORAGE.user, nextUser);
   };
 
   const signOut = async () => {
@@ -132,15 +156,15 @@ export function AppProvider({ children }: PropsWithChildren) {
     setProfiles(nextProfiles);
     setSelectedProfileId(profile.id);
     await Promise.all([
-      AsyncStorage.setItem(STORAGE.profiles, JSON.stringify(nextProfiles)),
-      AsyncStorage.setItem(STORAGE.selectedProfile, profile.id),
+      setStoredValue(STORAGE.profiles, nextProfiles),
+      setStoredValue(STORAGE.selectedProfile, profile.id),
     ]);
     return profile;
   };
 
   const selectProfile = async (profileId: string) => {
     setSelectedProfileId(profileId);
-    await AsyncStorage.setItem(STORAGE.selectedProfile, profileId);
+    await setStoredValue(STORAGE.selectedProfile, profileId);
   };
 
   const saveReading: AppContextValue['saveReading'] = async ({ profile, title, summary, payload }) => {
@@ -154,11 +178,20 @@ export function AppProvider({ children }: PropsWithChildren) {
       createdAt: payload.generatedAt,
       engineVersion: payload.engineVersion,
       interpretationVersion: 'rules-v1',
+      snapshotMeta: snapshotMetaFromPayload(payload),
+      inputSnapshot: payload.inputSnapshot,
+      ...(payload.module === 'liuyao'
+        ? {
+            seed: payload.seed,
+            date: payload.date,
+            seedScope: payload.seedScope,
+          }
+        : {}),
       payload,
     };
     const nextReadings = [reading, ...readings].slice(0, 100);
     setReadings(nextReadings);
-    await AsyncStorage.setItem(STORAGE.readings, JSON.stringify(nextReadings));
+    await setStoredValue(STORAGE.readings, nextReadings);
     return reading;
   };
 

@@ -155,7 +155,7 @@ export function ProfilesScreen() {
               <View style={styles.switchRow}>
                 <View style={styles.switchCopy}>
                   <Text style={styles.switchLabel}>时辰已知</Text>
-                  <Text style={styles.switchHint}>关闭后只显示日级别可计算内容，并标注偏差。</Text>
+                  <Text style={styles.switchHint}>关闭后保留日级别信息；需要准确时辰的模块会明确提示，不会自动猜测。</Text>
                 </View>
                 <Switch
                   accessibilityLabel="出生时辰是否已知"
@@ -210,7 +210,7 @@ export function ProfilesScreen() {
                         <Text style={styles.profileName}>{profile.name}</Text>
                         <Text style={styles.relationship}>{profile.relationship}</Text>
                       </View>
-                      <Text style={styles.profileMeta}>{profile.birthDate} · {profile.birthTime ?? '时辰未知'} · {profile.gender === 'male' ? '男' : profile.gender === 'female' ? '女' : '性别待补'} · {profile.birthCity}</Text>
+                      <Text style={styles.profileMeta}>{profile.birthDate} · {profile.birthTime ?? '时辰未提供'} · {profile.gender === 'male' ? '男' : profile.gender === 'female' ? '女' : '性别待补'} · {profile.birthCity}</Text>
                     </View>
                     <View style={[styles.selection, active && styles.selectionActive]} />
                   </Pressable>

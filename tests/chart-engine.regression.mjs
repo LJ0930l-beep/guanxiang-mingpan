@@ -35,6 +35,20 @@ test('八字固定样例保持四柱与关系证据稳定', () => {
   const result = calculateBaziView(fixtureProfile, undefined, fixedCalculation);
 
   assert.equal(result.generatedAt, generatedAt);
+  assert.equal(result.engineVersion, 'taibu-core@3.4.0/bazi');
+  assert.equal(result.snapshotVersion, 1);
+  assert.deepEqual(result.inputSnapshot, {
+    type: 'birth',
+    profileId: 'fixture-2001-shenzhen',
+    birthDate: '2001-09-08',
+    birthTime: '20:30',
+    timeKnown: true,
+    birthCity: '广东省深圳市',
+    calendar: 'solar',
+    gender: 'male',
+    latitude: 22.5431,
+    longitude: 114.0579,
+  });
   assert.equal(result.dayMaster, '甲');
   assert.deepEqual(
     result.pillars.map(({ key, stem, branch, tenGod, hiddenStems, naYin }) => ({
@@ -61,6 +75,7 @@ test('紫微固定样例保持十二宫、命身主与四化稳定', () => {
   const lifePalace = result.palaces.find((palace) => palace.name === '命宫');
 
   assert.equal(result.generatedAt, generatedAt);
+  assert.equal(result.engineVersion, 'iztro@2.5.8');
   assert.equal(result.solarDate, '2001-9-8');
   assert.equal(result.lunarDate, '二〇〇一年七月廿一');
   assert.equal(result.soul, '戌');
@@ -84,6 +99,7 @@ test('西方星盘固定样例保持精确模式、角点和标准十星', () =>
   const result = calculateAstrologyView(fixtureProfile, fixedCalculation);
 
   assert.equal(result.generatedAt, generatedAt);
+  assert.equal(result.engineVersion, 'circular-natal-horoscope-js@1.1.0');
   assert.equal(result.calculationMode, 'exact');
   assert.equal(result.sunSign, '处女座');
   assert.equal(result.moonSign, '金牛座');
@@ -119,6 +135,19 @@ test('六爻固定种子保持卦名、干支时间和六爻证据稳定', async
 
   assert.deepEqual(repeated, result);
   assert.equal(result.generatedAt, generatedAt);
+  assert.equal(result.engineVersion, 'taibu-core@3.4.0/liuyao+guanxiang-rng-v1');
+  assert.equal(result.snapshotVersion, 1);
+  assert.equal(result.seed, fixedCalculation.seed);
+  assert.equal(result.date, fixedCalculation.date);
+  assert.equal(result.seedScope, 'guanxiang-local-v1');
+  assert.deepEqual(result.inputSnapshot, {
+    type: 'liuyao',
+    question,
+    target,
+    seed: fixedCalculation.seed,
+    date: fixedCalculation.date,
+    seedScope: 'guanxiang-local-v1',
+  });
   assert.equal(result.question, question);
   assert.equal(result.hexagramName, '离为火');
   assert.equal(result.changedHexagramName, '风火家人');
@@ -151,6 +180,7 @@ test('输入边界不会把缺失时辰或未知城市伪装成精确结果', ()
   const missingTime = { ...fixtureProfile, birthTime: undefined, timeKnown: false };
   assert.throws(() => calculateBaziView(missingTime), /需要准确出生时辰/);
   assert.throws(() => calculateZiweiView(missingTime), /需要准确出生时辰/);
+  assert.throws(() => calculateAstrologyView(missingTime), /需要准确出生时辰/);
 
   const unknownCity = { ...fixtureProfile, birthCity: '福建省泉州市', latitude: undefined, longitude: undefined };
   const result = calculateAstrologyView(unknownCity, fixedCalculation);
