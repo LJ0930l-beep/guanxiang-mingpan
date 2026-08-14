@@ -353,6 +353,7 @@ function migrateReading(value: unknown): SavedReading | null {
         : 'rules-v1',
     snapshotMeta,
     inputSnapshot,
+    ...(isRecord(value.profileSnapshot) ? { profileSnapshot: value.profileSnapshot } : {}),
     favorite: value.favorite === true,
     feedback: migrateFeedback(value.feedback),
     ...(liuyaoPayload

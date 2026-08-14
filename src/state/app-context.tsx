@@ -284,6 +284,7 @@ export function AppProvider({ children }: PropsWithChildren) {
         : 'rules-v1',
       snapshotMeta: snapshotMetaFromPayload(payload),
       inputSnapshot: payload.inputSnapshot,
+      profileSnapshot: { ...profile },
       favorite: false,
       feedback: [],
       ...(payload.module === 'liuyao'

@@ -167,12 +167,14 @@ test('新八字记录显式保存 Phase 2 深度快照而不是只保存展示�
   });
 
   assert.equal(saved.interpretationVersion, 'bazi-rules-v2');
+  assert.equal(saved.profileSnapshot.birthDate, '1980-01-01');
   assert.deepEqual(saved.normalizedChartSnapshot, payload.normalizedChart);
   assert.deepEqual(saved.evidenceGraphSnapshot, payload.evidenceGraph);
   assert.deepEqual(saved.interpretationSnapshot, payload.interpretation);
   const persisted = JSON.parse(__storage.get(READINGS_KEY)).value[0];
   assert.equal(persisted.interpretationSnapshot.interpretationVersion, 'bazi-rules-v2');
   assert.equal(persisted.evidenceGraphSnapshot.evidenceVersion, 'bazi-evidence-v1');
+  assert.equal(persisted.profileSnapshot.birthCity, '北京市');
 
   await act(async () => {
     renderer.unmount();

@@ -63,6 +63,8 @@ export interface SavedReading {
   seed?: string;
   date?: string;
   seedScope?: string;
+  /** Immutable copy of the profile used when this reading was created. */
+  profileSnapshot?: BirthProfile;
   /** Phase 2 deep-result snapshots. These are absent on legacy records by design. */
   normalizedChartSnapshot?: BaziHistorySnapshot['normalizedChart'];
   evidenceGraphSnapshot?: BaziHistorySnapshot['evidenceGraph'];
