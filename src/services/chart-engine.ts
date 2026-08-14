@@ -40,6 +40,19 @@ interface BirthParts {
   minute: number;
 }
 
+export interface CalculationOptions {
+  /** Fixed timestamp used by regression tests and imported/replayed records. */
+  generatedAt?: string;
+  /** Fixed automatic-casting seed used when replaying a Liuyao record. */
+  seed?: string;
+  /** Fixed local ISO date used for Liuyao ganzhi and strength calculation. */
+  date?: string;
+}
+
+function generatedAt(options?: CalculationOptions) {
+  return options?.generatedAt ?? new Date().toISOString();
+}
+
 function birthParts(profile: BirthProfile): BirthParts {
   const [year, month, day] = profile.birthDate.split('-').map(Number);
   const [hour = 0, minute = 0] = (profile.birthTime ?? '').split(':').map(Number);
@@ -59,7 +72,11 @@ function requireGender(profile: BirthProfile, override?: Gender): Gender {
   return gender;
 }
 
-export function calculateBaziView(profile: BirthProfile, genderOverride?: Gender): BaziChartView {
+export function calculateBaziView(
+  profile: BirthProfile,
+  genderOverride?: Gender,
+  options?: CalculationOptions,
+): BaziChartView {
   requireExactBirth(profile);
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
@@ -96,7 +113,7 @@ export function calculateBaziView(profile: BirthProfile, genderOverride?: Gender
 
   return {
     module: 'bazi',
-    generatedAt: new Date().toISOString(),
+    generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSION,
     completeness: 'complete',
     caveats: ['基础版展示结构证据，不直接给出吉凶定论。', '子初换日与真太阳时设置将在专业设置中开放。'],
@@ -112,13 +129,17 @@ export function calculateBaziView(profile: BirthProfile, genderOverride?: Gender
   };
 }
 
-export async function calculateLiuyaoView(question: string, target: string): Promise<LiuyaoChartView> {
-  const seed = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+export async function calculateLiuyaoView(
+  question: string,
+  target: string,
+  options?: CalculationOptions,
+): Promise<LiuyaoChartView> {
+  const seed = options?.seed ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const result = await calculateLiuyao({
     question,
     yongShenTargets: [target as '父母' | '兄弟' | '官鬼' | '妻财' | '子孙'],
     method: 'auto',
-    date: new Date().toISOString(),
+    date: options?.date ?? new Date().toISOString(),
     seed,
     seedScope: 'guanxiang-local-v1',
     detailLevel: 'more',
@@ -144,7 +165,7 @@ export async function calculateLiuyaoView(question: string, target: string): Pro
 
   return {
     module: 'liuyao',
-    generatedAt: new Date().toISOString(),
+    generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSION,
     completeness: 'complete',
     caveats: ['一次起卦对应一个具体问题；基础版保留盘面证据，不代替现实决策。'],
@@ -163,7 +184,11 @@ export async function calculateLiuyaoView(question: string, target: string): Pro
   };
 }
 
-export function calculateZiweiView(profile: BirthProfile, genderOverride?: Gender): ZiweiChartView {
+export function calculateZiweiView(
+  profile: BirthProfile,
+  genderOverride?: Gender,
+  options?: CalculationOptions,
+): ZiweiChartView {
   requireExactBirth(profile);
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
@@ -190,7 +215,7 @@ export function calculateZiweiView(profile: BirthProfile, genderOverride?: Gende
 
   return {
     module: 'ziwei',
-    generatedAt: new Date().toISOString(),
+    generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSION,
     completeness: 'complete',
     caveats: ['不同流派在安星与四化规则上存在差异，本版固定算法版本以便复盘。'],
@@ -211,7 +236,7 @@ export function calculateZiweiView(profile: BirthProfile, genderOverride?: Gende
   };
 }
 
-export function calculateAstrologyView(profile: BirthProfile): AstrologyChartView {
+export function calculateAstrologyView(profile: BirthProfile, options?: CalculationOptions): AstrologyChartView {
   requireExactBirth(profile);
   const parts = birthParts(profile);
   const city = profile.latitude != null && profile.longitude != null
@@ -271,7 +296,7 @@ export function calculateAstrologyView(profile: BirthProfile): AstrologyChartVie
 
   return {
     module: 'astrology',
-    generatedAt: new Date().toISOString(),
+    generatedAt: generatedAt(options),
     engineVersion: ASTROLOGY_ENGINE_VERSION,
     completeness: city ? 'complete' : 'partial',
     caveats,
