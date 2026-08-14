@@ -64,10 +64,18 @@ test('P1-C makes the zi-early day boundary explicit and effective', () => {
   assert.ok(ziEarly.calculationEvidence.warnings.some((warning) => warning.includes('23:00')));
 });
 
-test('P1-D true-solar settings remain guarded until that batch is enabled', () => {
+test('P1-D true-solar settings record correction evidence and change the effective time', () => {
   const profile = profileFromGoldenCase(BAZI_GOLDEN_CASES[0]);
-  assert.throws(
-    () => calculateBaziView(profile, undefined, { bazi: { trueSolarTime: true, solarTimeModel: 'localMeanSolarTime' } }),
-    /P1-D/,
+  const result = calculateBaziView(profile, undefined, {
+    generatedAt,
+    bazi: { trueSolarTime: true, solarTimeModel: 'localMeanSolarTime' },
+  });
+  assert.equal(result.calculationSettings.trueSolarTime, true);
+  assert.equal(result.calculationEvidence.trueSolarCorrection.applied, true);
+  assert.equal(result.calculationEvidence.trueSolarCorrection.model, 'localMeanSolarTime');
+  assert.equal(result.calculationEvidence.trueSolarCorrection.longitude, profile.longitude);
+  assert.notEqual(
+    result.calculationEvidence.trueSolarCorrection.effectiveTime,
+    result.calculationEvidence.trueSolarCorrection.civilTime,
   );
 });

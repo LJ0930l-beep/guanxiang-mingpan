@@ -1,4 +1,5 @@
 import type { CalculationTimezone } from '@/types/charts';
+import type { BaziCalendarConversionEvidence } from '@/domains/bazi/calendar-resolver';
 
 export type BaziDayBoundary = 'midnight' | 'ziEarly';
 export type BaziSolarTimeModel = 'none' | 'localMeanSolarTime' | 'apparentSolarTime';
@@ -46,6 +47,10 @@ export interface TrueSolarCorrectionEvidence {
   civilTime: string;
   effectiveTime: string;
   correctionMinutes: number;
+  longitude?: number;
+  standardMeridian?: number;
+  precisionMinutes?: number;
+  note?: string;
 }
 
 export interface BaziLocationEvidence {
@@ -63,6 +68,7 @@ export interface BaziCalculationEvidence {
   normalizedCivilTime: string;
   effectiveCalculationTime: string;
   timezone: CalculationTimezone;
+  calendarConversion: BaziCalendarConversionEvidence;
   solarTermBoundary: SolarTermBoundaryEvidence;
   dayBoundaryRule: BaziDayBoundary;
   trueSolarCorrection: TrueSolarCorrectionEvidence;

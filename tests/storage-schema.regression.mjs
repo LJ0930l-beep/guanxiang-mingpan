@@ -123,6 +123,7 @@ test('当前 schema 读取旧版字段时会保留有效反馈并补齐收藏默
     createdAt: '2026-01-02T00:00:00.000Z',
   }]);
   assert.equal(reading.payload.calculationEvidence.solarTermBoundary.status, 'pending');
+  assert.equal(reading.payload.calculationEvidence.calendarConversion.resolverVersion, 'legacy-default');
   assert.match(reading.payload.calculationEvidence.warnings[0], /历史记录/);
 });
 

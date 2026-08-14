@@ -71,8 +71,8 @@ export function baziCalculationSettings(options?: CalculationOptions): BaziCalcu
   if (base.dayBoundary !== 'midnight' && base.dayBoundary !== 'ziEarly') {
     throw new Error('八字日界线规则无效；当前仅支持 midnight 或 ziEarly。');
   }
-  if (base.trueSolarTime || base.solarTimeModel !== 'none') {
-    throw new Error('真太阳时将在 P1-D 开放；当前八字计算不接受真太阳时设置。');
+  if ((base.trueSolarTime && base.solarTimeModel === 'none') || (!base.trueSolarTime && base.solarTimeModel !== 'none')) {
+    throw new Error('真太阳时设置无效：启用时必须选择 localMeanSolarTime 或 apparentSolarTime。');
   }
   return base;
 }

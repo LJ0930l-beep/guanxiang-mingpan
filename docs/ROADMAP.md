@@ -16,12 +16,13 @@
 - [x] 每个模块输出可追溯的规则型基础观察，不使用生成式 AI。
 - [x] 建立首批四模块固定样例与缺失时辰/未知城市边界回归测试（`npm test`）。
 - [x] 建立 `ChartSnapshotMeta`、`calculationSettings`、`inputSnapshot`、六爻 seed/date/scope 持久化和四模块独立计算器 facade。
-- [x] P1-A：建立独立来源八字 Golden Case 框架、`BaziCalculationSettings` 与 `BaziCalculationEvidence`；未启用的子初/真太阳时设置会拒绝执行。
+- [x] P1-A：建立独立来源八字 Golden Case 框架、`BaziCalculationSettings` 与 `BaziCalculationEvidence`；真太阳时与日界规则由后续批次正式启用。
 - [x] P1-B：接入带来源/版本/精度的节气边界解析，记录最近/下一节气、边界窗口和月柱节令依据，并完成 T-1/T/T+1 与跨 TZ 回归。
 - [x] P1-C：落实午夜 / 子初日界线，23:00 子初换日写入有效计算时刻、设置与证据，并加入 22:59/23:00/23:01 回归。
+- [x] P1-D：接入 UTC-only 真太阳时修正（地方平太阳时 / 视太阳时），记录标准经线、经度、修正分钟数、精度与有效时刻，并完成跨 TZ 回归。
 - [ ] 扩充全国城市坐标离线索引。
 - [ ] 为边界日期、闰月、子时换日、夏令时和未知时辰建立固定金标准测试集。
-- [ ] 增加真太阳时和流派选择的专业设置；子初换日已在 P1-C 完成第一版。
+- [ ] 扩充大陆城市坐标及来源许可、增加流派选择；子初换日和真太阳时已完成第一版。
 
 ## M2 — 本地档案与备份
 

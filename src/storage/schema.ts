@@ -183,6 +183,17 @@ function legacyBaziEvidence(inputSnapshot: ChartInputSnapshot, settings: Calcula
     normalizedCivilTime: civilTime,
     effectiveCalculationTime: civilTime,
     timezone: DEFAULT_CALCULATION_TIMEZONE,
+    calendarConversion: {
+      sourceCalendar: birth?.calendar ?? 'solar',
+      inputDate: birth?.birthDate ?? 'unknown',
+      inputTime: birth?.birthTime ? `${birth.birthTime}:00` : '00:00:00',
+      isLeapMonth: birth?.isLeapMonth,
+      normalizedSolarDateTime: civilTime,
+      dataSource: 'legacy-record',
+      dataVersion: 'unknown',
+      resolverVersion: 'legacy-default',
+      note: '历史记录未保存独立历法换算证据；当前版本不重算原始结果。',
+    },
     solarTermBoundary: {
       status: 'pending',
       note: '历史记录未保存 P1-A 节气证据；当前版本不会重新解释原始结果。',
@@ -269,6 +280,16 @@ function migrateReading(value: unknown): SavedReading | null {
       : 'legacy-unknown';
   const payloadInputSnapshot = migrateInputSnapshot(rawPayload.inputSnapshot) ?? inputSnapshot;
   const payloadCalculationSettings = migrateCalculationSettings(rawPayload.calculationSettings ?? calculationSettings, module);
+  const payloadBaziEvidence = module === 'bazi'
+    ? !isRecord(rawPayload.calculationEvidence)
+      ? legacyBaziEvidence(payloadInputSnapshot, payloadCalculationSettings)
+      : !isRecord(rawPayload.calculationEvidence.calendarConversion)
+        ? {
+            ...rawPayload.calculationEvidence,
+            calendarConversion: legacyBaziEvidence(payloadInputSnapshot, payloadCalculationSettings).calendarConversion,
+          }
+        : rawPayload.calculationEvidence
+    : undefined;
   const payload = {
     ...rawPayload,
     module,
@@ -277,9 +298,7 @@ function migrateReading(value: unknown): SavedReading | null {
     engineVersion: rawPayload.engineVersion ?? engineVersion,
     calculationSettings: payloadCalculationSettings,
     inputSnapshot: payloadInputSnapshot,
-    ...(module === 'bazi' && !isRecord(rawPayload.calculationEvidence)
-      ? { calculationEvidence: legacyBaziEvidence(payloadInputSnapshot, payloadCalculationSettings) }
-      : {}),
+    ...(module === 'bazi' ? { calculationEvidence: payloadBaziEvidence } : {}),
     ...(module === 'liuyao'
       ? {
           seed: rawPayload.seed ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.seed : 'legacy-unknown'),

@@ -2,6 +2,8 @@ import { calculateBazi } from 'taibu-core/bazi';
 
 import { resolveBaziDayBoundary } from '@/domains/bazi/day-boundary';
 import { createBaziCalculationEvidence } from '@/domains/bazi/evidence';
+import { resolveBaziCalendar } from '@/domains/bazi/calendar-resolver';
+import { resolveTrueSolarTime } from '@/domains/bazi/true-solar-time';
 import type { BaziChartView } from '@/types/charts';
 import { baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
@@ -67,11 +69,26 @@ export function calculateBaziView(
   options?: CalculationOptions,
 ): BaziChartView {
   requireExactBirth(profile);
-  const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
   const settings = baziCalculationSettings(options);
-  const dayBoundaryResolution = resolveBaziDayBoundary(profile, settings);
-  const result = calculateWithDayBoundary(profile, parts, gender, dayBoundaryResolution);
+  const calendarResolution = resolveBaziCalendar(profile);
+  const calendarProfile = {
+    ...profile,
+    calendar: 'solar' as const,
+    birthDate: calendarResolution.normalizedSolarDate,
+    birthTime: calendarResolution.normalizedSolarTime.slice(0, 5),
+  };
+  const trueSolarResolution = resolveTrueSolarTime(calendarProfile, settings);
+  const calculationProfile = trueSolarResolution.applied
+    ? {
+        ...calendarProfile,
+        birthDate: trueSolarResolution.effectiveDate,
+        birthTime: trueSolarResolution.effectiveTime.slice(0, 5),
+      }
+    : calendarProfile;
+  const parts = birthParts(calculationProfile);
+  const dayBoundaryResolution = resolveBaziDayBoundary(calculationProfile, settings);
+  const result = calculateWithDayBoundary(calculationProfile, parts, gender, dayBoundaryResolution);
   const order = [
     ['year', '年柱'],
     ['month', '月柱'],
@@ -98,10 +115,14 @@ export function calculateBaziView(
     generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSIONS.bazi,
     calculationSettings: settings,
-    calculationEvidence: createBaziCalculationEvidence(profile, settings, dayBoundaryResolution),
+    calculationEvidence: createBaziCalculationEvidence(profile, settings, dayBoundaryResolution, trueSolarResolution, calendarResolution),
     inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
-    caveats: ['基础版展示结构证据，不直接给出吉凶定论。', 'P1-A～P1-C 已记录并应用日界线、节气、位置数据与历法解析版本；真太阳时仍将在 P1-D 启用。'],
+    caveats: [
+      '基础版展示结构证据，不直接给出吉凶定论。',
+      'P1-A～P1-D 已记录并应用日界线、节气、位置数据与历法解析版本；流派选择仍待后续批次。',
+      ...(trueSolarResolution.applied ? [trueSolarResolution.note] : []),
+    ],
     dayMaster: result.dayMaster,
     pillars,
     kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongZhi.join('、')}`,
