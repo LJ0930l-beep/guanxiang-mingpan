@@ -16,6 +16,7 @@
 - [x] 每个模块输出可追溯的规则型基础观察，不使用生成式 AI。
 - [x] 建立首批四模块固定样例与缺失时辰/未知城市边界回归测试（`npm test`）。
 - [x] 建立 `ChartSnapshotMeta`、`calculationSettings`、`inputSnapshot`、六爻 seed/date/scope 持久化和四模块独立计算器 facade。
+- [x] P1-A：建立独立来源八字 Golden Case 框架、`BaziCalculationSettings` 与 `BaziCalculationEvidence`；未启用的子初/真太阳时设置会拒绝执行。
 - [ ] 扩充全国城市坐标离线索引。
 - [ ] 为边界日期、闰月、子时换日、夏令时和未知时辰建立固定金标准测试集。
 - [ ] 增加真太阳时、子初换日和流派选择的专业设置。

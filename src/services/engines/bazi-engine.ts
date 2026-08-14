@@ -1,7 +1,8 @@
 import { calculateBazi } from 'taibu-core/bazi';
 
+import { createBaziCalculationEvidence } from '@/domains/bazi/evidence';
 import type { BaziChartView } from '@/types/charts';
-import { calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 
@@ -13,7 +14,7 @@ export function calculateBaziView(
   requireExactBirth(profile);
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
-  const settings = calculationSettings(options);
+  const settings = baziCalculationSettings(options);
   const result = calculateBazi({
     gender,
     birthYear: parts.year,
@@ -51,9 +52,10 @@ export function calculateBaziView(
     generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSIONS.bazi,
     calculationSettings: settings,
+    calculationEvidence: createBaziCalculationEvidence(profile, settings),
     inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
-    caveats: ['基础版展示结构证据，不直接给出吉凶定论。', '子初换日与真太阳时设置将在专业设置中开放。'],
+    caveats: ['基础版展示结构证据，不直接给出吉凶定论。', 'P1-A 已记录换日、真太阳时、位置数据与历法解析版本；对应规则将在后续批次启用。'],
     dayMaster: result.dayMaster,
     pillars,
     kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongZhi.join('、')}`,

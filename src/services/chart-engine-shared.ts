@@ -1,5 +1,7 @@
 import { CHART_SNAPSHOT_VERSION, DEFAULT_CALCULATION_TIMEZONE } from '@/types/charts';
 import type { BirthInputSnapshot, CalculationSettings, CalculationTimezone } from '@/types/charts';
+import { DEFAULT_BAZI_CALCULATION_SETTINGS } from '@/domains/bazi/types';
+import type { BaziCalculationSettings } from '@/domains/bazi/types';
 import type { BirthProfile, Gender } from '@/types/domain';
 
 export const ENGINE_VERSIONS = {
@@ -48,6 +50,8 @@ export interface CalculationOptions {
   date?: string;
   /** Civil-time timezone for all calculations. The first release fixes this to Asia/Shanghai. */
   timezone?: CalculationTimezone;
+  /** P1-A records the Bazi rule slots; P1-C/P1-D will make non-default values effective. */
+  bazi?: Partial<BaziCalculationSettings>;
 }
 
 export function calculationSettings(options?: CalculationOptions): CalculationSettings {
@@ -56,6 +60,21 @@ export function calculationSettings(options?: CalculationOptions): CalculationSe
     throw new Error(`当前版本仅支持 ${DEFAULT_CALCULATION_TIMEZONE}，不允许依赖设备或服务器时区。`);
   }
   return { timezone };
+}
+
+export function baziCalculationSettings(options?: CalculationOptions): BaziCalculationSettings {
+  const base = {
+    ...DEFAULT_BAZI_CALCULATION_SETTINGS,
+    timezone: calculationSettings(options).timezone,
+    ...options?.bazi,
+  };
+  if (base.dayBoundary !== 'midnight') {
+    throw new Error('子初换日将在 P1-C 开放；当前八字计算只允许午夜换日。');
+  }
+  if (base.trueSolarTime || base.solarTimeModel !== 'none') {
+    throw new Error('真太阳时将在 P1-D 开放；当前八字计算不接受真太阳时设置。');
+  }
+  return base;
 }
 
 export function generatedAt(options?: CalculationOptions) {

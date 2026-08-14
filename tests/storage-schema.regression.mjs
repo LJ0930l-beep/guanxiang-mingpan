@@ -122,6 +122,8 @@ test('当前 schema 读取旧版字段时会保留有效反馈并补齐收藏默
     note: '事实已发生',
     createdAt: '2026-01-02T00:00:00.000Z',
   }]);
+  assert.equal(reading.payload.calculationEvidence.solarTermBoundary.status, 'pending');
+  assert.match(reading.payload.calculationEvidence.warnings[0], /历史记录/);
 });
 
 test('未来 schema 不会被当前版本覆盖', () => {

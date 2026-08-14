@@ -54,7 +54,16 @@ test('八字固定样例保持四柱与关系证据稳定', () => {
     latitude: 22.5431,
     longitude: 114.0579,
   });
-  assert.deepEqual(result.calculationSettings, { timezone: 'Asia/Shanghai' });
+  assert.deepEqual(result.calculationSettings, {
+    timezone: 'Asia/Shanghai',
+    dayBoundary: 'midnight',
+    trueSolarTime: false,
+    solarTimeModel: 'none',
+    locationDatasetVersion: 'china-cities-p1a-sparse-v1',
+    calendarResolverVersion: 'scaffold-p1a-v1',
+  });
+  assert.equal(result.calculationEvidence.solarTermBoundary.status, 'pending');
+  assert.equal(result.calculationEvidence.dayBoundaryRule, 'midnight');
   assert.equal(result.dayMaster, '甲');
   assert.deepEqual(
     result.pillars.map(({ key, stem, branch, tenGod, hiddenStems, naYin }) => ({

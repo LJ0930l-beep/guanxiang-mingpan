@@ -1,4 +1,5 @@
 import type { DivinationModule, Gender } from '@/types/domain';
+import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
 export const DEFAULT_CALCULATION_TIMEZONE = 'Asia/Shanghai' as const;
@@ -49,6 +50,8 @@ export interface ChartSnapshotMeta {
   generatedAt: string;
   engineVersion: string;
   calculationSettings: CalculationSettings;
+  /** Old records are explicitly labeled instead of being silently reinterpreted. */
+  calculationSettingsOrigin?: 'current' | 'legacy-default';
   inputSnapshot: ChartInputSnapshot;
 }
 
@@ -70,6 +73,8 @@ export interface BaziPillarView {
 
 export interface BaziChartView extends ChartMeta {
   module: 'bazi';
+  calculationSettings: BaziCalculationSettings;
+  calculationEvidence: BaziCalculationEvidence;
   dayMaster: string;
   pillars: BaziPillarView[];
   kongWang: string;

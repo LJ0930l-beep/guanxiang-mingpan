@@ -6,6 +6,8 @@ import type {
   CalculationSettings,
   LiuyaoInputSnapshot,
 } from '@/types/charts';
+import { DEFAULT_BAZI_CALCULATION_SETTINGS } from '@/domains/bazi/types';
+import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
 import type { BirthProfile, DivinationModule, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 
 export const STORAGE_SCHEMA_VERSION = 2 as const;
@@ -146,9 +148,18 @@ function isInputSnapshot(value: unknown): value is ChartInputSnapshot {
   return isRecord(value) && ['birth', 'liuyao', 'legacy'].includes(String(value.type));
 }
 
-function migrateCalculationSettings(value: unknown): CalculationSettings {
-  if (isRecord(value) && value.timezone === DEFAULT_CALCULATION_TIMEZONE) {
-    return { timezone: DEFAULT_CALCULATION_TIMEZONE };
+function migrateCalculationSettings(value: unknown, module?: DivinationModule): CalculationSettings {
+  if (module === 'bazi') {
+    const raw = isRecord(value) ? value : {};
+    return {
+      ...DEFAULT_BAZI_CALCULATION_SETTINGS,
+      timezone: DEFAULT_CALCULATION_TIMEZONE,
+      ...(raw.dayBoundary === 'midnight' || raw.dayBoundary === 'ziEarly' ? { dayBoundary: raw.dayBoundary } : {}),
+      ...(typeof raw.trueSolarTime === 'boolean' ? { trueSolarTime: raw.trueSolarTime } : {}),
+      ...(raw.solarTimeModel === 'none' || raw.solarTimeModel === 'localMeanSolarTime' || raw.solarTimeModel === 'apparentSolarTime' ? { solarTimeModel: raw.solarTimeModel } : {}),
+      ...(typeof raw.locationDatasetVersion === 'string' ? { locationDatasetVersion: raw.locationDatasetVersion } : {}),
+      ...(typeof raw.calendarResolverVersion === 'string' ? { calendarResolverVersion: raw.calendarResolverVersion } : {}),
+    } satisfies BaziCalculationSettings;
   }
   return { timezone: DEFAULT_CALCULATION_TIMEZONE };
 }
@@ -159,6 +170,42 @@ function migrateInputSnapshot(value: unknown): ChartInputSnapshot | null {
     ...value,
     timezone: DEFAULT_CALCULATION_TIMEZONE,
   } as unknown as ChartInputSnapshot;
+}
+
+function legacyBaziEvidence(inputSnapshot: ChartInputSnapshot, settings: CalculationSettings): BaziCalculationEvidence {
+  const baziSettings = settings as BaziCalculationSettings;
+  const birth = inputSnapshot.type === 'birth' ? inputSnapshot : null;
+  const civilTime = birth
+    ? `${birth.birthDate}T${birth.birthTime ? `${birth.birthTime}:00` : '00:00:00'}`
+    : '历史记录未保存原始出生时刻';
+  return {
+    sourceCalendar: birth?.calendar ?? 'solar',
+    normalizedCivilTime: civilTime,
+    effectiveCalculationTime: civilTime,
+    timezone: DEFAULT_CALCULATION_TIMEZONE,
+    solarTermBoundary: {
+      status: 'pending',
+      note: '历史记录未保存 P1-A 节气证据；当前版本不会重新解释原始结果。',
+    },
+    dayBoundaryRule: baziSettings.dayBoundary,
+    trueSolarCorrection: {
+      applied: false,
+      model: baziSettings.solarTimeModel,
+      civilTime,
+      effectiveTime: civilTime,
+      correctionMinutes: 0,
+    },
+    locationUsed: birth
+      ? {
+          name: birth.birthCity,
+          latitude: birth.latitude,
+          longitude: birth.longitude,
+          timezone: DEFAULT_CALCULATION_TIMEZONE,
+          datasetVersion: baziSettings.locationDatasetVersion,
+        }
+      : undefined,
+    warnings: ['历史记录未保存 P1-A 计算证据，已标记为历史默认规则；原始结果未重新计算。'],
+  };
 }
 
 function legacyInputSnapshot(module: DivinationModule, payload: RecordLike, reading: RecordLike): ChartInputSnapshot {
@@ -188,6 +235,7 @@ export function snapshotMetaFromPayload(payload: ChartPayload): ChartSnapshotMet
     generatedAt: payload.generatedAt,
     engineVersion: payload.engineVersion,
     calculationSettings: payload.calculationSettings,
+    calculationSettingsOrigin: 'current',
     inputSnapshot: payload.inputSnapshot,
   };
 }
@@ -201,7 +249,14 @@ function migrateReading(value: unknown): SavedReading | null {
   const inputSnapshot = migrateInputSnapshot(value.inputSnapshot)
     ?? migrateInputSnapshot(rawPayload.inputSnapshot)
     ?? legacyInputSnapshot(module, rawPayload, value);
-  const calculationSettings = migrateCalculationSettings(value.calculationSettings ?? rawPayload.calculationSettings);
+  const rawCalculationSettings = value.calculationSettings ?? rawPayload.calculationSettings;
+  const calculationSettings = migrateCalculationSettings(rawCalculationSettings, module);
+  const hasBaziSettings = module !== 'bazi' || (isRecord(rawCalculationSettings)
+    && typeof rawCalculationSettings.dayBoundary === 'string'
+    && typeof rawCalculationSettings.trueSolarTime === 'boolean'
+    && typeof rawCalculationSettings.solarTimeModel === 'string'
+    && typeof rawCalculationSettings.locationDatasetVersion === 'string'
+    && typeof rawCalculationSettings.calendarResolverVersion === 'string');
   const generatedAt = typeof value.createdAt === 'string'
     ? value.createdAt
     : typeof rawPayload.generatedAt === 'string'
@@ -213,7 +268,7 @@ function migrateReading(value: unknown): SavedReading | null {
       ? rawPayload.engineVersion
       : 'legacy-unknown';
   const payloadInputSnapshot = migrateInputSnapshot(rawPayload.inputSnapshot) ?? inputSnapshot;
-  const payloadCalculationSettings = migrateCalculationSettings(rawPayload.calculationSettings ?? calculationSettings);
+  const payloadCalculationSettings = migrateCalculationSettings(rawPayload.calculationSettings ?? calculationSettings, module);
   const payload = {
     ...rawPayload,
     module,
@@ -222,6 +277,9 @@ function migrateReading(value: unknown): SavedReading | null {
     engineVersion: rawPayload.engineVersion ?? engineVersion,
     calculationSettings: payloadCalculationSettings,
     inputSnapshot: payloadInputSnapshot,
+    ...(module === 'bazi' && !isRecord(rawPayload.calculationEvidence)
+      ? { calculationEvidence: legacyBaziEvidence(payloadInputSnapshot, payloadCalculationSettings) }
+      : {}),
     ...(module === 'liuyao'
       ? {
           seed: rawPayload.seed ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.seed : 'legacy-unknown'),
@@ -235,10 +293,14 @@ function migrateReading(value: unknown): SavedReading | null {
         snapshotVersion: value.snapshotMeta.snapshotVersion ?? CHART_SNAPSHOT_VERSION,
         generatedAt: value.snapshotMeta.generatedAt ?? generatedAt,
         engineVersion: value.snapshotMeta.engineVersion ?? engineVersion,
-        calculationSettings: migrateCalculationSettings(value.snapshotMeta.calculationSettings ?? calculationSettings),
+        calculationSettings: migrateCalculationSettings(value.snapshotMeta.calculationSettings ?? calculationSettings, module),
+        calculationSettingsOrigin: value.snapshotMeta.calculationSettingsOrigin === 'legacy-default' || !hasBaziSettings ? 'legacy-default' : 'current',
         inputSnapshot: migrateInputSnapshot(value.snapshotMeta.inputSnapshot) ?? inputSnapshot,
       } as ChartSnapshotMeta
-    : snapshotMetaFromPayload(payload);
+    : {
+        ...snapshotMetaFromPayload(payload),
+        calculationSettingsOrigin: hasBaziSettings ? 'current' : 'legacy-default',
+      };
   const liuyaoPayload = module === 'liuyao' && payload.module === 'liuyao' ? payload : null;
 
   return {
