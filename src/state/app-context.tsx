@@ -47,6 +47,8 @@ interface NewFeedbackInput {
   status: ReadingFeedbackStatus;
   observedAt: string;
   note: string;
+  linkedInterpretationIds?: string[];
+  linkedEvidenceIds?: string[];
 }
 
 interface AppContextValue {
@@ -66,6 +68,7 @@ interface AppContextValue {
   saveReading: (input: { profile: BirthProfile; title: string; summary: string; payload: ChartPayload }) => Promise<SavedReading>;
   toggleFavorite: (readingId: string) => Promise<boolean>;
   addFeedback: (readingId: string, input: NewFeedbackInput) => Promise<ReadingFeedback>;
+  updateFeedback: (readingId: string, feedbackId: string, input: NewFeedbackInput) => Promise<ReadingFeedback>;
   deleteFeedback: (readingId: string, feedbackId: string) => Promise<void>;
   deleteReading: (readingId: string) => Promise<void>;
   clearReadings: () => Promise<void>;
@@ -80,6 +83,12 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 function createId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function normalizeFeedbackLinks(values?: string[]): string[] | undefined {
+  if (!values) return undefined;
+  const links = [...new Set(values.map((value) => value.trim()).filter(Boolean))];
+  return links.length > 0 ? links : undefined;
 }
 
 export function AppProvider({ children }: PropsWithChildren) {
@@ -338,12 +347,42 @@ export function AppProvider({ children }: PropsWithChildren) {
       observedAt: input.observedAt,
       note,
       createdAt: new Date().toISOString(),
+      ...(normalizeFeedbackLinks(input.linkedInterpretationIds) ? { linkedInterpretationIds: normalizeFeedbackLinks(input.linkedInterpretationIds) } : {}),
+      ...(normalizeFeedbackLinks(input.linkedEvidenceIds) ? { linkedEvidenceIds: normalizeFeedbackLinks(input.linkedEvidenceIds) } : {}),
     };
     const nextReadings = currentReadings.map((reading) => reading.id === readingId ? { ...reading, feedback: [feedback, ...reading.feedback] } : reading);
     await setStoredValue(STORAGE.readings, nextReadings);
     readingsRef.current = nextReadings;
     setReadings(nextReadings);
     return feedback;
+  };
+
+  const updateFeedback = async (readingId: string, feedbackId: string, input: NewFeedbackInput) => {
+    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+    if (!['confirmed', 'partial', 'not-yet', 'contradicted'].includes(input.status)) throw new Error('反馈状态无效。');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.observedAt)) throw new Error('反馈日期请使用 YYYY-MM-DD 格式。');
+    const note = input.note.trim();
+    if (!note) throw new Error('请写下这次反馈的事实说明。');
+    const currentReadings = readingsRef.current;
+    const currentReading = currentReadings.find((reading) => reading.id === readingId);
+    const currentFeedback = currentReading?.feedback.find((feedback) => feedback.id === feedbackId);
+    if (!currentReading || !currentFeedback) throw new Error('找不到要修改的事实反馈。');
+    const updated: ReadingFeedback = {
+      ...currentFeedback,
+      status: input.status,
+      observedAt: input.observedAt,
+      note,
+      updatedAt: new Date().toISOString(),
+      ...(input.linkedInterpretationIds !== undefined ? { linkedInterpretationIds: normalizeFeedbackLinks(input.linkedInterpretationIds) } : {}),
+      ...(input.linkedEvidenceIds !== undefined ? { linkedEvidenceIds: normalizeFeedbackLinks(input.linkedEvidenceIds) } : {}),
+    };
+    const nextReadings = currentReadings.map((reading) => reading.id === readingId
+      ? { ...reading, feedback: reading.feedback.map((feedback) => feedback.id === feedbackId ? updated : feedback) }
+      : reading);
+    await setStoredValue(STORAGE.readings, nextReadings);
+    readingsRef.current = nextReadings;
+    setReadings(nextReadings);
+    return updated;
   };
 
   const deleteFeedback = async (readingId: string, feedbackId: string) => {
@@ -458,6 +497,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     saveReading,
     toggleFavorite,
     addFeedback,
+    updateFeedback,
     deleteFeedback,
     deleteReading,
     clearReadings,

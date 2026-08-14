@@ -122,6 +122,12 @@ export function migrateSelectedProfile(value: unknown): string | null {
 
 const FEEDBACK_STATUSES: ReadingFeedbackStatus[] = ['confirmed', 'partial', 'not-yet', 'contradicted'];
 
+function migrateFeedbackLinks(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const ids = value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).map((item) => item.trim());
+  return ids.length > 0 ? [...new Set(ids)] : undefined;
+}
+
 function migrateFeedback(value: unknown): ReadingFeedback[] {
   if (!Array.isArray(value)) return [];
   return value.filter(isRecord).flatMap((feedback) => {
@@ -134,12 +140,18 @@ function migrateFeedback(value: unknown): ReadingFeedback[] {
     ) {
       return [];
     }
+    const updatedAt = typeof feedback.updatedAt === 'string' ? feedback.updatedAt : undefined;
+    const linkedInterpretationIds = migrateFeedbackLinks(feedback.linkedInterpretationIds);
+    const linkedEvidenceIds = migrateFeedbackLinks(feedback.linkedEvidenceIds);
     return [{
       id: feedback.id,
       status: feedback.status as ReadingFeedbackStatus,
       observedAt: feedback.observedAt,
       note: feedback.note,
       createdAt: feedback.createdAt,
+      ...(updatedAt ? { updatedAt } : {}),
+      ...(linkedInterpretationIds ? { linkedInterpretationIds } : {}),
+      ...(linkedEvidenceIds ? { linkedEvidenceIds } : {}),
     }];
   });
 }

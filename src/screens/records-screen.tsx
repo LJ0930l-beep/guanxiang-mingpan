@@ -22,7 +22,7 @@ import { diffBaziInterpretations } from '@/domains/bazi/interpretation/history';
 import { useScrollToTopOnMount } from '@/hooks/use-scroll-to-top-on-mount';
 import { calculateBaziView } from '@/services/chart-engine';
 import { useApp } from '@/state/app-context';
-import type { ReadingFeedbackStatus } from '@/types/domain';
+import type { ReadingFeedback, ReadingFeedbackStatus } from '@/types/domain';
 
 const feedbackStatusOptions: { value: ReadingFeedbackStatus; label: string }[] = [
   { value: 'confirmed', label: '已发生' },
@@ -44,15 +44,18 @@ function todayShanghai() {
 
 export function RecordsScreen() {
   useScrollToTopOnMount();
-  const { readings, profiles, toggleFavorite, addFeedback, deleteFeedback, deleteReading, clearReadings, storageBlockedKeys } = useApp();
+  const { readings, profiles, toggleFavorite, addFeedback, updateFeedback, deleteFeedback, deleteReading, clearReadings, storageBlockedKeys } = useApp();
   const [expandedId, setExpandedId] = useState<string | null>(readings[0]?.id ?? null);
   const [archiveFilter, setArchiveFilter] = useState<ArchiveFilterState>(DEFAULT_ARCHIVE_FILTER_STATE);
   const [compareIds, setCompareIds] = useState<string[]>([]);
   const [compareError, setCompareError] = useState('');
   const [feedbackTargetId, setFeedbackTargetId] = useState<string | null>(null);
+  const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
   const [feedbackStatus, setFeedbackStatus] = useState<ReadingFeedbackStatus>('confirmed');
   const [feedbackObservedAt, setFeedbackObservedAt] = useState(todayShanghai());
   const [feedbackNote, setFeedbackNote] = useState('');
+  const [feedbackLinkedInterpretationIds, setFeedbackLinkedInterpretationIds] = useState('');
+  const [feedbackLinkedEvidenceIds, setFeedbackLinkedEvidenceIds] = useState('');
   const [feedbackError, setFeedbackError] = useState('');
   const [diffByReadingId, setDiffByReadingId] = useState<Record<string, ReturnType<typeof diffBaziInterpretations>>>({});
   const [diffError, setDiffError] = useState('');
@@ -88,17 +91,44 @@ export function RecordsScreen() {
 
   const startFeedback = (readingId: string) => {
     setFeedbackTargetId((current) => current === readingId ? null : readingId);
+    setEditingFeedbackId(null);
     setFeedbackStatus('confirmed');
     setFeedbackObservedAt(todayShanghai());
     setFeedbackNote('');
+    setFeedbackLinkedInterpretationIds('');
+    setFeedbackLinkedEvidenceIds('');
     setFeedbackError('');
   };
 
+  const startEditFeedback = (readingId: string, feedback: ReadingFeedback) => {
+    setFeedbackTargetId(readingId);
+    setEditingFeedbackId(feedback.id);
+    setFeedbackStatus(feedback.status);
+    setFeedbackObservedAt(feedback.observedAt);
+    setFeedbackNote(feedback.note);
+    setFeedbackLinkedInterpretationIds((feedback.linkedInterpretationIds ?? []).join(', '));
+    setFeedbackLinkedEvidenceIds((feedback.linkedEvidenceIds ?? []).join(', '));
+    setFeedbackError('');
+  };
+
+  const parseFeedbackLinks = (value: string) => value.split(/[\s,，、]+/).map((item) => item.trim()).filter(Boolean);
+
   const submitFeedback = async (readingId: string) => {
     try {
-      await addFeedback(readingId, { status: feedbackStatus, observedAt: feedbackObservedAt, note: feedbackNote });
+      const input = {
+        status: feedbackStatus,
+        observedAt: feedbackObservedAt,
+        note: feedbackNote,
+        linkedInterpretationIds: parseFeedbackLinks(feedbackLinkedInterpretationIds),
+        linkedEvidenceIds: parseFeedbackLinks(feedbackLinkedEvidenceIds),
+      };
+      if (editingFeedbackId) await updateFeedback(readingId, editingFeedbackId, input);
+      else await addFeedback(readingId, input);
       setFeedbackTargetId(null);
+      setEditingFeedbackId(null);
       setFeedbackNote('');
+      setFeedbackLinkedInterpretationIds('');
+      setFeedbackLinkedEvidenceIds('');
       setFeedbackError('');
     } catch (operationError) {
       setFeedbackError(operationError instanceof Error ? operationError.message : '保存反馈失败，请稍后重试。');
@@ -327,17 +357,23 @@ export function RecordsScreen() {
                                   <View style={styles.feedbackItemTop}>
                                     <Text style={styles.feedbackStatus}>{feedbackStatusOptions.find((option) => option.value === feedback.status)?.label ?? feedback.status}</Text>
                                     <Text style={styles.feedbackDate}>{feedback.observedAt}</Text>
+                                    {!!feedback.updatedAt && <Text style={styles.feedbackUpdated}>更新 {feedback.updatedAt.slice(0, 10)}</Text>}
+                                    <Pressable accessibilityLabel="编辑这条事实反馈" accessibilityRole="button" disabled={recordsReadOnly} onPress={() => startEditFeedback(reading.id, feedback)} style={({ pressed }) => [styles.feedbackEdit, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
+                                      <Text style={styles.feedbackEditText}>编辑</Text>
+                                    </Pressable>
                                     <Pressable accessibilityLabel="删除这条事实反馈" accessibilityRole="button" disabled={recordsReadOnly} onPress={() => confirmDeleteFeedback(reading.id, feedback.id)} style={({ pressed }) => [styles.feedbackDelete, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
                                       <Text style={styles.feedbackDeleteText}>删除</Text>
                                     </Pressable>
                                   </View>
                                   <Text style={styles.feedbackNote}>{feedback.note}</Text>
+                                  {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLinks}>用户关联 · Interpretation {feedback.linkedInterpretationIds.join(', ')}</Text>}
+                                  {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLinks}>用户关联 · Evidence {feedback.linkedEvidenceIds.join(', ')}</Text>}
                                 </View>
                               ))
                             )}
                             {feedbackTargetId === reading.id && (
                               <View style={styles.feedbackForm}>
-                                <Text style={styles.feedbackFormLabel}>这次反馈的状态</Text>
+                                <Text style={styles.feedbackFormLabel}>{editingFeedbackId ? '修改这条事实反馈' : '这次反馈的状态'}</Text>
                                 <View style={styles.statusOptions}>
                                   {feedbackStatusOptions.map((option) => (
                                     <Pressable accessibilityLabel={`反馈状态${option.label}`} accessibilityRole="radio" accessibilityState={{ selected: feedbackStatus === option.value }} key={option.value} onPress={() => setFeedbackStatus(option.value)} style={({ pressed }) => [styles.statusOption, feedbackStatus === option.value && styles.statusOptionActive, pressed && styles.pressed]}>
@@ -347,8 +383,11 @@ export function RecordsScreen() {
                                 </View>
                                 <TextInput accessibilityLabel="反馈发生日期" onChangeText={setFeedbackObservedAt} placeholder="发生日期 YYYY-MM-DD" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackObservedAt} />
                                 <TextInput accessibilityLabel="反馈事实说明" multiline onChangeText={setFeedbackNote} placeholder="记录可核对的事实，例如：哪一天、发生了什么、与盘面哪条观察有关" placeholderTextColor="#65736D" style={[styles.feedbackInput, styles.feedbackNoteInput]} textAlignVertical="top" value={feedbackNote} />
+                                <TextInput accessibilityLabel="用户关联的解释 ID" onChangeText={setFeedbackLinkedInterpretationIds} placeholder="可选：Interpretation ID，多个用逗号分隔" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedInterpretationIds} />
+                                <TextInput accessibilityLabel="用户关联的证据 ID" onChangeText={setFeedbackLinkedEvidenceIds} placeholder="可选：Evidence ID，多个用逗号分隔" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedEvidenceIds} />
+                                <Text style={styles.feedbackLinkHint}>这些关联只代表你的复盘标记（user-linked），不会被当作系统证明，也不会改写原命盘。</Text>
                                 {!!feedbackError && <Text style={styles.feedbackError}>{feedbackError}</Text>}
-                                <ActionButton accessibilityLabel="保存这次事实反馈" disabled={recordsReadOnly} onPress={() => submitFeedback(reading.id)} style={styles.feedbackSaveButton} variant="secondary">保存反馈</ActionButton>
+                                <ActionButton accessibilityLabel="保存这次事实反馈" disabled={recordsReadOnly} onPress={() => submitFeedback(reading.id)} style={styles.feedbackSaveButton} variant="secondary">{editingFeedbackId ? '保存修改' : '保存反馈'}</ActionButton>
                               </View>
                             )}
                           </View>
@@ -444,11 +483,16 @@ const styles = StyleSheet.create({
   feedbackItemTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.x2 },
   feedbackStatus: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },
   feedbackDate: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 10 },
+  feedbackUpdated: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
+  feedbackEdit: { minHeight: 30, marginLeft: 'auto', justifyContent: 'center', paddingHorizontal: spacing.x2 },
+  feedbackEditText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10 },
   feedbackDelete: { minHeight: 30, marginLeft: 'auto', justifyContent: 'center', paddingHorizontal: spacing.x2 },
   feedbackDeleteText: { color: '#C89283', fontFamily: fontFamilies.body, fontSize: 10 },
   feedbackNote: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
+  feedbackLinks: { marginTop: spacing.x1, color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9, lineHeight: 15 },
   feedbackForm: { marginTop: spacing.x4, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x3 },
   feedbackFormLabel: { color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 11 },
+  feedbackLinkHint: { marginTop: spacing.x2, color: palette.patina, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 15 },
   statusOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x2 },
   statusOption: { minHeight: 34, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x2 },
   statusOptionActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.jadeGlow },

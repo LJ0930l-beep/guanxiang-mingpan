@@ -78,6 +78,15 @@ function validateProfiles(value: unknown): BirthProfile[] {
 
 const FEEDBACK_STATUSES: ReadingFeedbackStatus[] = ['confirmed', 'partial', 'not-yet', 'contradicted'];
 
+function validateOptionalFeedbackLinks(value: unknown, label: string): string[] | undefined {
+  if (value === undefined) return undefined;
+  if (!Array.isArray(value) || value.some((item) => !isString(item))) {
+    throw new BackupFormatError(`澶囦唤鏂囦欢涓殑${label}鏃犳晥銆?`);
+  }
+  const ids = [...new Set(value.map((item) => item.trim()).filter(Boolean))];
+  return ids.length > 0 ? ids : undefined;
+}
+
 function validateFeedback(value: unknown): ReadingFeedback[] {
   if (value === undefined) return [];
   if (!Array.isArray(value)) throw new BackupFormatError('备份文件中的反馈记录无效。');
@@ -90,12 +99,18 @@ function validateFeedback(value: unknown): ReadingFeedback[] {
     if (!isString(item.observedAt) || !isString(item.note) || !isString(item.createdAt) || !FEEDBACK_STATUSES.includes(item.status as ReadingFeedbackStatus)) {
       throw new BackupFormatError('备份文件中的反馈记录不完整。');
     }
+    const updatedAt = item.updatedAt === undefined ? undefined : requireString(item.updatedAt, '反馈更新时间');
+    const linkedInterpretationIds = validateOptionalFeedbackLinks(item.linkedInterpretationIds, '用户关联解释 ID');
+    const linkedEvidenceIds = validateOptionalFeedbackLinks(item.linkedEvidenceIds, '用户关联证据 ID');
     return {
       id,
       status: item.status as ReadingFeedbackStatus,
       observedAt: item.observedAt,
       note: item.note,
       createdAt: item.createdAt,
+      ...(updatedAt ? { updatedAt } : {}),
+      ...(linkedInterpretationIds ? { linkedInterpretationIds } : {}),
+      ...(linkedEvidenceIds ? { linkedEvidenceIds } : {}),
     };
   });
 }

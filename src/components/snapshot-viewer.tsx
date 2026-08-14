@@ -160,9 +160,11 @@ export function SnapshotViewer({ reading, diff, onRunBaziDiff }: SnapshotViewerP
         {model.feedback.length === 0 ? (
           <Text style={styles.missing}>尚无事实反馈。后续反馈只记录现实发生了什么，不修改原排盘。</Text>
         ) : model.feedback.map((feedback) => (
-          <View key={feedback.id} style={styles.feedbackItem}>
-            <View style={styles.feedbackTop}><Text style={styles.feedbackStatus}>{feedback.status}</Text><Text style={styles.feedbackDate}>{feedback.observedAt}</Text></View>
+            <View key={feedback.id} style={styles.feedbackItem}>
+            <View style={styles.feedbackTop}><Text style={styles.feedbackStatus}>{feedback.status}</Text><Text style={styles.feedbackDate}>{feedback.observedAt}</Text>{!!feedback.updatedAt && <Text style={styles.feedbackDate}>更新 {feedback.updatedAt.slice(0, 10)}</Text>}</View>
             <Text style={styles.feedbackNote}>{feedback.note}</Text>
+            {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLink}>user-linked Interpretation: {feedback.linkedInterpretationIds.join(', ')}</Text>}
+            {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLink}>user-linked Evidence: {feedback.linkedEvidenceIds.join(', ')}</Text>}
           </View>
         ))}
       </Section>
@@ -197,5 +199,6 @@ const styles = StyleSheet.create({
   feedbackStatus: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10 },
   feedbackDate: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 10 },
   feedbackNote: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 17 },
+  feedbackLink: { marginTop: spacing.x1, color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9, lineHeight: 15 },
   pressed: { opacity: 0.72 },
 });

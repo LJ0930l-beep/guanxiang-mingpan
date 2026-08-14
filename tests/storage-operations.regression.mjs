@@ -142,6 +142,56 @@ test('排盘记录支持收藏、事实反馈，并持久化到同一条记录',
   });
 });
 
+test('P3-C 反馈时间线支持按日事实、user-linked 关联和独立更新时间戳', async () => {
+  __storage.clear();
+  const { app, renderer } = await mountApp();
+  let saved;
+  await act(async () => {
+    saved = await app.saveReading(validReadingForPersistence);
+  });
+  const originalReadingCreatedAt = saved.createdAt;
+  let feedback;
+  await act(async () => {
+    feedback = await app.addFeedback(saved.id, {
+      status: 'confirmed',
+      observedAt: '2026-01-06',
+      note: '事实发生，但不自动归因',
+      linkedInterpretationIds: ['interpretation:strength'],
+      linkedEvidenceIds: ['evidence:month-command'],
+    });
+  });
+  assert.deepEqual(feedback.linkedInterpretationIds, ['interpretation:strength']);
+  assert.deepEqual(feedback.linkedEvidenceIds, ['evidence:month-command']);
+  assert.equal(feedback.observedAt, '2026-01-06');
+  await new Promise((resolve) => setImmediate(resolve));
+
+  let updated;
+  await act(async () => {
+    updated = await app.updateFeedback(saved.id, feedback.id, {
+      status: 'partial',
+      observedAt: '2026-01-07',
+      note: '补充核对后的现实事实',
+      linkedInterpretationIds: ['interpretation:element'],
+      linkedEvidenceIds: [],
+    });
+  });
+  assert.equal(updated.createdAt, feedback.createdAt);
+  assert.ok(updated.updatedAt);
+  assert.deepEqual(updated.linkedInterpretationIds, ['interpretation:element']);
+  assert.equal(updated.linkedEvidenceIds, undefined);
+  const persisted = JSON.parse(__storage.get(READINGS_KEY)).value[0];
+  assert.equal(persisted.createdAt, originalReadingCreatedAt);
+  assert.equal(persisted.feedback[0].observedAt, '2026-01-07');
+  assert.equal(persisted.feedback[0].note, '补充核对后的现实事实');
+  assert.ok(persisted.feedback[0].updatedAt);
+  assert.deepEqual(persisted.feedback[0].linkedInterpretationIds, ['interpretation:element']);
+  assert.equal(persisted.feedback[0].linkedEvidenceIds, undefined);
+
+  await act(async () => {
+    renderer.unmount();
+  });
+});
+
 test('新八字记录显式保存 Phase 2 深度快照而不是只保存展示摘要', async () => {
   __storage.clear();
   const { app, renderer } = await mountApp();

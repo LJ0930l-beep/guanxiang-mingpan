@@ -45,6 +45,11 @@ export interface ReadingFeedback {
   observedAt: string;
   note: string;
   createdAt: string;
+  /** Feedback owns its own edit clock; editing never changes the reading timestamp. */
+  updatedAt?: string;
+  /** Manual links only. They are user-linked, never system-proven relationships. */
+  linkedInterpretationIds?: string[];
+  linkedEvidenceIds?: string[];
 }
 
 export interface SavedReading {

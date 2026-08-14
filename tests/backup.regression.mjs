@@ -42,6 +42,9 @@ const reading = {
     observedAt: '2026-01-03',
     note: '事实已发生',
     createdAt: '2026-01-03T00:00:00.000Z',
+    updatedAt: '2026-01-04T00:00:00.000Z',
+    linkedInterpretationIds: ['interpretation:strength'],
+    linkedEvidenceIds: ['evidence:month-command'],
   }],
 };
 
