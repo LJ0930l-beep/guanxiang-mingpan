@@ -30,9 +30,10 @@
 - 已完成：命盘结果、命主、算法版本、快照元数据与基础观察自动归档；旧版未版本化数据会迁移；命主/记录支持编辑、删除、清空与二次确认；支持带版本的本机 JSON 备份导出与导入；记录支持收藏筛选和按日事实反馈。
 - 已完成：密码保护的加密备份导出与恢复（scrypt + AES-256-GCM，随机 salt/nonce，密码不落盘）。
 - 已完成：统一 `npm test`、Asia/Shanghai 跨 TZ 六爻复现、future schema 写保护与 GitHub Actions CI 基线。
-- 带版本号的本地数据迁移
-- 设备迁移时的冲突合并与真机文件流转验收（加密备份基础能力已完成）
-- iOS 文件 App / iCloud Drive 导出与恢复
+- [x] 带版本号的本地数据迁移
+- [x] 设备迁移时的冲突预览、合并/替换策略与失败回滚（见 `src/storage/import-plan.ts`、`src/storage/transaction.ts`）
+- [x] Web 下载/选择与 iOS 文件 App 分享/选择的文件流实现
+- [ ] 实体 iPhone / TestFlight 文件流最终签字（见 [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md)）
 
 ## M3 — 中国大陆账户服务
 

@@ -3,16 +3,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
 import * as Sharing from 'expo-sharing';
 
-const BACKUP_MIME_TYPE = 'application/json';
-
-export interface BackupExportOptions {
-  encrypted?: boolean;
-}
-
-function backupFilename(options: BackupExportOptions) {
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-  return `guanxiang-${options.encrypted ? 'encrypted-' : ''}backup-${stamp}.json`;
-}
+import { BACKUP_MIME_TYPE, backupFilename, type BackupExportOptions } from '@/storage/backup-file-contract';
 
 export async function exportBackupFile(text: string, options: BackupExportOptions = {}): Promise<'downloaded' | 'shared'> {
   const filename = backupFilename(options);
@@ -56,6 +47,17 @@ export async function pickBackupFile(): Promise<string | null> {
   if (result.canceled || !result.assets[0]) return null;
 
   const asset = result.assets[0];
-  if (Platform.OS === 'web' && asset.file) return asset.file.text();
+  if (Platform.OS === 'web') {
+    if (asset.file) return asset.file.text();
+    // Some browser/document-picker combinations expose only a blob URI.
+    // Fetching that URI keeps import working without asking the user to rename
+    // or re-save the downloaded JSON file.
+    if (typeof fetch === 'function') {
+      const response = await fetch(asset.uri);
+      if (!response.ok) throw new Error('无法读取所选备份文件。');
+      return response.text();
+    }
+    throw new Error('当前浏览器无法读取所选备份文件。');
+  }
   return FileSystem.readAsStringAsync(asset.uri, { encoding: FileSystem.EncodingType.UTF8 });
 }
