@@ -2,6 +2,7 @@ import type { DivinationModule, Gender } from '@/types/domain';
 import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
 import type { NormalizedBaziChart } from '@/domains/bazi/model/normalized-chart';
 import type { BaziEvidenceGraph, StrengthAssessment } from '@/domains/bazi/evidence/index';
+import type { BaziInterpretation } from '@/domains/bazi/interpretation/rules';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
 export const DEFAULT_CALCULATION_TIMEZONE = 'Asia/Shanghai' as const;
@@ -82,6 +83,7 @@ export interface BaziChartView extends ChartMeta {
   normalizedChart: NormalizedBaziChart;
   evidenceGraph: BaziEvidenceGraph;
   strengthAssessment: StrengthAssessment;
+  interpretation: BaziInterpretation;
   dayMaster: string;
   pillars: BaziPillarView[];
   kongWang: string;

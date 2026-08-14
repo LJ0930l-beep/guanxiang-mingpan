@@ -6,6 +6,7 @@ import { resolveBaziCalendar } from '@/domains/bazi/calendar-resolver';
 import { resolveTrueSolarTime } from '@/domains/bazi/true-solar-time';
 import { normalizeBaziChart } from '@/domains/bazi/model/normalized-chart';
 import { buildBaziEvidenceGraph } from '@/domains/bazi/evidence/index';
+import { buildBaziInterpretation } from '@/domains/bazi/interpretation/rules';
 import type { BaziChartView } from '@/types/charts';
 import { baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
@@ -115,6 +116,7 @@ export function calculateBaziView(
     snapshotVersion: CHART_SNAPSHOT_VERSION,
   });
   const evidenceGraph = buildBaziEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.bazi });
+  const interpretation = buildBaziInterpretation(normalizedChart, evidenceGraph);
 
   return {
     module: 'bazi',
@@ -126,6 +128,7 @@ export function calculateBaziView(
     normalizedChart,
     evidenceGraph,
     strengthAssessment: evidenceGraph.strengthAssessment!,
+    interpretation,
     inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
     caveats: [
