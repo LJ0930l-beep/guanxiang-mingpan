@@ -4,6 +4,7 @@ import { resolveBaziDayBoundary } from '@/domains/bazi/day-boundary';
 import { createBaziCalculationEvidence } from '@/domains/bazi/evidence';
 import { resolveBaziCalendar } from '@/domains/bazi/calendar-resolver';
 import { resolveTrueSolarTime } from '@/domains/bazi/true-solar-time';
+import { normalizeBaziChart } from '@/domains/bazi/model/normalized-chart';
 import type { BaziChartView } from '@/types/charts';
 import { baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
@@ -108,6 +109,10 @@ export function calculateBaziView(
     };
   });
   const relations = result.relations.slice(0, 6).map((item) => item.description);
+  const normalizedChart = normalizeBaziChart(result, {
+    engineVersion: ENGINE_VERSIONS.bazi,
+    snapshotVersion: CHART_SNAPSHOT_VERSION,
+  });
 
   return {
     module: 'bazi',
@@ -116,6 +121,7 @@ export function calculateBaziView(
     engineVersion: ENGINE_VERSIONS.bazi,
     calculationSettings: settings,
     calculationEvidence: createBaziCalculationEvidence(profile, settings, dayBoundaryResolution, trueSolarResolution, calendarResolution),
+    normalizedChart,
     inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
     caveats: [

@@ -1,5 +1,6 @@
 import type { DivinationModule, Gender } from '@/types/domain';
 import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
+import type { NormalizedBaziChart } from '@/domains/bazi/model/normalized-chart';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
 export const DEFAULT_CALCULATION_TIMEZONE = 'Asia/Shanghai' as const;
@@ -77,6 +78,7 @@ export interface BaziChartView extends ChartMeta {
   module: 'bazi';
   calculationSettings: BaziCalculationSettings;
   calculationEvidence: BaziCalculationEvidence;
+  normalizedChart: NormalizedBaziChart;
   dayMaster: string;
   pillars: BaziPillarView[];
   kongWang: string;
