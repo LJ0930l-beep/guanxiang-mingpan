@@ -5,10 +5,13 @@
   "dependencies": {
     "@expo/ui": "~57.0.7",
     "@expo/vector-icons": "^15.0.2",
+    "@noble/ciphers": "2.3.0",
+    "@noble/hashes": "2.3.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "circular-natal-horoscope-js": "1.1.0",
     "expo": "~57.0.7",
     "expo-constants": "~57.0.6",
+    "expo-crypto": "57.0.1",
     "expo-device": "~57.0.1",
     "expo-document-picker": "~57.0.1",
     "expo-file-system": "~57.0.1",
@@ -50,7 +53,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --experimental-loader ./scripts/ts-path-loader.mjs --test tests/chart-engine.regression.mjs tests/storage-schema.regression.mjs tests/backup.regression.mjs tests/storage-operations.regression.mjs",
+    "test": "node --experimental-strip-types --experimental-loader ./scripts/ts-path-loader.mjs --test tests/chart-engine.regression.mjs tests/storage-schema.regression.mjs tests/backup.regression.mjs tests/encrypted-backup.regression.mjs tests/storage-operations.regression.mjs",
     "test:charts": "node --experimental-strip-types --experimental-loader ./scripts/ts-path-loader.mjs --test tests/chart-engine.regression.mjs",
     "build:web": "expo export --platform web",
     "postinstall": "node scripts/patch-iztro.cjs"

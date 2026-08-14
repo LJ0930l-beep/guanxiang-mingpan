@@ -3,6 +3,7 @@ import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useRe
 
 import { resolveCityCoordinates } from '@/data/china-cities';
 import { createLocalBackupText, parseLocalBackupText } from '@/storage/backup';
+import { createEncryptedLocalBackupText, parseEncryptedLocalBackupText } from '@/storage/encrypted-backup';
 import {
   decodeStorageValue,
   encodeStorageValue,
@@ -70,6 +71,8 @@ interface AppContextValue {
   clearLocalData: () => Promise<void>;
   createLocalBackup: () => string;
   restoreLocalBackup: (raw: string) => Promise<void>;
+  createEncryptedLocalBackup: (password: string) => Promise<string>;
+  restoreEncryptedLocalBackup: (raw: string, password: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -363,11 +366,35 @@ export function AppProvider({ children }: PropsWithChildren) {
 
   const createLocalBackup = () => {
     Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
-    return createLocalBackupText({ user, profiles, selectedProfileId, readings });
+    return createLocalBackupText({ user, profiles, selectedProfileId, readings: readingsRef.current });
+  };
+
+  const createEncryptedLocalBackup = async (password: string) => {
+    Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
+    return createEncryptedLocalBackupText({ user, profiles, selectedProfileId, readings: readingsRef.current }, password);
   };
 
   const restoreLocalBackup = async (raw: string) => {
     const backup = parseLocalBackupText(raw);
+    Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
+    const { data } = backup;
+    await AsyncStorage.multiSet([
+      [STORAGE.user, encodeStorageValue(data.user)],
+      [STORAGE.profiles, encodeStorageValue(data.profiles)],
+      [STORAGE.selectedProfile, encodeStorageValue(data.selectedProfileId)],
+      [STORAGE.readings, encodeStorageValue(data.readings)],
+    ]);
+    blockedStorageKeysRef.current = new Set();
+    setStorageBlockedKeys([]);
+    setUser(data.user);
+    setProfiles(data.profiles);
+    setSelectedProfileId(data.selectedProfileId);
+    readingsRef.current = data.readings;
+    setReadings(data.readings);
+  };
+
+  const restoreEncryptedLocalBackup = async (raw: string, password: string) => {
+    const backup = await parseEncryptedLocalBackupText(raw, password);
     Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
     const { data } = backup;
     await AsyncStorage.multiSet([
@@ -413,6 +440,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     clearLocalData,
     createLocalBackup,
     restoreLocalBackup,
+    createEncryptedLocalBackup,
+    restoreEncryptedLocalBackup,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

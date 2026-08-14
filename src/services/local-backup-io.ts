@@ -5,13 +5,17 @@ import * as Sharing from 'expo-sharing';
 
 const BACKUP_MIME_TYPE = 'application/json';
 
-function backupFilename() {
-  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
-  return `guanxiang-backup-${stamp}.json`;
+export interface BackupExportOptions {
+  encrypted?: boolean;
 }
 
-export async function exportBackupFile(text: string): Promise<'downloaded' | 'shared'> {
-  const filename = backupFilename();
+function backupFilename(options: BackupExportOptions) {
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  return `guanxiang-${options.encrypted ? 'encrypted-' : ''}backup-${stamp}.json`;
+}
+
+export async function exportBackupFile(text: string, options: BackupExportOptions = {}): Promise<'downloaded' | 'shared'> {
+  const filename = backupFilename(options);
 
   if (Platform.OS === 'web') {
     if (typeof document === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') {

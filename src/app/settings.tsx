@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, View } from 'react-native';
+import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ActionButton } from '@/components/action-button';
 import { LoadingScreen } from '@/components/loading-screen';
@@ -13,9 +13,10 @@ import { useApp } from '@/state/app-context';
 export default function SettingsRoute() {
   const router = useRouter();
   const { ready, authenticated } = useRequireAuth();
-  const { signOut, clearLocalData, createLocalBackup, restoreLocalBackup, profiles, readings, storageBlockedKeys } = useApp();
+  const { signOut, clearLocalData, createLocalBackup, restoreLocalBackup, createEncryptedLocalBackup, restoreEncryptedLocalBackup, profiles, readings, storageBlockedKeys } = useApp();
   const [error, setError] = useState('');
   const [backupBusy, setBackupBusy] = useState(false);
+  const [backupPassword, setBackupPassword] = useState('');
   if (!ready || !authenticated) return <LoadingScreen />;
 
   const clearBlocked = storageBlockedKeys.length > 0;
@@ -28,6 +29,20 @@ export default function SettingsRoute() {
       Alert.alert(mode === 'downloaded' ? '备份已下载' : '备份已准备好', mode === 'downloaded' ? '请将下载的 JSON 文件保存在安全位置。' : '请在系统分享面板中选择保存到“文件”或发送到你的私人设备。');
     } catch (operationError) {
       setError(operationError instanceof Error ? operationError.message : '导出备份失败，请稍后重试。');
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const exportEncryptedBackup = async () => {
+    setError('');
+    setBackupBusy(true);
+    try {
+      const text = await createEncryptedLocalBackup(backupPassword);
+      const mode = await exportBackupFile(text, { encrypted: true });
+      Alert.alert(mode === 'downloaded' ? '加密备份已下载' : '加密备份已准备好', '请将文件与备份密码分开保存；应用不会替你找回密码。');
+    } catch (operationError) {
+      setError(operationError instanceof Error ? operationError.message : '导出加密备份失败，请稍后重试。');
     } finally {
       setBackupBusy(false);
     }
@@ -71,6 +86,44 @@ export default function SettingsRoute() {
     }
   };
 
+  const importEncryptedBackup = async () => {
+    setError('');
+    setBackupBusy(true);
+    try {
+      const raw = await pickBackupFile();
+      if (!raw) {
+        setBackupBusy(false);
+        return;
+      }
+      Alert.alert(
+        '确认恢复加密备份',
+        '恢复会替换当前账户、命主、排盘记录和当前选择。请确认已输入正确的备份密码。',
+        [
+          { text: '取消', style: 'cancel' },
+          {
+            text: '确认恢复',
+            style: 'destructive',
+            onPress: async () => {
+              setBackupBusy(true);
+              try {
+                await restoreEncryptedLocalBackup(raw, backupPassword);
+                Alert.alert('恢复完成', '加密备份中的本机资料已经恢复。');
+              } catch (operationError) {
+                setError(operationError instanceof Error ? operationError.message : '密码错误或加密备份已损坏。');
+              } finally {
+                setBackupBusy(false);
+              }
+            },
+          },
+        ],
+      );
+      setBackupBusy(false);
+    } catch (operationError) {
+      setError(operationError instanceof Error ? operationError.message : '选择加密备份文件失败，请稍后重试。');
+      setBackupBusy(false);
+    }
+  };
+
   const confirmClear = () => {
     Alert.alert(
       '清除本机全部数据',
@@ -96,7 +149,7 @@ export default function SettingsRoute() {
   return (
     <QuietScreen
       actionLabel="退出当前账户"
-      description="账户仅用于身份与未来权益；命主与命盘仍保存在本机。加密备份与跨设备恢复仍在开发中。"
+      description="账户仅用于身份与未来权益；命主与命盘仍保存在本机。你可以用密码保护的文件在设备之间主动迁移。"
       kicker="ACCOUNT & PRIVACY"
       onAction={async () => {
         await signOut();
@@ -112,12 +165,17 @@ export default function SettingsRoute() {
         {!!error && <Text style={styles.error}>{error}</Text>}
         <View style={styles.backupPanel}>
           <Text style={styles.backupTitle}>本机备份</Text>
-          <Text style={styles.backupHint}>导出或恢复命主与排盘记录，文件只在你选择的位置流转。</Text>
+          <Text style={styles.backupHint}>普通 JSON 便于检查；加密备份使用本机密码保护。密码不会上传，也无法找回。</Text>
           <View style={styles.backupActions}>
             <ActionButton accessibilityLabel="导出本机备份文件" disabled={clearBlocked || backupBusy} loading={backupBusy} onPress={exportBackup} style={styles.backupButton}>导出备份</ActionButton>
             <ActionButton accessibilityLabel="导入本机备份文件" disabled={clearBlocked || backupBusy} onPress={importBackup} style={styles.backupButton} variant="quiet">导入备份</ActionButton>
           </View>
-          <Text style={styles.backupWarning}>当前备份为可读 JSON，尚未加密；请勿上传到公共位置。</Text>
+          <TextInput accessibilityLabel="加密备份密码" autoCapitalize="none" autoCorrect={false} onChangeText={setBackupPassword} placeholder="加密备份密码（至少 8 位）" placeholderTextColor="#65736D" secureTextEntry style={styles.passwordInput} value={backupPassword} />
+          <View style={styles.backupActions}>
+            <ActionButton accessibilityLabel="导出加密本机备份文件" disabled={clearBlocked || backupBusy} loading={backupBusy} onPress={exportEncryptedBackup} style={styles.backupButton}>导出加密备份</ActionButton>
+            <ActionButton accessibilityLabel="导入加密本机备份文件" disabled={clearBlocked || backupBusy} onPress={importEncryptedBackup} style={styles.backupButton} variant="quiet">导入加密备份</ActionButton>
+          </View>
+          <Text style={styles.backupWarning}>普通备份是可读 JSON；加密备份采用 scrypt + AES-256-GCM。请把文件和密码分开保管。</Text>
         </View>
         <ActionButton accessibilityLabel="清除本机全部数据" disabled={clearBlocked} onPress={confirmClear} style={styles.clearButton} variant="quiet">清除本机全部数据</ActionButton>
       </View>
@@ -136,6 +194,7 @@ const styles = StyleSheet.create({
   backupHint: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18, textAlign: 'center' },
   backupActions: { flexDirection: 'row', gap: spacing.x3, marginTop: spacing.x4 },
   backupButton: { flex: 1, paddingHorizontal: spacing.x2 },
+  passwordInput: { minHeight: 44, marginTop: spacing.x4, borderWidth: 1, borderColor: palette.hairline, borderRadius: 10, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 12, paddingHorizontal: spacing.x3 },
   backupWarning: { marginTop: spacing.x3, color: '#C8A38E', fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16, textAlign: 'center' },
   error: { marginTop: spacing.x3, color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18, textAlign: 'center' },
 });
