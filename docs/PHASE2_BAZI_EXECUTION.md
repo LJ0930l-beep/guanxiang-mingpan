@@ -73,7 +73,7 @@ UI Evidence Explorer / Saved History / User-triggered Diff
 ```text
 npm run typecheck  PASS
 npm run lint       PASS
-npm test           PASS（44/44）
+npm test           PASS（45/45）
 npm run build:web  PASS（8 static routes，Web Export 实际执行）
 git diff --check   PASS
 ```
@@ -89,4 +89,3 @@ Phase 2 完成不等于正式上线完成。仍需单独处理：
 3. 全国完整城市数据、更多流派设置和更多人工核验样例；
 4. iPhone 真机全量验收、隐私政策、用户协议、内容合规和 App Store 材料；
 5. 生产依赖审计中的 high/moderate findings，应在兼容的 Expo/RN 升级后重新处理。
-

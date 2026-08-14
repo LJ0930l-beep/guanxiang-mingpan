@@ -147,7 +147,7 @@
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm test`（四模块固定样例、P1-A 独立来源 Golden Case、P1-B 节气边界 T-1/T/T+1 与跨 TZ、P1-C 日界线 22:59/23:00/23:01、P1-D 真太阳时跨 TZ、P1-E 农历/闰月/春节换算与跨 TZ、P2-A～P2-F 证据/解释/快照/Golden、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、收藏/反馈持久化、普通/加密本机备份格式，共 44 项测试）
+- `npm test`（四模块固定样例、P1-A 独立来源 Golden Case、P1-B 节气边界 T-1/T/T+1 与跨 TZ、P1-C 日界线 22:59/23:00/23:01、P1-D 真太阳时跨 TZ、P1-E 农历/闰月/春节换算与跨 TZ、P2-A～P2-F 证据/解释/快照/Golden、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、收藏/反馈持久化、普通/加密本机备份格式，共 45 项测试）
 - `npm run build:web`（静态 Web 构建成功，8 条路由）
 - GitHub Actions CI：安装依赖后自动执行 typecheck、lint、npm test 和 Web 构建；Web Export 使用 `always()`，不会因测试失败被跳过。
 - 浏览器手工走查：首页、八字落柱、六爻起卦、紫微十二宫、星盘精确/近似分支、自动保存及记录展开。
