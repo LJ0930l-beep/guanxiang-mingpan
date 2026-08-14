@@ -6,6 +6,7 @@ import {
   createLocalBackupText,
   parseLocalBackupText,
 } from '../src/storage/backup.ts';
+import { STORAGE_SCHEMA_VERSION } from '../src/storage/schema.ts';
 
 const profile = {
   id: 'profile-1',
@@ -34,6 +35,14 @@ const reading = {
   snapshotMeta: { snapshotVersion: 1, calculationSettings: { timezone: 'Asia/Shanghai' } },
   inputSnapshot: { type: 'liuyao', timezone: 'Asia/Shanghai' },
   payload: { module: 'liuyao', calculationSettings: { timezone: 'Asia/Shanghai' } },
+  favorite: true,
+  feedback: [{
+    id: 'feedback-1',
+    status: 'confirmed',
+    observedAt: '2026-01-03',
+    note: '事实已发生',
+    createdAt: '2026-01-03T00:00:00.000Z',
+  }],
 };
 
 test('本机备份带版本和完整本地数据，并能无损解析', () => {
@@ -48,9 +57,23 @@ test('本机备份带版本和完整本地数据，并能无损解析', () => {
 
   assert.equal(parsed.format, 'guanxiang-local-backup');
   assert.equal(parsed.backupVersion, 1);
-  assert.equal(parsed.storageSchemaVersion, 1);
+  assert.equal(parsed.storageSchemaVersion, STORAGE_SCHEMA_VERSION);
   assert.equal(parsed.exportedAt, '2026-01-03T00:00:00.000Z');
   assert.deepEqual(parsed.data, data);
+});
+
+test('旧版本机备份缺少收藏与反馈字段时会安全补默认值', () => {
+  const legacyReading = { ...reading };
+  delete legacyReading.favorite;
+  delete legacyReading.feedback;
+  const legacyDocument = JSON.parse(createLocalBackupText({ user: null, profiles: [profile], selectedProfileId: profile.id, readings: [legacyReading] }));
+  legacyDocument.storageSchemaVersion = 1;
+  const raw = JSON.stringify(legacyDocument);
+  const parsed = parseLocalBackupText(raw);
+
+  assert.equal(parsed.storageSchemaVersion, STORAGE_SCHEMA_VERSION);
+  assert.equal(parsed.data.readings[0].favorite, false);
+  assert.deepEqual(parsed.data.readings[0].feedback, []);
 });
 
 test('本机备份拒绝未来版本、非法 JSON 和不一致选择', () => {
@@ -66,4 +89,11 @@ test('本机备份拒绝重复 ID，避免恢复后覆盖数据', () => {
   const raw = createLocalBackupText({ user: null, profiles: [profile, duplicate], selectedProfileId: profile.id, readings: [] });
 
   assert.throws(() => parseLocalBackupText(raw), /重复的命主 ID/);
+});
+
+test('本机备份拒绝同一记录下重复的反馈 ID', () => {
+  const duplicateFeedback = { ...reading, feedback: [reading.feedback[0], reading.feedback[0]] };
+  const raw = createLocalBackupText({ user: null, profiles: [profile], selectedProfileId: profile.id, readings: [duplicateFeedback] });
+
+  assert.throws(() => parseLocalBackupText(raw), /重复的反馈 ID/);
 });

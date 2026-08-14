@@ -1,8 +1,9 @@
 import { STORAGE_SCHEMA_VERSION } from '@/storage/schema';
-import type { BirthProfile, LocalUser, SavedReading } from '@/types/domain';
+import type { BirthProfile, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 
 export const LOCAL_BACKUP_FORMAT = 'guanxiang-local-backup' as const;
 export const LOCAL_BACKUP_VERSION = 1 as const;
+const LEGACY_STORAGE_SCHEMA_VERSIONS = [1] as const;
 
 export interface LocalBackupData {
   user: LocalUser | null;
@@ -75,6 +76,30 @@ function validateProfiles(value: unknown): BirthProfile[] {
   });
 }
 
+const FEEDBACK_STATUSES: ReadingFeedbackStatus[] = ['confirmed', 'partial', 'not-yet', 'contradicted'];
+
+function validateFeedback(value: unknown): ReadingFeedback[] {
+  if (value === undefined) return [];
+  if (!Array.isArray(value)) throw new BackupFormatError('备份文件中的反馈记录无效。');
+  const ids = new Set<string>();
+  return value.map((item) => {
+    if (!isRecord(item)) throw new BackupFormatError('备份文件中的反馈记录无效。');
+    const id = requireString(item.id, '反馈 ID');
+    if (ids.has(id)) throw new BackupFormatError('备份文件中存在重复的反馈 ID。');
+    ids.add(id);
+    if (!isString(item.observedAt) || !isString(item.note) || !isString(item.createdAt) || !FEEDBACK_STATUSES.includes(item.status as ReadingFeedbackStatus)) {
+      throw new BackupFormatError('备份文件中的反馈记录不完整。');
+    }
+    return {
+      id,
+      status: item.status as ReadingFeedbackStatus,
+      observedAt: item.observedAt,
+      note: item.note,
+      createdAt: item.createdAt,
+    };
+  });
+}
+
 function validateReadings(value: unknown): SavedReading[] {
   if (!Array.isArray(value)) throw new BackupFormatError('备份文件中的排盘记录无效。');
   const ids = new Set<string>();
@@ -89,7 +114,11 @@ function validateReadings(value: unknown): SavedReading[] {
     if (!['bazi', 'liuyao', 'ziwei', 'astrology'].includes(String(item.module))) {
       throw new BackupFormatError('备份文件中的排盘模块无效。');
     }
-    return item as unknown as SavedReading;
+    return {
+      ...item,
+      favorite: item.favorite === true,
+      feedback: validateFeedback(item.feedback),
+    } as unknown as SavedReading;
   });
 }
 
@@ -114,7 +143,9 @@ export function parseLocalBackupText(raw: string): LocalBackupDocument {
     throw new BackupFormatError('备份文件不是有效的 JSON。');
   }
 
-  if (!isRecord(parsed) || parsed.format !== LOCAL_BACKUP_FORMAT || parsed.backupVersion !== LOCAL_BACKUP_VERSION || parsed.storageSchemaVersion !== STORAGE_SCHEMA_VERSION || !isString(parsed.exportedAt) || !isRecord(parsed.data)) {
+  const supportedStorageSchema = isRecord(parsed)
+    && (parsed.storageSchemaVersion === STORAGE_SCHEMA_VERSION || LEGACY_STORAGE_SCHEMA_VERSIONS.includes(parsed.storageSchemaVersion as 1));
+  if (!isRecord(parsed) || parsed.format !== LOCAL_BACKUP_FORMAT || parsed.backupVersion !== LOCAL_BACKUP_VERSION || !supportedStorageSchema || !isString(parsed.exportedAt) || !isRecord(parsed.data)) {
     throw new BackupFormatError('备份文件版本不兼容，请使用观象导出的本机备份。');
   }
 

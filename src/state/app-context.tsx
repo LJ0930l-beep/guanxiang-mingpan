@@ -15,7 +15,7 @@ import {
   snapshotMetaFromPayload,
   writeStorageValue,
 } from '@/storage/schema';
-import type { BirthProfile, Gender, LocalUser, SavedReading } from '@/types/domain';
+import type { BirthProfile, Gender, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import type { ChartPayload } from '@/types/charts';
 
 const STORAGE = {
@@ -41,6 +41,12 @@ interface NewProfileInput {
   gender: Gender;
 }
 
+interface NewFeedbackInput {
+  status: ReadingFeedbackStatus;
+  observedAt: string;
+  note: string;
+}
+
 interface AppContextValue {
   ready: boolean;
   user: LocalUser | null;
@@ -56,6 +62,9 @@ interface AppContextValue {
   updateProfile: (profileId: string, input: NewProfileInput) => Promise<BirthProfile>;
   deleteProfile: (profileId: string) => Promise<void>;
   saveReading: (input: { profile: BirthProfile; title: string; summary: string; payload: ChartPayload }) => Promise<SavedReading>;
+  toggleFavorite: (readingId: string) => Promise<boolean>;
+  addFeedback: (readingId: string, input: NewFeedbackInput) => Promise<ReadingFeedback>;
+  deleteFeedback: (readingId: string, feedbackId: string) => Promise<void>;
   deleteReading: (readingId: string) => Promise<void>;
   clearReadings: () => Promise<void>;
   clearLocalData: () => Promise<void>;
@@ -75,6 +84,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [profiles, setProfiles] = useState<BirthProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [readings, setReadings] = useState<SavedReading[]>([]);
+  const readingsRef = useRef<SavedReading[]>([]);
   const [storageBlockedKeys, setStorageBlockedKeys] = useState<string[]>([]);
   const blockedStorageKeysRef = useRef<Set<string>>(new Set());
 
@@ -84,6 +94,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     blockedStorageKeysRef.current,
     (storageKey, encodedValue) => AsyncStorage.setItem(storageKey, encodedValue),
   );
+
+  useEffect(() => {
+    readingsRef.current = readings;
+  }, [readings]);
 
   useEffect(() => {
     let active = true;
@@ -218,7 +232,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
     const nextProfiles = profiles.filter((profile) => profile.id !== profileId);
     if (nextProfiles.length === profiles.length) throw new Error('找不到要删除的命主。');
-    const nextReadings = readings.filter((reading) => reading.profileId !== profileId);
+    const nextReadings = readingsRef.current.filter((reading) => reading.profileId !== profileId);
     const nextSelectedProfileId = selectedProfileId === profileId ? nextProfiles[0]?.id ?? null : selectedProfileId;
     await Promise.all([
       setStoredValue(STORAGE.profiles, nextProfiles),
@@ -227,6 +241,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     ]);
     setProfiles(nextProfiles);
     setSelectedProfileId(nextSelectedProfileId);
+    readingsRef.current = nextReadings;
     setReadings(nextReadings);
   };
 
@@ -250,6 +265,8 @@ export function AppProvider({ children }: PropsWithChildren) {
       interpretationVersion: 'rules-v1',
       snapshotMeta: snapshotMetaFromPayload(payload),
       inputSnapshot: payload.inputSnapshot,
+      favorite: false,
+      feedback: [],
       ...(payload.module === 'liuyao'
         ? {
             seed: payload.seed,
@@ -259,23 +276,76 @@ export function AppProvider({ children }: PropsWithChildren) {
         : {}),
       payload,
     };
-    const nextReadings = [reading, ...readings].slice(0, 100);
+    const nextReadings = [reading, ...readingsRef.current].slice(0, 100);
+    readingsRef.current = nextReadings;
     setReadings(nextReadings);
     await setStoredValue(STORAGE.readings, nextReadings);
     return reading;
   };
 
+  const toggleFavorite = async (readingId: string) => {
+    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+    const currentReadings = readingsRef.current;
+    const current = currentReadings.find((reading) => reading.id === readingId);
+    if (!current) throw new Error('找不到要收藏的排盘记录。');
+    const favorite = !current.favorite;
+    const nextReadings = currentReadings.map((reading) => reading.id === readingId ? { ...reading, favorite } : reading);
+    await setStoredValue(STORAGE.readings, nextReadings);
+    readingsRef.current = nextReadings;
+    setReadings(nextReadings);
+    return favorite;
+  };
+
+  const addFeedback = async (readingId: string, input: NewFeedbackInput) => {
+    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+    if (!['confirmed', 'partial', 'not-yet', 'contradicted'].includes(input.status)) throw new Error('反馈状态无效。');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(input.observedAt)) throw new Error('反馈日期请使用 YYYY-MM-DD 格式。');
+    const note = input.note.trim();
+    if (!note) throw new Error('请写下这次反馈的事实说明。');
+    const currentReadings = readingsRef.current;
+    const current = currentReadings.find((reading) => reading.id === readingId);
+    if (!current) throw new Error('找不到要反馈的排盘记录。');
+    const feedback: ReadingFeedback = {
+      id: createId('feedback'),
+      status: input.status,
+      observedAt: input.observedAt,
+      note,
+      createdAt: new Date().toISOString(),
+    };
+    const nextReadings = currentReadings.map((reading) => reading.id === readingId ? { ...reading, feedback: [feedback, ...reading.feedback] } : reading);
+    await setStoredValue(STORAGE.readings, nextReadings);
+    readingsRef.current = nextReadings;
+    setReadings(nextReadings);
+    return feedback;
+  };
+
+  const deleteFeedback = async (readingId: string, feedbackId: string) => {
+    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+    const currentReadings = readingsRef.current;
+    const current = currentReadings.find((reading) => reading.id === readingId);
+    if (!current) throw new Error('找不到要反馈的排盘记录。');
+    const nextFeedback = current.feedback.filter((feedback) => feedback.id !== feedbackId);
+    if (nextFeedback.length === current.feedback.length) throw new Error('找不到要删除的反馈。');
+    const nextReadings = currentReadings.map((reading) => reading.id === readingId ? { ...reading, feedback: nextFeedback } : reading);
+    await setStoredValue(STORAGE.readings, nextReadings);
+    readingsRef.current = nextReadings;
+    setReadings(nextReadings);
+  };
+
   const deleteReading = async (readingId: string) => {
     assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
-    const nextReadings = readings.filter((reading) => reading.id !== readingId);
-    if (nextReadings.length === readings.length) throw new Error('找不到要删除的排盘记录。');
+    const currentReadings = readingsRef.current;
+    const nextReadings = currentReadings.filter((reading) => reading.id !== readingId);
+    if (nextReadings.length === currentReadings.length) throw new Error('找不到要删除的排盘记录。');
     await setStoredValue(STORAGE.readings, nextReadings);
+    readingsRef.current = nextReadings;
     setReadings(nextReadings);
   };
 
   const clearReadings = async () => {
     assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
     await setStoredValue(STORAGE.readings, []);
+    readingsRef.current = [];
     setReadings([]);
   };
 
@@ -287,6 +357,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setUser(null);
     setProfiles([]);
     setSelectedProfileId(null);
+    readingsRef.current = [];
     setReadings([]);
   };
 
@@ -310,6 +381,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     setUser(data.user);
     setProfiles(data.profiles);
     setSelectedProfileId(data.selectedProfileId);
+    readingsRef.current = data.readings;
     setReadings(data.readings);
   };
 
@@ -333,6 +405,9 @@ export function AppProvider({ children }: PropsWithChildren) {
     updateProfile,
     deleteProfile,
     saveReading,
+    toggleFavorite,
+    addFeedback,
+    deleteFeedback,
     deleteReading,
     clearReadings,
     clearLocalData,

@@ -46,6 +46,29 @@ const validReadingInput = {
   payload: { module: 'bazi' },
 };
 
+const validReadingForPersistence = {
+  profile: { id: 'profile-1', name: '测试命主' },
+  title: '可复盘记录',
+  summary: '保存收藏和反馈',
+  payload: {
+    module: 'bazi',
+    generatedAt: '2026-01-02T00:00:00.000Z',
+    engineVersion: 'bazi-engine@1.0.0',
+    snapshotVersion: 1,
+    calculationSettings: { timezone: 'Asia/Shanghai' },
+    inputSnapshot: {
+      type: 'birth',
+      timezone: 'Asia/Shanghai',
+      birthDate: '1995-05-20',
+      birthTime: '08:30',
+      birthCity: '北京',
+      calendar: 'solar',
+      gender: 'female',
+    },
+    focus: ['事业'],
+  },
+};
+
 test('读取 future schema 后，真实 add/select/save 操作拒绝写入且原始值完全不变', async () => {
   const cases = [
     [PROFILE_KEY, [{ id: 'future-profile' }], (app) => app.addProfile(validProfileInput)],
@@ -66,4 +89,54 @@ test('读取 future schema 后，真实 add/select/save 操作拒绝写入且原
       renderer.unmount();
     });
   }
+});
+
+test('排盘记录支持收藏、事实反馈，并持久化到同一条记录', async () => {
+  __storage.clear();
+  let app;
+  let renderer;
+  ({ app, renderer } = await mountApp());
+  let saved;
+
+  await act(async () => {
+    saved = await app.saveReading(validReadingForPersistence);
+  });
+  await act(async () => {
+    renderer.unmount();
+  });
+  ({ app, renderer } = await mountApp());
+  await act(async () => {
+    assert.equal(await app.toggleFavorite(saved.id), true);
+  });
+
+  let feedback;
+  await act(async () => {
+    feedback = await app.addFeedback(saved.id, {
+      status: 'partial',
+      observedAt: '2026-01-05',
+      note: '部分事实已经发生',
+    });
+  });
+
+  const afterAdd = JSON.parse(__storage.get(READINGS_KEY));
+  assert.equal(afterAdd.schemaVersion, STORAGE_SCHEMA_VERSION);
+  assert.equal(afterAdd.value[0].favorite, true);
+  assert.deepEqual(afterAdd.value[0].feedback, [{
+    id: feedback.id,
+    status: 'partial',
+    observedAt: '2026-01-05',
+    note: '部分事实已经发生',
+    createdAt: feedback.createdAt,
+  }]);
+
+  await act(async () => {
+    await app.deleteFeedback(saved.id, feedback.id);
+  });
+  const afterDelete = JSON.parse(__storage.get(READINGS_KEY));
+  assert.equal(afterDelete.value[0].favorite, true);
+  assert.deepEqual(afterDelete.value[0].feedback, []);
+
+  await act(async () => {
+    renderer.unmount();
+  });
 });

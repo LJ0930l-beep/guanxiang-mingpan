@@ -29,6 +29,17 @@ export interface LocalUser {
   provider: 'phone' | 'apple' | 'wechat';
 }
 
+export type ReadingFeedbackStatus = 'confirmed' | 'partial' | 'not-yet' | 'contradicted';
+
+export interface ReadingFeedback {
+  id: string;
+  status: ReadingFeedbackStatus;
+  /** The smallest supported feedback time unit is a calendar day. */
+  observedAt: string;
+  note: string;
+  createdAt: string;
+}
+
 export interface SavedReading {
   id: string;
   profileId: string;
@@ -45,5 +56,7 @@ export interface SavedReading {
   seed?: string;
   date?: string;
   seedScope?: string;
+  favorite: boolean;
+  feedback: ReadingFeedback[];
   payload: ChartPayload;
 }

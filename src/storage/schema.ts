@@ -6,9 +6,9 @@ import type {
   CalculationSettings,
   LiuyaoInputSnapshot,
 } from '@/types/charts';
-import type { BirthProfile, DivinationModule, LocalUser, SavedReading } from '@/types/domain';
+import type { BirthProfile, DivinationModule, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 
-export const STORAGE_SCHEMA_VERSION = 1 as const;
+export const STORAGE_SCHEMA_VERSION = 2 as const;
 
 export interface VersionedStorageValue<T> {
   schemaVersion: typeof STORAGE_SCHEMA_VERSION;
@@ -118,6 +118,30 @@ export function migrateSelectedProfile(value: unknown): string | null {
   return typeof value === 'string' ? value : null;
 }
 
+const FEEDBACK_STATUSES: ReadingFeedbackStatus[] = ['confirmed', 'partial', 'not-yet', 'contradicted'];
+
+function migrateFeedback(value: unknown): ReadingFeedback[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter(isRecord).flatMap((feedback) => {
+    if (
+      typeof feedback.id !== 'string'
+      || typeof feedback.observedAt !== 'string'
+      || typeof feedback.note !== 'string'
+      || typeof feedback.createdAt !== 'string'
+      || !FEEDBACK_STATUSES.includes(feedback.status as ReadingFeedbackStatus)
+    ) {
+      return [];
+    }
+    return [{
+      id: feedback.id,
+      status: feedback.status as ReadingFeedbackStatus,
+      observedAt: feedback.observedAt,
+      note: feedback.note,
+      createdAt: feedback.createdAt,
+    }];
+  });
+}
+
 function isInputSnapshot(value: unknown): value is ChartInputSnapshot {
   return isRecord(value) && ['birth', 'liuyao', 'legacy'].includes(String(value.type));
 }
@@ -225,6 +249,8 @@ function migrateReading(value: unknown): SavedReading | null {
     interpretationVersion: typeof value.interpretationVersion === 'string' ? value.interpretationVersion : 'rules-v1',
     snapshotMeta,
     inputSnapshot,
+    favorite: value.favorite === true,
+    feedback: migrateFeedback(value.feedback),
     ...(liuyaoPayload
       ? {
           seed: liuyaoPayload.seed,

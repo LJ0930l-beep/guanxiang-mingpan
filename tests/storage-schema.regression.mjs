@@ -14,7 +14,7 @@ test('本地存储写入统一 schema version，并能读取当前版本', () =>
   const raw = encodeStorageValue(value);
   const decoded = decodeStorageValue(raw, [], (input) => input);
 
-  assert.equal(STORAGE_SCHEMA_VERSION, 1);
+  assert.equal(STORAGE_SCHEMA_VERSION, 2);
   assert.deepEqual(decoded.value, value);
   assert.equal(decoded.needsRewrite, false);
   assert.equal(decoded.blocked, false);
@@ -77,6 +77,51 @@ test('旧版未版本化命盘记录会迁移出 inputSnapshot 与 snapshotMeta'
   assert.equal(reading.seedScope, 'legacy');
   assert.deepEqual(reading.snapshotMeta.calculationSettings, { timezone: 'Asia/Shanghai' });
   assert.equal(reading.inputSnapshot.timezone, 'Asia/Shanghai');
+  assert.equal(reading.favorite, false);
+  assert.deepEqual(reading.feedback, []);
+});
+
+test('当前 schema 读取旧版字段时会保留有效反馈并补齐收藏默认值', () => {
+  const raw = JSON.stringify({
+    schemaVersion: 1,
+    value: [{
+      id: 'reading-v1',
+      profileId: 'profile-1',
+      profileName: '旧命主',
+      module: 'bazi',
+      title: '旧版记录',
+      summary: '旧版摘要',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      engineVersion: 'bazi-engine@1.0.0',
+      payload: {
+        module: 'bazi',
+        generatedAt: '2026-01-01T00:00:00.000Z',
+        engineVersion: 'bazi-engine@1.0.0',
+        snapshotVersion: 1,
+        calculationSettings: { timezone: 'Asia/Shanghai' },
+        inputSnapshot: { type: 'birth', timezone: 'Asia/Shanghai' },
+      },
+      feedback: [{
+        id: 'feedback-1',
+        status: 'confirmed',
+        observedAt: '2026-01-02',
+        note: '事实已发生',
+        createdAt: '2026-01-02T00:00:00.000Z',
+      }],
+    }],
+  });
+  const decoded = decodeStorageValue(raw, [], migrateReadings);
+  const [reading] = decoded.value;
+
+  assert.equal(decoded.needsRewrite, true);
+  assert.equal(reading.favorite, false);
+  assert.deepEqual(reading.feedback, [{
+    id: 'feedback-1',
+    status: 'confirmed',
+    observedAt: '2026-01-02',
+    note: '事实已发生',
+    createdAt: '2026-01-02T00:00:00.000Z',
+  }]);
 });
 
 test('未来 schema 不会被当前版本覆盖', () => {
