@@ -8,18 +8,54 @@ import { fontFamilies, palette, spacing } from '@/constants/guanxiang';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { QuietScreen } from '@/screens/quiet-screen';
 import { exportBackupFile, pickBackupFile } from '@/services/local-backup-io';
+import type { ImportMode, ImportPreview } from '@/storage/import-plan';
 import { useApp } from '@/state/app-context';
 
 export default function SettingsRoute() {
   const router = useRouter();
   const { ready, authenticated } = useRequireAuth();
-  const { signOut, clearLocalData, createLocalBackup, restoreLocalBackup, createEncryptedLocalBackup, restoreEncryptedLocalBackup, profiles, readings, storageBlockedKeys } = useApp();
+  const { signOut, clearLocalData, createLocalBackup, previewLocalBackup, restoreLocalBackup, createEncryptedLocalBackup, previewEncryptedLocalBackup, restoreEncryptedLocalBackup, profiles, readings, storageBlockedKeys } = useApp();
   const [error, setError] = useState('');
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupPassword, setBackupPassword] = useState('');
   if (!ready || !authenticated) return <LoadingScreen />;
 
   const clearBlocked = storageBlockedKeys.length > 0;
+
+  const formatImportPreview = (preview: ImportPreview) => {
+    const current = preview.currentSummary;
+    const incoming = preview.incomingSummary;
+    const conflictText = preview.conflicts.length === 0
+      ? '未发现重复 ID。'
+      : `发现 ${preview.conflicts.length} 个重复 ID；合并导入默认保留本机，替换导入才会使用文件版本。`;
+    return `导入前不会写入本机。\n\n当前：${current.profileCount} 个命主、${current.readingCount} 条记录、${current.feedbackCount} 条反馈、${current.baziDeepSnapshotCount} 条八字深度快照。\n文件：${incoming.profileCount} 个命主、${incoming.readingCount} 条记录、${incoming.feedbackCount} 条反馈、${incoming.baziDeepSnapshotCount} 条八字深度快照。\n\n${conflictText}`;
+  };
+
+  const presentImportPreview = (
+    preview: ImportPreview,
+    restore: (mode: ImportMode) => Promise<void>,
+    successMessage: string,
+  ) => {
+    const runRestore = async (mode: ImportMode) => {
+      try {
+        await restore(mode);
+        Alert.alert('恢复完成', successMessage);
+      } catch (operationError) {
+        setError(operationError instanceof Error ? operationError.message : '备份版本不兼容，无法恢复。');
+      } finally {
+        setBackupBusy(false);
+      }
+    };
+    Alert.alert(
+      '导入预览',
+      formatImportPreview(preview),
+      [
+        { text: '取消', style: 'cancel', onPress: () => setBackupBusy(false) },
+        { text: '合并导入', onPress: () => { void runRestore('merge'); } },
+        { text: '替换本机', style: 'destructive', onPress: () => { void runRestore('replace'); } },
+      ],
+    );
+  };
 
   const exportBackup = async () => {
     setError('');
@@ -57,29 +93,8 @@ export default function SettingsRoute() {
         setBackupBusy(false);
         return;
       }
-      Alert.alert(
-        '确认恢复本机备份',
-        '恢复会替换当前账户、命主、排盘记录和当前选择。建议先导出一份当前备份。',
-        [
-          { text: '取消', style: 'cancel' },
-          {
-            text: '确认恢复',
-            style: 'destructive',
-            onPress: async () => {
-              setBackupBusy(true);
-              try {
-                await restoreLocalBackup(raw);
-                Alert.alert('恢复完成', '本机资料已经恢复。');
-              } catch (operationError) {
-                setError(operationError instanceof Error ? operationError.message : '备份版本不兼容，无法恢复。');
-              } finally {
-                setBackupBusy(false);
-              }
-            },
-          },
-        ],
-      );
-      setBackupBusy(false);
+      const preview = previewLocalBackup(raw, 'merge');
+      presentImportPreview(preview, (mode) => restoreLocalBackup(raw, mode), '本机资料已经恢复。');
     } catch (operationError) {
       setError(operationError instanceof Error ? operationError.message : '选择备份文件失败，请稍后重试。');
       setBackupBusy(false);
@@ -95,29 +110,8 @@ export default function SettingsRoute() {
         setBackupBusy(false);
         return;
       }
-      Alert.alert(
-        '确认恢复加密备份',
-        '恢复会替换当前账户、命主、排盘记录和当前选择。请确认已输入正确的备份密码。',
-        [
-          { text: '取消', style: 'cancel' },
-          {
-            text: '确认恢复',
-            style: 'destructive',
-            onPress: async () => {
-              setBackupBusy(true);
-              try {
-                await restoreEncryptedLocalBackup(raw, backupPassword);
-                Alert.alert('恢复完成', '加密备份中的本机资料已经恢复。');
-              } catch (operationError) {
-                setError(operationError instanceof Error ? operationError.message : '密码错误或加密备份已损坏。');
-              } finally {
-                setBackupBusy(false);
-              }
-            },
-          },
-        ],
-      );
-      setBackupBusy(false);
+      const preview = await previewEncryptedLocalBackup(raw, backupPassword, 'merge');
+      presentImportPreview(preview, (mode) => restoreEncryptedLocalBackup(raw, backupPassword, mode), '加密备份中的本机资料已经恢复。');
     } catch (operationError) {
       setError(operationError instanceof Error ? operationError.message : '选择加密备份文件失败，请稍后重试。');
       setBackupBusy(false);

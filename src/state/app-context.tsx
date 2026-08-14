@@ -3,7 +3,9 @@ import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useRe
 
 import { resolveCityCoordinates } from '@/data/china-cities';
 import { createLocalBackupText, parseLocalBackupText } from '@/storage/backup';
+import { applyImportPlan, buildImportPreview, type ImportMode, type ImportPreview } from '@/storage/import-plan';
 import { createEncryptedLocalBackupText, parseEncryptedLocalBackupText } from '@/storage/encrypted-backup';
+import { transactionalReplace } from '@/storage/transaction';
 import { createBaziHistorySnapshot } from '@/domains/bazi/interpretation/history';
 import {
   decodeStorageValue,
@@ -19,6 +21,7 @@ import {
 } from '@/storage/schema';
 import type { BirthProfile, Gender, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import type { ChartPayload } from '@/types/charts';
+import type { LocalBackupData } from '@/storage/backup';
 
 const STORAGE = {
   user: '@guanxiang/user',
@@ -74,9 +77,11 @@ interface AppContextValue {
   clearReadings: () => Promise<void>;
   clearLocalData: () => Promise<void>;
   createLocalBackup: () => string;
-  restoreLocalBackup: (raw: string) => Promise<void>;
+  previewLocalBackup: (raw: string, mode?: ImportMode) => ImportPreview;
+  restoreLocalBackup: (raw: string, mode?: ImportMode) => Promise<void>;
   createEncryptedLocalBackup: (password: string) => Promise<string>;
-  restoreEncryptedLocalBackup: (raw: string, password: string) => Promise<void>;
+  previewEncryptedLocalBackup: (raw: string, password: string, mode?: ImportMode) => Promise<ImportPreview>;
+  restoreEncryptedLocalBackup: (raw: string, password: string, mode?: ImportMode) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -437,16 +442,31 @@ export function AppProvider({ children }: PropsWithChildren) {
     return createEncryptedLocalBackupText({ user, profiles, selectedProfileId, readings: readingsRef.current }, password);
   };
 
-  const restoreLocalBackup = async (raw: string) => {
+  const currentArchiveData = (): LocalBackupData => ({ user, profiles, selectedProfileId, readings: readingsRef.current });
+
+  const previewLocalBackup = (raw: string, mode: ImportMode = 'replace') => {
     const backup = parseLocalBackupText(raw);
-    Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
-    const { data } = backup;
-    await AsyncStorage.multiSet([
+    return buildImportPreview(currentArchiveData(), backup.data, mode);
+  };
+
+  const writeArchiveData = async (data: LocalBackupData) => {
+    await transactionalReplace([
       [STORAGE.user, encodeStorageValue(data.user)],
       [STORAGE.profiles, encodeStorageValue(data.profiles)],
       [STORAGE.selectedProfile, encodeStorageValue(data.selectedProfileId)],
       [STORAGE.readings, encodeStorageValue(data.readings)],
-    ]);
+    ], {
+      getItem: (key) => AsyncStorage.getItem(key),
+      setItem: (key, value) => AsyncStorage.setItem(key, value),
+      removeItem: (key) => AsyncStorage.removeItem(key),
+    });
+  };
+
+  const restoreLocalBackup = async (raw: string, mode: ImportMode = 'replace') => {
+    const backup = parseLocalBackupText(raw);
+    Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
+    const data = applyImportPlan(currentArchiveData(), backup.data, mode);
+    await writeArchiveData(data);
     blockedStorageKeysRef.current = new Set();
     setStorageBlockedKeys([]);
     setUser(data.user);
@@ -456,16 +476,16 @@ export function AppProvider({ children }: PropsWithChildren) {
     setReadings(data.readings);
   };
 
-  const restoreEncryptedLocalBackup = async (raw: string, password: string) => {
+  const previewEncryptedLocalBackup = async (raw: string, password: string, mode: ImportMode = 'replace') => {
+    const backup = await parseEncryptedLocalBackupText(raw, password);
+    return buildImportPreview(currentArchiveData(), backup.data, mode);
+  };
+
+  const restoreEncryptedLocalBackup = async (raw: string, password: string, mode: ImportMode = 'replace') => {
     const backup = await parseEncryptedLocalBackupText(raw, password);
     Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
-    const { data } = backup;
-    await AsyncStorage.multiSet([
-      [STORAGE.user, encodeStorageValue(data.user)],
-      [STORAGE.profiles, encodeStorageValue(data.profiles)],
-      [STORAGE.selectedProfile, encodeStorageValue(data.selectedProfileId)],
-      [STORAGE.readings, encodeStorageValue(data.readings)],
-    ]);
+    const data = applyImportPlan(currentArchiveData(), backup.data, mode);
+    await writeArchiveData(data);
     blockedStorageKeysRef.current = new Set();
     setStorageBlockedKeys([]);
     setUser(data.user);
@@ -503,8 +523,10 @@ export function AppProvider({ children }: PropsWithChildren) {
     clearReadings,
     clearLocalData,
     createLocalBackup,
+    previewLocalBackup,
     restoreLocalBackup,
     createEncryptedLocalBackup,
+    previewEncryptedLocalBackup,
     restoreEncryptedLocalBackup,
   };
 
