@@ -125,6 +125,7 @@ export function calculateBaziView(
     calculationEvidence: createBaziCalculationEvidence(profile, settings, dayBoundaryResolution, trueSolarResolution, calendarResolution),
     normalizedChart,
     evidenceGraph,
+    strengthAssessment: evidenceGraph.strengthAssessment!,
     inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
     caveats: [

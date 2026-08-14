@@ -5,6 +5,28 @@ export const BAZI_EVIDENCE_RULE_VERSION = 'bazi-evidence-v1' as const;
 export type EvidenceSource = 'chart' | 'derived-rule';
 export type EvidenceWeight = 'major' | 'medium' | 'minor';
 
+export type StrengthStatus = 'strong' | 'weak' | 'balanced' | 'uncertain';
+export type StrengthConfidence = 'high' | 'medium' | 'low';
+
+export interface StrengthDecisionStep {
+  id: string;
+  label: string;
+  outcome: 'support' | 'opposing' | 'neutral' | 'conflict' | 'context';
+  evidenceRefs: string[];
+  rationale: string;
+}
+
+export interface StrengthAssessment {
+  status: StrengthStatus;
+  confidence: StrengthConfidence;
+  supportingEvidenceRefs: string[];
+  opposingEvidenceRefs: string[];
+  decisiveEvidenceRefs: string[];
+  caveats: string[];
+  decisionPath: StrengthDecisionStep[];
+  ruleVersion: string;
+}
+
 export interface EvidenceNode {
   id: string;
   type: string;
@@ -24,4 +46,5 @@ export interface BaziEvidenceGraph {
   };
   nodes: EvidenceNode[];
   relationEdges: RelationEdge[];
+  strengthAssessment?: StrengthAssessment;
 }

@@ -25,7 +25,7 @@ test('P2-B evidence graph separates element facts, month command, roots and expo
   const graph = result.evidenceGraph;
   assert.equal(graph.evidenceVersion, 'bazi-evidence-v1');
   assert.equal(graph.source.modelVersion, 'bazi-normalized-v1');
-  assert.equal(graph.relationEdges.length, 0);
+  assert.equal(graph.relationEdges.length, result.normalizedChart.relations.length);
 
   const types = new Set(graph.nodes.map((node) => node.type));
   assert.equal(types.has('element.stem'), true);
