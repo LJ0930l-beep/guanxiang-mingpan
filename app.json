@@ -1,0 +1,50 @@
+{
+  "expo": {
+    "name": "观象·命盘",
+    "slug": "guanxiang-mingpan",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "guanxiang",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#050907",
+    "ios": {
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.guanxiang.mingpan",
+      "supportsTablet": false
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#050907",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png",
+      "name": "观象·命盘",
+      "shortName": "观象",
+      "lang": "zh-CN",
+      "themeColor": "#050907",
+      "description": "八字、六爻、紫微斗数与西方星盘的本地排盘与复盘工具"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#050907",
+          "image": "./assets/images/splash-icon.png",
+          "imageWidth": 92
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}

@@ -1,0 +1,34 @@
+:root {
+  --font-display: STSong, 'Songti SC', 'Noto Serif SC', serif;
+  --font-body: 'PingFang SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
+  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+  color-scheme: dark;
+  background: #050907;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+  background: #050907;
+}
+
+body {
+  overscroll-behavior-y: none;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  color: #050907;
+  background: #c6a66b;
+}
+
+:focus-visible {
+  outline: 2px solid #c6a66b;
+  outline-offset: 2px;
+}
