@@ -1,15 +1,18 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { resolveCityCoordinates } from '@/data/china-cities';
 import {
   decodeStorageValue,
   encodeStorageValue,
+  assertStorageWritable,
   migrateProfiles,
   migrateReadings,
   migrateSelectedProfile,
   migrateUser,
+  removeStorageValue,
   snapshotMetaFromPayload,
+  writeStorageValue,
 } from '@/storage/schema';
 import type { BirthProfile, Gender, LocalUser, SavedReading } from '@/types/domain';
 import type { ChartPayload } from '@/types/charts';
@@ -43,6 +46,7 @@ interface AppContextValue {
   profiles: BirthProfile[];
   selectedProfile: BirthProfile | null;
   readings: SavedReading[];
+  storageBlockedKeys: string[];
   signInWithPhone: (phone: string, code: string) => Promise<SignInResult>;
   signInWithProvider: (provider: 'apple' | 'wechat') => Promise<void>;
   signOut: () => Promise<void>;
@@ -57,16 +61,21 @@ function createId(prefix: string) {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function setStoredValue<T>(key: string, value: T) {
-  return AsyncStorage.setItem(key, encodeStorageValue(value));
-}
-
 export function AppProvider({ children }: PropsWithChildren) {
   const [ready, setReady] = useState(false);
   const [user, setUser] = useState<LocalUser | null>(null);
   const [profiles, setProfiles] = useState<BirthProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [readings, setReadings] = useState<SavedReading[]>([]);
+  const [storageBlockedKeys, setStorageBlockedKeys] = useState<string[]>([]);
+  const blockedStorageKeysRef = useRef<Set<string>>(new Set());
+
+  const setStoredValue = <T,>(key: string, value: T) => writeStorageValue(
+    key,
+    value,
+    blockedStorageKeysRef.current,
+    (storageKey, encodedValue) => AsyncStorage.setItem(storageKey, encodedValue),
+  );
 
   useEffect(() => {
     let active = true;
@@ -83,6 +92,14 @@ export function AppProvider({ children }: PropsWithChildren) {
         const profilesState = decodeStorageValue(storedProfiles, [], migrateProfiles);
         const selectedProfileState = decodeStorageValue(storedSelectedProfile, null, migrateSelectedProfile);
         const readingsState = decodeStorageValue(storedReadings, [], migrateReadings);
+        const blockedKeys = new Set<string>([
+          ...(userState.blocked ? [STORAGE.user] : []),
+          ...(profilesState.blocked ? [STORAGE.profiles] : []),
+          ...(selectedProfileState.blocked ? [STORAGE.selectedProfile] : []),
+          ...(readingsState.blocked ? [STORAGE.readings] : []),
+        ]);
+        blockedStorageKeysRef.current = blockedKeys;
+        setStorageBlockedKeys([...blockedKeys]);
         setUser(userState.value);
         setProfiles(profilesState.value);
         setSelectedProfileId(selectedProfileState.value);
@@ -113,6 +130,7 @@ export function AppProvider({ children }: PropsWithChildren) {
       return { ok: false, message: '请输入 6 位验证码。' };
     }
 
+    assertStorageWritable(STORAGE.user, blockedStorageKeysRef.current);
     const nextUser: LocalUser = {
       id: `phone_${normalizedPhone}`,
       displayName: `${normalizedPhone.slice(0, 3)}****${normalizedPhone.slice(-4)}`,
@@ -125,6 +143,7 @@ export function AppProvider({ children }: PropsWithChildren) {
   };
 
   const signInWithProvider = async (provider: 'apple' | 'wechat') => {
+    assertStorageWritable(STORAGE.user, blockedStorageKeysRef.current);
     const nextUser: LocalUser = {
       id: createId(provider),
       displayName: provider === 'apple' ? 'Apple 用户' : '微信用户',
@@ -135,11 +154,13 @@ export function AppProvider({ children }: PropsWithChildren) {
   };
 
   const signOut = async () => {
+    await removeStorageValue(STORAGE.user, blockedStorageKeysRef.current, (key) => AsyncStorage.removeItem(key));
     setUser(null);
-    await AsyncStorage.removeItem(STORAGE.user);
   };
 
   const addProfile = async (input: NewProfileInput) => {
+    assertStorageWritable(STORAGE.profiles, blockedStorageKeysRef.current);
+    assertStorageWritable(STORAGE.selectedProfile, blockedStorageKeysRef.current);
     const timestamp = new Date().toISOString();
     const city = resolveCityCoordinates(input.birthCity);
     const profile: BirthProfile = {
@@ -163,11 +184,13 @@ export function AppProvider({ children }: PropsWithChildren) {
   };
 
   const selectProfile = async (profileId: string) => {
+    assertStorageWritable(STORAGE.selectedProfile, blockedStorageKeysRef.current);
     setSelectedProfileId(profileId);
     await setStoredValue(STORAGE.selectedProfile, profileId);
   };
 
   const saveReading: AppContextValue['saveReading'] = async ({ profile, title, summary, payload }) => {
+    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
     const reading: SavedReading = {
       id: createId('reading'),
       profileId: profile.id,
@@ -206,6 +229,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     profiles,
     selectedProfile,
     readings,
+    storageBlockedKeys,
     signInWithPhone,
     signInWithProvider,
     signOut,

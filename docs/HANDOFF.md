@@ -87,8 +87,8 @@
 - **客户端框架**：Expo SDK 57、React Native 0.86、React 19、Expo Router；同一套代码支持 Web 和 iPhone 目标。
 - **状态与存储**：`src/state/app-context.tsx` 负责本地会话、命主、当前命主和排盘记录。键名为 `@guanxiang/user`、`@guanxiang/profiles`、`@guanxiang/selected-profile`、`@guanxiang/readings`。
 - **排盘适配层**：`src/services/chart-engine.ts` 是稳定的公共 facade；四个独立计算器位于 `src/services/engines/`，将不同开源引擎的输出统一为应用自己的 `ChartPayload`。页面只消费这个统一数据协议，后续替换引擎时应先维护该协议。
-- **可复现快照**：`ChartSnapshotMeta`、`snapshotVersion` 和 `inputSnapshot` 会随每个 `ChartPayload` 保存；六爻还会保留 `seed`、`date` 与 `seedScope`。`SavedReading` 同步保存 `snapshotMeta`，便于迁移、导出和复盘。
-- **本地存储迁移**：`src/storage/schema.ts` 为每个 AsyncStorage 值写入 `STORAGE_SCHEMA_VERSION` 包装，兼容首版未版本化数据、未来版本阻断写回，并为旧记录补齐快照字段。
+- **可复现快照**：`ChartSnapshotMeta`、`snapshotVersion`、`calculationSettings` 和 `inputSnapshot` 会随每个 `ChartPayload` 保存；首版计算业务时区固定为 `Asia/Shanghai`，六爻还会保留 `seed`、`date` 与 `seedScope`。`SavedReading` 同步保存 `snapshotMeta`，便于迁移、导出和复盘。
+- **本地存储迁移**：`src/storage/schema.ts` 为每个 AsyncStorage 值写入 `STORAGE_SCHEMA_VERSION` 包装，兼容首版未版本化数据、未来版本阻断写回，并为旧记录补齐快照字段。读取到 future schema 的 key 会进入只读/不兼容状态，用户写操作会拒绝且不会覆盖原始值。
 - **坐标数据**：`src/data/china-cities.ts` 内置少量常用中国城市坐标，用于西方本命盘是否可以计算角点和宫位的判断；不是全国城市库。
 - **路由/页面**：模块工作台集中在 `src/screens/module-workspace.tsx`，记录页在 `src/screens/records-screen.tsx`，命主页在 `src/screens/profiles-screen.tsx`。
 
@@ -143,13 +143,13 @@
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm test`（四模块固定样例、输入边界与存储迁移，共 8 项测试）
+- `npm test`（四模块固定样例、缺失时辰、跨 TZ 六爻复现与存储写保护，共 10 项测试）
 - `npm run build:web`（静态 Web 构建成功，8 条路由）
-- GitHub Actions CI：安装依赖后自动执行 typecheck、lint、npm test 和 Web 构建。
+- GitHub Actions CI：安装依赖后自动执行 typecheck、lint、npm test 和 Web 构建；Web Export 使用 `always()`，不会因测试失败被跳过。
 - 浏览器手工走查：首页、八字落柱、六爻起卦、紫微十二宫、星盘精确/近似分支、自动保存及记录展开。
 - 视觉与响应式基线已检查过 375px、手机横屏和 1440px；正式发布前仍必须在实际 iPhone 上做全量回归。
 
-已知依赖审计基线记录在 [SECURITY_NOTES.md](SECURITY_NOTES.md)：2026-07-18 的生产依赖审计为 0 个 high/critical、11 个 moderate，均位于 Expo 构建/配置依赖链。自动修复会建议不兼容的大版本降级，因此未执行强制修复。提交前必须重新审计当前锁文件与兼容的 Expo SDK 57 补丁版本。
+已知依赖审计基线记录在 [SECURITY_NOTES.md](SECURITY_NOTES.md)：2026-08-14 的 `npm audit --omit=dev` 结果为 0 critical、18 high、9 moderate；当前 findings 主要来自 Expo/Metro/React Native 运行依赖链及其传递依赖。自动修复会建议不兼容的大版本降级，因此未执行强制修复。提交前必须重新审计当前锁文件与兼容的 Expo SDK 57 补丁版本。
 
 ## 8. 上线前必须完成的工作
 

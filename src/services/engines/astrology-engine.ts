@@ -2,13 +2,14 @@ import { Horoscope, Origin } from 'circular-natal-horoscope-js/dist/index.js';
 
 import { resolveCityCoordinates } from '@/data/china-cities';
 import type { AstrologyChartView } from '@/types/charts';
-import { CHART_SNAPSHOT_VERSION, aspectLabels, bodyLabels, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, signLabels } from '@/services/chart-engine-shared';
+import { calculationSettings, CHART_SNAPSHOT_VERSION, aspectLabels, bodyLabels, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, signLabels } from '@/services/chart-engine-shared';
 import type { BirthProfile } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 
 export function calculateAstrologyView(profile: BirthProfile, options?: CalculationOptions): AstrologyChartView {
   requireExactBirth(profile);
   const parts = birthParts(profile);
+  const settings = calculationSettings(options);
   const city = profile.latitude != null && profile.longitude != null
     ? { latitude: profile.latitude, longitude: profile.longitude }
     : resolveCityCoordinates(profile.birthCity);
@@ -69,7 +70,8 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSIONS.astrology,
-    inputSnapshot: birthInputSnapshot(profile),
+    calculationSettings: settings,
+    inputSnapshot: birthInputSnapshot(profile, undefined, settings),
     completeness: city ? 'complete' : 'partial',
     caveats,
     calculationMode: city ? 'exact' : 'approximate',

@@ -1,5 +1,30 @@
 # Dependency security notes
 
+## 2026-08-14 production baseline
+
+Command:
+
+```bash
+npm audit --omit=dev
+```
+
+Result:
+
+- Critical: 0
+- High: 18
+- Moderate: 9
+- Low: 0
+- Total: 27
+
+This is the production-only audit view, but Expo SDK 57 and React Native are
+runtime dependencies in this app, so their Metro/configuration dependency
+chain is included. The findings include `brace-expansion`, `image-size`,
+`js-yaml`, `nanoid`, `postcss`, `uuid` and the Expo/Metro/RN chain. The
+available automatic fixes include incompatible major changes (for example
+Expo 53 or React Native 0.72), so `npm audit fix --force` was not applied.
+This baseline must be rechecked during the next compatible Expo/RN upgrade and
+before production submission; it is not a claim of zero production findings.
+
 ## 2026-07-18 baseline
 
 Command:
@@ -23,4 +48,3 @@ Before a public release:
 2. Review the upstream Expo advisories and changelog.
 3. Regenerate the lockfile only as part of a tested SDK upgrade.
 4. Require zero high or critical production findings before submission.
-

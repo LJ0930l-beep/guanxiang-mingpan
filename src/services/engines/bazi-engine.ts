@@ -1,7 +1,7 @@
 import { calculateBazi } from 'taibu-core/bazi';
 
 import type { BaziChartView } from '@/types/charts';
-import { CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 
@@ -13,6 +13,7 @@ export function calculateBaziView(
   requireExactBirth(profile);
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
+  const settings = calculationSettings(options);
   const result = calculateBazi({
     gender,
     birthYear: parts.year,
@@ -49,7 +50,8 @@ export function calculateBaziView(
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSIONS.bazi,
-    inputSnapshot: birthInputSnapshot(profile, gender),
+    calculationSettings: settings,
+    inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
     caveats: ['基础版展示结构证据，不直接给出吉凶定论。', '子初换日与真太阳时设置将在专业设置中开放。'],
     dayMaster: result.dayMaster,

@@ -15,7 +15,7 @@
 - [x] 完成八字、西方本命盘、紫微斗数与六爻的本地基础排盘。
 - [x] 每个模块输出可追溯的规则型基础观察，不使用生成式 AI。
 - [x] 建立首批四模块固定样例与缺失时辰/未知城市边界回归测试（`npm test`）。
-- [x] 建立 `ChartSnapshotMeta`、`inputSnapshot`、六爻 seed/date/scope 持久化和四模块独立计算器 facade。
+- [x] 建立 `ChartSnapshotMeta`、`calculationSettings`、`inputSnapshot`、六爻 seed/date/scope 持久化和四模块独立计算器 facade。
 - [ ] 扩充全国城市坐标离线索引。
 - [ ] 为边界日期、闰月、子时换日、夏令时和未知时辰建立固定金标准测试集。
 - [ ] 增加真太阳时、子初换日和流派选择的专业设置。
@@ -24,7 +24,7 @@
 
 - 命盘记录、收藏、反馈和复盘
 - 已完成：命盘结果、命主、算法版本、快照元数据与基础观察自动归档；旧版未版本化数据会迁移；收藏与反馈仍待实现。
-- 已完成：统一 `npm test` 与 GitHub Actions CI 基线。
+- 已完成：统一 `npm test`、Asia/Shanghai 跨 TZ 六爻复现、future schema 写保护与 GitHub Actions CI 基线。
 - 带版本号的本地数据迁移
 - 用户自选密码的加密备份文件
 - iOS 文件 App / iCloud Drive 导出与恢复

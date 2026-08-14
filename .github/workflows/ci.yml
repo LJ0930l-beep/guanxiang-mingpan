@@ -39,4 +39,5 @@ jobs:
         run: npm test
 
       - name: Web export
+        if: ${{ always() }}
         run: npm run build:web

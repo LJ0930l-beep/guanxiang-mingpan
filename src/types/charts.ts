@@ -1,9 +1,18 @@
 import type { DivinationModule, Gender } from '@/types/domain';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
+export const DEFAULT_CALCULATION_TIMEZONE = 'Asia/Shanghai' as const;
+
+export type CalculationTimezone = typeof DEFAULT_CALCULATION_TIMEZONE;
+
+export interface CalculationSettings {
+  /** Business timezone used for civil-time calculations and replay. */
+  timezone: CalculationTimezone;
+}
 
 export interface BirthInputSnapshot {
   type: 'birth';
+  timezone: CalculationTimezone;
   profileId: string;
   birthDate: string;
   birthTime?: string;
@@ -18,6 +27,7 @@ export interface BirthInputSnapshot {
 
 export interface LiuyaoInputSnapshot {
   type: 'liuyao';
+  timezone: CalculationTimezone;
   question: string;
   target: string;
   seed: string;
@@ -27,6 +37,7 @@ export interface LiuyaoInputSnapshot {
 
 export interface LegacyInputSnapshot {
   type: 'legacy';
+  timezone: CalculationTimezone;
   module: DivinationModule;
   reason: string;
 }
@@ -37,6 +48,7 @@ export interface ChartSnapshotMeta {
   snapshotVersion: typeof CHART_SNAPSHOT_VERSION;
   generatedAt: string;
   engineVersion: string;
+  calculationSettings: CalculationSettings;
   inputSnapshot: ChartInputSnapshot;
 }
 

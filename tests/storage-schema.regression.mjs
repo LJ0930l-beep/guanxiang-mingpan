@@ -6,6 +6,7 @@ import {
   decodeStorageValue,
   encodeStorageValue,
   migrateReadings,
+  writeStorageValue,
 } from '../src/storage/schema.ts';
 
 test('本地存储写入统一 schema version，并能读取当前版本', () => {
@@ -17,6 +18,29 @@ test('本地存储写入统一 schema version，并能读取当前版本', () =>
   assert.deepEqual(decoded.value, value);
   assert.equal(decoded.needsRewrite, false);
   assert.equal(decoded.blocked, false);
+});
+
+test('读取 future schema 后，用户写操作被拒绝且原始值保持不变', async () => {
+  const cases = [
+    ['@guanxiang/profiles', [{ id: 'future-profile' }], [{ id: 'new-profile' }]],
+    ['@guanxiang/selected-profile', 'future-profile', 'new-profile'],
+    ['@guanxiang/readings', [{ id: 'future-reading' }], [{ id: 'new-reading' }]],
+  ];
+
+  for (const [key, futureValue, replacementValue] of cases) {
+    const original = JSON.stringify({ schemaVersion: STORAGE_SCHEMA_VERSION + 1, value: futureValue });
+    const storage = new Map([[key, original]]);
+    const decoded = decodeStorageValue(storage.get(key), null, (input) => input);
+    const blockedKeys = new Set(decoded.blocked ? [key] : []);
+
+    assert.throws(
+      () => writeStorageValue(key, replacementValue, blockedKeys, async (storageKey, value) => {
+        storage.set(storageKey, value);
+      }),
+      /read-only/,
+    );
+    assert.equal(storage.get(key), original);
+  }
 });
 
 test('旧版未版本化命盘记录会迁移出 inputSnapshot 与 snapshotMeta', () => {
@@ -51,6 +75,8 @@ test('旧版未版本化命盘记录会迁移出 inputSnapshot 与 snapshotMeta'
   assert.equal(reading.seed, 'legacy-unknown');
   assert.equal(reading.date, '2026-01-01T00:00:00.000Z');
   assert.equal(reading.seedScope, 'legacy');
+  assert.deepEqual(reading.snapshotMeta.calculationSettings, { timezone: 'Asia/Shanghai' });
+  assert.equal(reading.inputSnapshot.timezone, 'Asia/Shanghai');
 });
 
 test('未来 schema 不会被当前版本覆盖', () => {

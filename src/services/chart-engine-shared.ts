@@ -1,5 +1,5 @@
-import { CHART_SNAPSHOT_VERSION } from '@/types/charts';
-import type { BirthInputSnapshot } from '@/types/charts';
+import { CHART_SNAPSHOT_VERSION, DEFAULT_CALCULATION_TIMEZONE } from '@/types/charts';
+import type { BirthInputSnapshot, CalculationSettings, CalculationTimezone } from '@/types/charts';
 import type { BirthProfile, Gender } from '@/types/domain';
 
 export const ENGINE_VERSIONS = {
@@ -46,15 +46,30 @@ export interface CalculationOptions {
   seed?: string;
   /** Fixed local ISO date used for Liuyao ganzhi and strength calculation. */
   date?: string;
+  /** Civil-time timezone for all calculations. The first release fixes this to Asia/Shanghai. */
+  timezone?: CalculationTimezone;
+}
+
+export function calculationSettings(options?: CalculationOptions): CalculationSettings {
+  const timezone = options?.timezone ?? DEFAULT_CALCULATION_TIMEZONE;
+  if (timezone !== DEFAULT_CALCULATION_TIMEZONE) {
+    throw new Error(`当前版本仅支持 ${DEFAULT_CALCULATION_TIMEZONE}，不允许依赖设备或服务器时区。`);
+  }
+  return { timezone };
 }
 
 export function generatedAt(options?: CalculationOptions) {
   return options?.generatedAt ?? new Date().toISOString();
 }
 
-export function birthInputSnapshot(profile: BirthProfile, gender?: Gender): BirthInputSnapshot {
+export function birthInputSnapshot(
+  profile: BirthProfile,
+  gender?: Gender,
+  settings: CalculationSettings = { timezone: DEFAULT_CALCULATION_TIMEZONE },
+): BirthInputSnapshot {
   const snapshot: BirthInputSnapshot = {
     type: 'birth',
+    timezone: settings.timezone,
     profileId: profile.id,
     birthDate: profile.birthDate,
     timeKnown: profile.timeKnown,
@@ -68,6 +83,56 @@ export function birthInputSnapshot(profile: BirthProfile, gender?: Gender): Birt
   if (profile.latitude !== undefined) snapshot.latitude = profile.latitude;
   if (profile.longitude !== undefined) snapshot.longitude = profile.longitude;
   return snapshot;
+}
+
+function formatDateInTimezone(value: Date, timezone: CalculationTimezone): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    calendar: 'gregory',
+    numberingSystem: 'latn',
+    timeZone: timezone,
+    hourCycle: 'h23',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).formatToParts(value);
+  const values = Object.fromEntries(
+    parts.filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]),
+  );
+  const hour = values.hour === '24' ? '00' : values.hour;
+  return `${values.year}-${values.month}-${values.day}T${hour}:${values.minute}:${values.second}`;
+}
+
+/**
+ * taibu-core currently parses a date string and then reads local Date getters.
+ * Passing a timezone-free civil timestamp makes those getters represent the
+ * already-normalized Asia/Shanghai wall clock, independent of the host TZ.
+ */
+export function normalizeLiuyaoDate(input: string, timezone: CalculationTimezone = DEFAULT_CALCULATION_TIMEZONE): string {
+  const normalized = input.trim().replace(' ', 'T');
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized)) {
+    const parsed = new Date(normalized);
+    if (Number.isNaN(parsed.getTime())) throw new Error('六爻日期无效，请检查年月日时分是否合理。');
+    return formatDateInTimezone(parsed, timezone);
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d{1,3})?$/.exec(normalized);
+  if (!match) throw new Error('六爻日期必须包含时间，请使用 ISO 时间或 YYYY-MM-DDTHH:MM[:SS]。');
+  const [, year, month, day, hour, minute, second = '00'] = match;
+  const check = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second)));
+  if (
+    check.getUTCFullYear() !== Number(year)
+    || check.getUTCMonth() !== Number(month) - 1
+    || check.getUTCDate() !== Number(day)
+    || check.getUTCHours() !== Number(hour)
+    || check.getUTCMinutes() !== Number(minute)
+    || check.getUTCSeconds() !== Number(second)
+  ) {
+    throw new Error('六爻日期无效，请检查年月日时分是否合理。');
+  }
+  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
 }
 
 export function birthParts(profile: BirthProfile): BirthParts {

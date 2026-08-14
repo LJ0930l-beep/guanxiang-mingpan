@@ -1,7 +1,7 @@
 import { calculateLiuyao } from 'taibu-core/liuyao';
 
 import type { LiuyaoChartView } from '@/types/charts';
-import { CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generatedAt, LIUYAO_SEED_SCOPE, strengthLabels } from '@/services/chart-engine-shared';
+import { calculationSettings, CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generatedAt, LIUYAO_SEED_SCOPE, normalizeLiuyaoDate, strengthLabels } from '@/services/chart-engine-shared';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 
 export async function calculateLiuyaoView(
@@ -11,12 +11,14 @@ export async function calculateLiuyaoView(
 ): Promise<LiuyaoChartView> {
   const seed = options?.seed ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const date = options?.date ?? new Date().toISOString();
+  const settings = calculationSettings(options);
+  const calculationDate = normalizeLiuyaoDate(date, settings.timezone);
   const seedScope = LIUYAO_SEED_SCOPE;
   const result = await calculateLiuyao({
     question,
     yongShenTargets: [target as '父母' | '兄弟' | '官鬼' | '妻财' | '子孙'],
     method: 'auto',
-    date,
+    date: calculationDate,
     seed,
     seedScope,
     detailLevel: 'more',
@@ -45,7 +47,8 @@ export async function calculateLiuyaoView(
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSIONS.liuyao,
-    inputSnapshot: { type: 'liuyao', question, target, seed, date, seedScope },
+    calculationSettings: settings,
+    inputSnapshot: { type: 'liuyao', timezone: settings.timezone, question, target, seed, date, seedScope },
     completeness: 'complete',
     caveats: ['一次起卦对应一个具体问题；基础版保留盘面证据，不代替现实决策。'],
     question,

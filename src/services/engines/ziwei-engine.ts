@@ -1,7 +1,7 @@
 import * as iztro from 'iztro/dist/iztro.min.js';
 
 import type { ZiweiChartView } from '@/types/charts';
-import { CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 
@@ -13,6 +13,7 @@ export function calculateZiweiView(
   requireExactBirth(profile);
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
+  const settings = calculationSettings(options);
   const timeIndex = parts.hour >= 23 ? 12 : parts.hour < 1 ? 0 : Math.floor((parts.hour + 1) / 2);
   const date = `${parts.year}-${parts.month}-${parts.day}`;
   const result = profile.calendar === 'lunar'
@@ -39,7 +40,8 @@ export function calculateZiweiView(
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSIONS.ziwei,
-    inputSnapshot: birthInputSnapshot(profile, gender),
+    calculationSettings: settings,
+    inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
     caveats: ['不同流派在安星与四化规则上存在差异，本版固定算法版本以便复盘。'],
     solarDate: result.solarDate,

@@ -1,8 +1,9 @@
-import { CHART_SNAPSHOT_VERSION } from '@/types/charts';
+import { CHART_SNAPSHOT_VERSION, DEFAULT_CALCULATION_TIMEZONE } from '@/types/charts';
 import type {
   ChartInputSnapshot,
   ChartPayload,
   ChartSnapshotMeta,
+  CalculationSettings,
   LiuyaoInputSnapshot,
 } from '@/types/charts';
 import type { BirthProfile, DivinationModule, LocalUser, SavedReading } from '@/types/domain';
@@ -36,6 +37,39 @@ export function encodeStorageValue<T>(value: T): string {
     value,
   };
   return JSON.stringify(record);
+}
+
+export class StorageWriteBlockedError extends Error {
+  readonly key: string;
+
+  constructor(key: string) {
+    super(`Storage key ${key} is read-only because it was written by a newer schema.`);
+    this.name = 'StorageWriteBlockedError';
+    this.key = key;
+  }
+}
+
+export function assertStorageWritable(key: string, blockedKeys: ReadonlySet<string>) {
+  if (blockedKeys.has(key)) throw new StorageWriteBlockedError(key);
+}
+
+export function writeStorageValue<T>(
+  key: string,
+  value: T,
+  blockedKeys: ReadonlySet<string>,
+  setItem: (key: string, value: string) => Promise<void>,
+) {
+  assertStorageWritable(key, blockedKeys);
+  return setItem(key, encodeStorageValue(value));
+}
+
+export function removeStorageValue(
+  key: string,
+  blockedKeys: ReadonlySet<string>,
+  removeItem: (key: string) => Promise<void>,
+) {
+  assertStorageWritable(key, blockedKeys);
+  return removeItem(key);
 }
 
 export function decodeStorageValue<T>(
@@ -85,13 +119,29 @@ export function migrateSelectedProfile(value: unknown): string | null {
 }
 
 function isInputSnapshot(value: unknown): value is ChartInputSnapshot {
-  return isRecord(value) && typeof value.type === 'string';
+  return isRecord(value) && ['birth', 'liuyao', 'legacy'].includes(String(value.type));
+}
+
+function migrateCalculationSettings(value: unknown): CalculationSettings {
+  if (isRecord(value) && value.timezone === DEFAULT_CALCULATION_TIMEZONE) {
+    return { timezone: DEFAULT_CALCULATION_TIMEZONE };
+  }
+  return { timezone: DEFAULT_CALCULATION_TIMEZONE };
+}
+
+function migrateInputSnapshot(value: unknown): ChartInputSnapshot | null {
+  if (!isInputSnapshot(value)) return null;
+  return {
+    ...value,
+    timezone: DEFAULT_CALCULATION_TIMEZONE,
+  } as unknown as ChartInputSnapshot;
 }
 
 function legacyInputSnapshot(module: DivinationModule, payload: RecordLike, reading: RecordLike): ChartInputSnapshot {
   if (module === 'liuyao') {
     const liuyao: LiuyaoInputSnapshot = {
       type: 'liuyao',
+      timezone: DEFAULT_CALCULATION_TIMEZONE,
       question: typeof payload.question === 'string' ? payload.question : '历史记录（问题未保存）',
       target: '历史记录（用神未保存）',
       seed: 'legacy-unknown',
@@ -102,6 +152,7 @@ function legacyInputSnapshot(module: DivinationModule, payload: RecordLike, read
   }
   return {
     type: 'legacy',
+    timezone: DEFAULT_CALCULATION_TIMEZONE,
     module,
     reason: 'pre-snapshot-v1 record; original input was not persisted',
   };
@@ -112,6 +163,7 @@ export function snapshotMetaFromPayload(payload: ChartPayload): ChartSnapshotMet
     snapshotVersion: payload.snapshotVersion,
     generatedAt: payload.generatedAt,
     engineVersion: payload.engineVersion,
+    calculationSettings: payload.calculationSettings,
     inputSnapshot: payload.inputSnapshot,
   };
 }
@@ -122,11 +174,10 @@ function migrateReading(value: unknown): SavedReading | null {
   const module = (value.module ?? rawPayload.module) as DivinationModule;
   if (!['bazi', 'liuyao', 'ziwei', 'astrology'].includes(module)) return null;
 
-  const inputSnapshot = isInputSnapshot(value.inputSnapshot)
-    ? value.inputSnapshot
-    : isInputSnapshot(rawPayload.inputSnapshot)
-      ? rawPayload.inputSnapshot
-      : legacyInputSnapshot(module, rawPayload, value);
+  const inputSnapshot = migrateInputSnapshot(value.inputSnapshot)
+    ?? migrateInputSnapshot(rawPayload.inputSnapshot)
+    ?? legacyInputSnapshot(module, rawPayload, value);
+  const calculationSettings = migrateCalculationSettings(value.calculationSettings ?? rawPayload.calculationSettings);
   const generatedAt = typeof value.createdAt === 'string'
     ? value.createdAt
     : typeof rawPayload.generatedAt === 'string'
@@ -137,13 +188,16 @@ function migrateReading(value: unknown): SavedReading | null {
     : typeof rawPayload.engineVersion === 'string'
       ? rawPayload.engineVersion
       : 'legacy-unknown';
+  const payloadInputSnapshot = migrateInputSnapshot(rawPayload.inputSnapshot) ?? inputSnapshot;
+  const payloadCalculationSettings = migrateCalculationSettings(rawPayload.calculationSettings ?? calculationSettings);
   const payload = {
     ...rawPayload,
     module,
     snapshotVersion: rawPayload.snapshotVersion ?? CHART_SNAPSHOT_VERSION,
     generatedAt: rawPayload.generatedAt ?? generatedAt,
     engineVersion: rawPayload.engineVersion ?? engineVersion,
-    inputSnapshot: rawPayload.inputSnapshot ?? inputSnapshot,
+    calculationSettings: payloadCalculationSettings,
+    inputSnapshot: payloadInputSnapshot,
     ...(module === 'liuyao'
       ? {
           seed: rawPayload.seed ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.seed : 'legacy-unknown'),
@@ -152,8 +206,14 @@ function migrateReading(value: unknown): SavedReading | null {
         }
       : {}),
   } as unknown as ChartPayload;
-  const snapshotMeta = isRecord(value.snapshotMeta) && isInputSnapshot(value.snapshotMeta.inputSnapshot)
-    ? value.snapshotMeta as unknown as ChartSnapshotMeta
+  const snapshotMeta = isRecord(value.snapshotMeta)
+    ? {
+        snapshotVersion: value.snapshotMeta.snapshotVersion ?? CHART_SNAPSHOT_VERSION,
+        generatedAt: value.snapshotMeta.generatedAt ?? generatedAt,
+        engineVersion: value.snapshotMeta.engineVersion ?? engineVersion,
+        calculationSettings: migrateCalculationSettings(value.snapshotMeta.calculationSettings ?? calculationSettings),
+        inputSnapshot: migrateInputSnapshot(value.snapshotMeta.inputSnapshot) ?? inputSnapshot,
+      } as ChartSnapshotMeta
     : snapshotMetaFromPayload(payload);
   const liuyaoPayload = module === 'liuyao' && payload.module === 'liuyao' ? payload : null;
 
