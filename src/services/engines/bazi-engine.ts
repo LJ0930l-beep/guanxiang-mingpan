@@ -1,10 +1,65 @@
 import { calculateBazi } from 'taibu-core/bazi';
 
+import { resolveBaziDayBoundary } from '@/domains/bazi/day-boundary';
 import { createBaziCalculationEvidence } from '@/domains/bazi/evidence';
 import type { BaziChartView } from '@/types/charts';
 import { baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
+
+function inputForBoundary(
+  profile: BirthProfile,
+  parts: ReturnType<typeof birthParts>,
+  gender: Gender,
+  resolution: ReturnType<typeof resolveBaziDayBoundary>,
+) {
+  const [effectiveYear, effectiveMonth, effectiveDay] = resolution.effectiveDate.split('-').map(Number);
+  return {
+    gender,
+    birthYear: resolution.shiftedToNextDate ? effectiveYear : parts.year,
+    birthMonth: resolution.shiftedToNextDate ? effectiveMonth : parts.month,
+    birthDay: resolution.shiftedToNextDate ? effectiveDay : parts.day,
+    birthHour: parts.hour,
+    birthMinute: parts.minute,
+    calendarType: profile.calendar,
+    isLeapMonth: resolution.shiftedToNextDate ? resolution.effectiveIsLeapMonth : profile.isLeapMonth,
+    birthPlace: profile.birthCity,
+  } as const;
+}
+
+function calculateWithDayBoundary(
+  profile: BirthProfile,
+  parts: ReturnType<typeof birthParts>,
+  gender: Gender,
+  resolution: ReturnType<typeof resolveBaziDayBoundary>,
+) {
+  const original = calculateBazi({
+    ...inputForBoundary(profile, parts, gender, resolution),
+    birthYear: parts.year,
+    birthMonth: parts.month,
+    birthDay: parts.day,
+    isLeapMonth: profile.isLeapMonth,
+  });
+  if (!resolution.shiftedToNextDate) return original;
+
+  const shifted = calculateBazi(inputForBoundary(profile, parts, gender, resolution));
+  const yearChanged = original.fourPillars.year.stem !== shifted.fourPillars.year.stem
+    || original.fourPillars.year.branch !== shifted.fourPillars.year.branch;
+  const monthChanged = original.fourPillars.month.stem !== shifted.fourPillars.month.stem
+    || original.fourPillars.month.branch !== shifted.fourPillars.month.branch;
+  return {
+    ...shifted,
+    // A day-boundary shift must not accidentally move the year/month pillar
+    // when 23:00 crosses a solar-term or lunar-new-year boundary.
+    fourPillars: {
+      ...shifted.fourPillars,
+      year: yearChanged ? { ...shifted.fourPillars.year, stem: original.fourPillars.year.stem, branch: original.fourPillars.year.branch, naYin: original.fourPillars.year.naYin } : shifted.fourPillars.year,
+      month: monthChanged ? { ...shifted.fourPillars.month, stem: original.fourPillars.month.stem, branch: original.fourPillars.month.branch, naYin: original.fourPillars.month.naYin } : shifted.fourPillars.month,
+    },
+    taiYuan: monthChanged ? original.taiYuan : shifted.taiYuan,
+    mingGong: yearChanged || monthChanged ? original.mingGong : shifted.mingGong,
+  };
+}
 
 export function calculateBaziView(
   profile: BirthProfile,
@@ -15,17 +70,8 @@ export function calculateBaziView(
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
   const settings = baziCalculationSettings(options);
-  const result = calculateBazi({
-    gender,
-    birthYear: parts.year,
-    birthMonth: parts.month,
-    birthDay: parts.day,
-    birthHour: parts.hour,
-    birthMinute: parts.minute,
-    calendarType: profile.calendar,
-    birthPlace: profile.birthCity,
-    longitude: profile.longitude,
-  });
+  const dayBoundaryResolution = resolveBaziDayBoundary(profile, settings);
+  const result = calculateWithDayBoundary(profile, parts, gender, dayBoundaryResolution);
   const order = [
     ['year', '年柱'],
     ['month', '月柱'],
@@ -52,10 +98,10 @@ export function calculateBaziView(
     generatedAt: generatedAt(options),
     engineVersion: ENGINE_VERSIONS.bazi,
     calculationSettings: settings,
-    calculationEvidence: createBaziCalculationEvidence(profile, settings),
+    calculationEvidence: createBaziCalculationEvidence(profile, settings, dayBoundaryResolution),
     inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
-    caveats: ['基础版展示结构证据，不直接给出吉凶定论。', 'P1-A 已记录换日、真太阳时、位置数据与历法解析版本；对应规则将在后续批次启用。'],
+    caveats: ['基础版展示结构证据，不直接给出吉凶定论。', 'P1-A～P1-C 已记录并应用日界线、节气、位置数据与历法解析版本；真太阳时仍将在 P1-D 启用。'],
     dayMaster: result.dayMaster,
     pillars,
     kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongZhi.join('、')}`,

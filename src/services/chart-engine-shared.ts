@@ -68,8 +68,8 @@ export function baziCalculationSettings(options?: CalculationOptions): BaziCalcu
     timezone: calculationSettings(options).timezone,
     ...options?.bazi,
   };
-  if (base.dayBoundary !== 'midnight') {
-    throw new Error('子初换日将在 P1-C 开放；当前八字计算只允许午夜换日。');
+  if (base.dayBoundary !== 'midnight' && base.dayBoundary !== 'ziEarly') {
+    throw new Error('八字日界线规则无效；当前仅支持 midnight 或 ziEarly。');
   }
   if (base.trueSolarTime || base.solarTimeModel !== 'none') {
     throw new Error('真太阳时将在 P1-D 开放；当前八字计算不接受真太阳时设置。');

@@ -28,6 +28,13 @@ was not applied.
 This baseline must be rechecked during the next compatible Expo/RN upgrade and
 before production submission; it is not a claim of zero production findings.
 
+## 2026-08-15 recheck
+
+`npm audit --omit=dev --audit-level=low` was rerun against the current lockfile.
+The result is unchanged: 0 critical, 18 high, 10 moderate, 0 low (28 total).
+No production dependency was force-upgraded because the suggested fixes still
+include incompatible Expo major changes.
+
 ## 2026-07-18 baseline
 
 Command:

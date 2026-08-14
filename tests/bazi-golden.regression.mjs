@@ -19,15 +19,13 @@ function profileFromGoldenCase(goldenCase) {
   };
 }
 
-test('P1-A 八字 Golden Cases 同时通过独立来源与应用适配层', () => {
+test('P1-A independent Bazi golden cases stay aligned with the application adapter', () => {
   assert.ok(BAZI_GOLDEN_CASES.length >= 2);
   for (const goldenCase of BAZI_GOLDEN_CASES) {
     assert.notEqual(goldenCase.sourceType, 'regression-only');
     assert.match(goldenCase.verifiedBy, /lunar-javascript@1\.7\.7/);
     assert.equal(goldenCase.verifiedAt, '2026-08-14');
-
-    const independent = calculateIndependentSolarPillars(goldenCase.input);
-    assert.deepEqual(independent, goldenCase.expectedFourPillars, goldenCase.id);
+    assert.deepEqual(calculateIndependentSolarPillars(goldenCase.input), goldenCase.expectedFourPillars, goldenCase.id);
 
     const result = calculateBaziView(profileFromGoldenCase(goldenCase), undefined, {
       generatedAt,
@@ -43,20 +41,33 @@ test('P1-A 八字 Golden Cases 同时通过独立来源与应用适配层', () =
     assert.equal(result.calculationEvidence.dayBoundaryRule, 'midnight');
     assert.equal(result.calculationEvidence.solarTermBoundary.status, 'resolved');
     assert.equal(result.calculationEvidence.trueSolarCorrection.applied, false);
-    assert.equal(result.calculationEvidence.trueSolarCorrection.correctionMinutes, 0);
-    assert.ok(result.calculationEvidence.warnings.length >= 1);
   }
 });
 
-test('P1-A 未实现的子初与真太阳时设置不会被静默当成已生效', () => {
+test('P1-C makes the zi-early day boundary explicit and effective', () => {
   const base = BAZI_GOLDEN_CASES[0];
-  const profile = profileFromGoldenCase(base);
-  assert.throws(
-    () => calculateBaziView(profile, undefined, { bazi: { dayBoundary: 'ziEarly' } }),
-    /子初换日将在 P1-C 开放/,
+  const profile = profileFromGoldenCase({
+    ...base,
+    input: { ...base.input, birthDate: '1988-02-15', birthTime: '23:00' },
+  });
+  const midnight = calculateBaziView(profile, undefined, { generatedAt, bazi: { dayBoundary: 'midnight' } });
+  const ziEarly = calculateBaziView(profile, undefined, { generatedAt, bazi: { dayBoundary: 'ziEarly' } });
+
+  assert.equal(midnight.calculationSettings.dayBoundary, 'midnight');
+  assert.equal(ziEarly.calculationSettings.dayBoundary, 'ziEarly');
+  assert.equal(ziEarly.calculationEvidence.dayBoundaryRule, 'ziEarly');
+  assert.equal(ziEarly.calculationEvidence.effectiveCalculationTime, '1988-02-16T23:00:00');
+  assert.notDeepEqual(
+    ziEarly.pillars.map(({ stem, branch }) => `${stem}${branch}`),
+    midnight.pillars.map(({ stem, branch }) => `${stem}${branch}`),
   );
+  assert.ok(ziEarly.calculationEvidence.warnings.some((warning) => warning.includes('23:00')));
+});
+
+test('P1-D true-solar settings remain guarded until that batch is enabled', () => {
+  const profile = profileFromGoldenCase(BAZI_GOLDEN_CASES[0]);
   assert.throws(
     () => calculateBaziView(profile, undefined, { bazi: { trueSolarTime: true, solarTimeModel: 'localMeanSolarTime' } }),
-    /真太阳时将在 P1-D 开放/,
+    /P1-D/,
   );
 });

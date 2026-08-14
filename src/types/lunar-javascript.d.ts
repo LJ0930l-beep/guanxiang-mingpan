@@ -8,14 +8,26 @@ declare module 'lunar-javascript' {
     getDayZhi(): string;
     getTimeGan(): string;
     getTimeZhi(): string;
+    setSect(sect: number): void;
   }
 
   interface Lunar {
     getEightChar(): EightChar;
+    next(days: number): Lunar;
+    getYear(): number;
+    getMonth(): number;
+    getDay(): number;
+    getSolar(): SolarValue;
   }
 
   interface SolarValue {
     getLunar(): Lunar;
+    getYear(): number;
+    getMonth(): number;
+    getDay(): number;
+    getHour(): number;
+    getMinute(): number;
+    getSecond(): number;
   }
 
   interface SolarTermValue {
@@ -37,5 +49,6 @@ declare module 'lunar-javascript' {
 
   export const Lunar: {
     fromYmd(year: number, month: number, day: number): LunarValue;
+    fromYmdHms(year: number, month: number, day: number, hour: number, minute: number, second: number): Lunar;
   };
 }

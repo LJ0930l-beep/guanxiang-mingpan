@@ -32,6 +32,7 @@ import type {
   LiuyaoChartView,
   ZiweiChartView,
 } from '@/types/charts';
+import type { BaziDayBoundary } from '@/domains/bazi/types';
 import type { BirthProfile, DivinationModule, Gender } from '@/types/domain';
 
 const moduleIntro: Record<DivinationModule, { step: string; action: string }> = {
@@ -156,6 +157,32 @@ function GenderSelector({ value, onChange }: { value: Gender; onChange: (value: 
   );
 }
 
+function BaziDayBoundarySelector({ value, onChange }: { value: BaziDayBoundary; onChange: (value: BaziDayBoundary) => void }) {
+  return (
+    <View style={styles.fieldBlock}>
+      <Text style={styles.fieldLabel}>日界线规则</Text>
+      <View style={styles.segment}>
+        {([
+          ['midnight', '午夜换日'],
+          ['ziEarly', '子初换日'],
+        ] as const).map(([item, label]) => (
+          <Pressable
+            accessibilityRole="radio"
+            accessibilityState={{ selected: value === item }}
+            key={item}
+            onPress={() => onChange(item)}
+            style={[styles.segmentItem, value === item && styles.segmentItemActive]}>
+            <Text style={[styles.segmentText, value === item && styles.segmentTextActive]}>{label}</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Text style={styles.fieldHint}>
+        午夜换日从 00:00 起切换；子初换日从 23:00 起按次日柱与次日时柱计算。切换规则会改变日柱、时柱，并写入本次命盘快照。
+      </Text>
+    </View>
+  );
+}
+
 function WorkspacePanel({ children }: { children: React.ReactNode }) {
   return <AnimatedReveal delay={120} style={styles.workspacePanel}>{children}</AnimatedReveal>;
 }
@@ -195,12 +222,13 @@ function FocusList({ items }: { items: string[] }) {
 function BaziWorkspace({ profile }: { profile: BirthProfile }) {
   const { saveReading } = useApp();
   const [gender, setGender] = useState<Gender>(profile.gender ?? 'female');
+  const [dayBoundary, setDayBoundary] = useState<BaziDayBoundary>('midnight');
   const [result, setResult] = useState<BaziChartView | null>(null);
   const [error, setError] = useState('');
   const run = async () => {
     try {
       setError('');
-      const next = calculateBaziView(profile, gender);
+      const next = calculateBaziView(profile, gender, { bazi: { dayBoundary } });
       setResult(next);
       await saveReading({ profile, payload: next, title: `${next.dayMaster}日主 · 四柱命盘`, summary: next.focus[0] });
     } catch (reason) {
@@ -211,6 +239,7 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
     <WorkspacePanel>
       <View style={styles.workspaceHeading}><View><Text style={styles.workspaceKicker}>PILLAR CALIBRATION</Text><Text style={styles.workspaceTitle}>让四柱依次落位</Text></View><Text style={styles.workspaceMeta}>年 · 月 · 日 · 时</Text></View>
       {!profile.gender && <GenderSelector onChange={setGender} value={gender} />}
+      <BaziDayBoundarySelector onChange={setDayBoundary} value={dayBoundary} />
       <Text style={styles.workspaceDescription}>以保存的历法、日期与时辰排出天干地支、十神、藏干、纳音及柱间关系。</Text>
       <ErrorNotice message={error} />
       <ActionButton accessibilityLabel="排出八字四柱" onPress={run}>{result ? '重新排盘' : '排出四柱'}</ActionButton>
@@ -240,6 +269,10 @@ function BaziResult({ result }: { result: BaziChartView }) {
       <View style={styles.evidenceStrip}>
         <Text style={styles.evidenceLabel}>月柱依据</Text>
         <Text style={styles.evidenceValue}>{result.calculationEvidence.solarTermBoundary.currentMonthBasis ?? result.calculationEvidence.solarTermBoundary.note}</Text>
+      </View>
+      <View style={styles.evidenceStrip}>
+        <Text style={styles.evidenceLabel}>日界线</Text>
+        <Text style={styles.evidenceValue}>{result.calculationEvidence.dayBoundaryRule} · {result.calculationEvidence.effectiveCalculationTime}</Text>
       </View>
       {!!result.relations.length && <View style={styles.tagWrap}>{result.relations.map((item, index) => <Text key={`${item}-${index}`} style={styles.evidenceTag}>{item}</Text>)}</View>}
       <FocusList items={result.focus} />
