@@ -1,15 +1,23 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/action-button';
+import { ArchiveFilterBar } from '@/components/archive-filter-bar';
 import { AnimatedReveal } from '@/components/animated-reveal';
 import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
 import { SnapshotViewer } from '@/components/snapshot-viewer';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
 import { moduleBySlug } from '@/data/modules';
+import {
+  compareArchiveReadings,
+  DEFAULT_ARCHIVE_FILTER_STATE,
+  filterArchiveReadings,
+  groupArchiveReadings,
+  type ArchiveFilterState,
+} from '@/domains/archive/query';
 import { diffBaziInterpretations } from '@/domains/bazi/interpretation/history';
 import { useScrollToTopOnMount } from '@/hooks/use-scroll-to-top-on-mount';
 import { calculateBaziView } from '@/services/chart-engine';
@@ -38,7 +46,9 @@ export function RecordsScreen() {
   useScrollToTopOnMount();
   const { readings, profiles, toggleFavorite, addFeedback, deleteFeedback, deleteReading, clearReadings, storageBlockedKeys } = useApp();
   const [expandedId, setExpandedId] = useState<string | null>(readings[0]?.id ?? null);
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [archiveFilter, setArchiveFilter] = useState<ArchiveFilterState>(DEFAULT_ARCHIVE_FILTER_STATE);
+  const [compareIds, setCompareIds] = useState<string[]>([]);
+  const [compareError, setCompareError] = useState('');
   const [feedbackTargetId, setFeedbackTargetId] = useState<string | null>(null);
   const [feedbackStatus, setFeedbackStatus] = useState<ReadingFeedbackStatus>('confirmed');
   const [feedbackObservedAt, setFeedbackObservedAt] = useState(todayShanghai());
@@ -47,7 +57,34 @@ export function RecordsScreen() {
   const [diffByReadingId, setDiffByReadingId] = useState<Record<string, ReturnType<typeof diffBaziInterpretations>>>({});
   const [diffError, setDiffError] = useState('');
   const recordsReadOnly = storageBlockedKeys.includes('@guanxiang/readings');
-  const visibleReadings = favoritesOnly ? readings.filter((reading) => reading.favorite) : readings;
+  const visibleReadings = useMemo(() => filterArchiveReadings(readings, archiveFilter), [archiveFilter, readings]);
+  const readingGroups = useMemo(() => groupArchiveReadings(visibleReadings, archiveFilter.groupBy), [archiveFilter.groupBy, visibleReadings]);
+  const compareLeft = compareIds.length === 2 ? readings.find((reading) => reading.id === compareIds[0]) : undefined;
+  const compareRight = compareIds.length === 2 ? readings.find((reading) => reading.id === compareIds[1]) : undefined;
+  const compareResult = compareLeft && compareRight ? compareArchiveReadings(compareLeft, compareRight) : undefined;
+
+  const updateArchiveFilter = (patch: Partial<ArchiveFilterState>) => {
+    setArchiveFilter((current) => ({ ...current, ...patch }));
+  };
+
+  const clearArchiveFilter = () => setArchiveFilter(DEFAULT_ARCHIVE_FILTER_STATE);
+
+  const toggleCompare = (readingId: string) => {
+    setCompareError('');
+    setCompareIds((current) => {
+      if (current.includes(readingId)) return current.filter((id) => id !== readingId);
+      if (current.length === 0) return [readingId];
+      const left = readings.find((reading) => reading.id === current[0]);
+      const right = readings.find((reading) => reading.id === readingId);
+      if (!left || !right) return [readingId];
+      const result = compareArchiveReadings(left, right);
+      if (!result.allowed) {
+        setCompareError(result.reason ?? '这两条记录暂时不能对比。');
+        return current;
+      }
+      return [current[0], readingId];
+    });
+  };
 
   const startFeedback = (readingId: string) => {
     setFeedbackTargetId((current) => current === readingId ? null : readingId);
@@ -186,8 +223,8 @@ export function RecordsScreen() {
             </View>
             <View style={styles.headerActions}>
               {readings.length > 0 && (
-                <Pressable accessibilityLabel={favoritesOnly ? '显示全部观象记录' : '只看收藏记录'} accessibilityRole="button" onPress={() => setFavoritesOnly((current) => !current)} style={({ pressed }) => [styles.filterButton, favoritesOnly && styles.filterButtonActive, pressed && styles.pressed]}>
-                  <Text style={styles.filterButtonText}>{favoritesOnly ? '全部记录' : '只看收藏'}</Text>
+                <Pressable accessibilityLabel={archiveFilter.favoritesOnly ? '显示全部观象记录' : '只看收藏记录'} accessibilityRole="button" onPress={() => updateArchiveFilter({ favoritesOnly: !archiveFilter.favoritesOnly })} style={({ pressed }) => [styles.filterButton, archiveFilter.favoritesOnly && styles.filterButtonActive, pressed && styles.pressed]}>
+                  <Text style={styles.filterButtonText}>{archiveFilter.favoritesOnly ? '全部记录' : '只看收藏'}</Text>
                 </Pressable>
               )}
               {readings.length > 0 && (
@@ -205,20 +242,54 @@ export function RecordsScreen() {
             <Text style={styles.readOnlyText}>这份数据由更新版本写入，当前版本不会覆盖它。请先升级应用后再删除或清空。</Text>
           </View>
         )}
+        {readings.length > 0 && <ArchiveFilterBar filter={archiveFilter} profiles={profiles} onChange={updateArchiveFilter} onClear={clearArchiveFilter} />}
+        {compareIds.length > 0 && (
+          <View style={styles.comparePanel}>
+            <View style={styles.compareHeader}>
+              <View>
+                <Text style={styles.compareTitle}>只读对比</Text>
+                <Text style={styles.compareHint}>{compareIds.length === 1 ? '再选择一条同命主、同模块记录' : '不会重算，也不会创建新记录'}</Text>
+              </View>
+              <Pressable accessibilityLabel="清除对比选择" accessibilityRole="button" onPress={() => { setCompareIds([]); setCompareError(''); }} style={({ pressed }) => [styles.compareClear, pressed && styles.pressed]}>
+                <Text style={styles.compareClearText}>清除</Text>
+              </Pressable>
+            </View>
+            {!!compareError && <Text style={styles.compareError}>{compareError}</Text>}
+            {compareResult?.allowed && (
+              <View style={styles.compareFields}>
+                {compareResult.fields.length === 0 ? (
+                  <Text style={styles.compareEmpty}>两条记录的可比字段一致。</Text>
+                ) : compareResult.fields.map((field) => (
+                  <View key={field.key} style={styles.compareRow}>
+                    <Text style={styles.compareLabel}>{field.label}</Text>
+                    <View style={styles.compareValueColumn}>
+                      <Text style={styles.compareOld}>{field.oldValue}</Text>
+                      <Text style={styles.compareNew}>{field.newValue}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
         {readings.length === 0 || visibleReadings.length === 0 ? (
           <View style={styles.empty}>
             <MaterialCommunityIcons color={palette.brass} name="archive-clock-outline" size={34} />
-            <Text style={styles.emptyTitle}>{favoritesOnly ? '还没有收藏记录' : '还没有排盘记录'}</Text>
-            <Text style={styles.emptyText}>{favoritesOnly ? '在记录详情中点亮收藏，重要的盘会集中显示在这里。' : '从首页进入任一体系完成排盘后，结果会自动保存在这里。'}</Text>
+            <Text style={styles.emptyTitle}>{readings.length === 0 ? '还没有排盘记录' : '没有符合筛选的记录'}</Text>
+            <Text style={styles.emptyText}>{readings.length === 0 ? '从首页进入任一体系完成排盘后，结果会自动保存在这里。' : '试试清除筛选，或换一个关键词、时间范围和反馈状态。'}</Text>
           </View>
         ) : (
           <View style={styles.list}>
-            {visibleReadings.map((reading, index) => {
-              const module = moduleBySlug[reading.module];
-              const expanded = reading.id === expandedId;
-              const feedbackList = reading.feedback ?? [];
-              return (
-                <AnimatedReveal delay={Math.min(index, 6) * 55} key={reading.id}>
+            {readingGroups.map((group, groupIndex) => (
+              <View key={group.key} style={styles.group}>
+                {!!group.label && <Text style={styles.groupLabel}>{group.label}</Text>}
+                {group.readings.map((reading, index) => {
+                  const module = moduleBySlug[reading.module];
+                  const expanded = reading.id === expandedId;
+                  const feedbackList = reading.feedback ?? [];
+                  const compareSelected = compareIds.includes(reading.id);
+                  return (
+                  <AnimatedReveal delay={Math.min(groupIndex * 3 + index, 6) * 55} key={reading.id}>
                   <Pressable
                     accessibilityLabel={`${expanded ? '收起' : '展开'}${reading.title}排盘记录`}
                     accessibilityRole="button"
@@ -226,7 +297,7 @@ export function RecordsScreen() {
                     style={({ pressed }) => [styles.card, expanded && styles.cardExpanded, pressed && styles.pressed]}>
                     <View style={[styles.moduleMark, { borderColor: module.accent }]}><Text style={[styles.moduleGlyph, { color: module.accent }]}>{module.glyph}</Text></View>
                     <View style={styles.cardCopy}>
-                      <View style={styles.cardTop}><Text style={styles.moduleName}>{module.title} · {reading.profileName}</Text><Text style={styles.date}>{new Date(reading.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Text></View>
+                      <View style={styles.cardTop}><Text style={styles.moduleName}>{module.title} · {reading.profileName}</Text><View style={styles.cardMeta}><Text style={styles.date}>{new Date(reading.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Text><Pressable accessibilityLabel={compareSelected ? `取消对比${reading.title}` : `选择${reading.title}进行对比`} accessibilityRole="button" onPress={(event) => { event.stopPropagation(); toggleCompare(reading.id); }} style={({ pressed }) => [styles.compareToggle, compareSelected && styles.compareToggleActive, pressed && styles.pressed]}><Text style={[styles.compareToggleText, compareSelected && styles.compareToggleTextActive]}>{compareSelected ? '已选' : '对比'}</Text></Pressable></View></View>
                       <Text style={styles.cardTitle}>{reading.title}</Text>
                       <Text style={styles.cardSummary}>{reading.summary}</Text>
                       {expanded && (
@@ -289,9 +360,11 @@ export function RecordsScreen() {
                     </View>
                     <MaterialCommunityIcons color={palette.ashGreen} name={expanded ? 'chevron-up' : 'chevron-down'} size={20} />
                   </Pressable>
-                </AnimatedReveal>
-              );
-            })}
+                  </AnimatedReveal>
+                  );
+                })}
+              </View>
+            ))}
           </View>
         )}
       </ScrollView>
@@ -315,21 +388,42 @@ const styles = StyleSheet.create({
   filterButton: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   filterButtonActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },
   filterButtonText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },
+  comparePanel: { marginTop: spacing.x4, borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.card, backgroundColor: 'rgba(16,42,33,0.72)', padding: spacing.x4 },
+  compareHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.x3 },
+  compareTitle: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 16 },
+  compareHint: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
+  compareClear: { minHeight: 30, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x2 },
+  compareClearText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
+  compareError: { marginTop: spacing.x3, color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
+  compareFields: { marginTop: spacing.x3, borderTopWidth: 1, borderColor: palette.hairline },
+  compareEmpty: { marginTop: spacing.x3, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11 },
+  compareRow: { flexDirection: 'row', gap: spacing.x3, borderBottomWidth: 1, borderColor: palette.hairline, paddingVertical: spacing.x2 },
+  compareLabel: { width: 74, color: palette.patina, fontFamily: fontFamilies.body, fontSize: 10 },
+  compareValueColumn: { flex: 1, gap: spacing.x1 },
+  compareOld: { color: '#C9A58E', fontFamily: fontFamilies.body, fontSize: 11 },
+  compareNew: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },
   readOnlyBanner: { marginTop: spacing.x5, borderWidth: 1, borderColor: 'rgba(216, 137, 120, 0.48)', borderRadius: radii.card, backgroundColor: 'rgba(120, 48, 36, 0.14)', padding: spacing.x4 },
   readOnlyTitle: { color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 13, fontWeight: '600' },
   readOnlyText: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   empty: { marginTop: spacing.x8, alignItems: 'center', borderWidth: 1, borderStyle: 'dashed', borderColor: palette.hairline, borderRadius: radii.panel, padding: spacing.x10 },
   emptyTitle: { marginTop: spacing.x3, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 20 },
   emptyText: { maxWidth: 380, marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 20, textAlign: 'center' },
-  list: { marginTop: spacing.x6, gap: spacing.x3 },
+  list: { marginTop: spacing.x6, gap: spacing.x4 },
+  group: { gap: spacing.x3 },
+  groupLabel: { color: palette.brass, fontFamily: fontFamilies.display, fontSize: 15, letterSpacing: 1 },
   card: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x3, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.card, backgroundColor: 'rgba(8,26,22,0.88)', padding: spacing.x4 },
   cardExpanded: { borderColor: palette.hairlineStrong },
   moduleMark: { width: 44, height: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 22, backgroundColor: palette.obsidian },
   moduleGlyph: { fontFamily: fontFamilies.display, fontSize: 16 },
   cardCopy: { flex: 1, minWidth: 0 },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.x2 },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.x2 },
   moduleName: { flex: 1, color: palette.brass, fontFamily: fontFamilies.body, fontSize: 10 },
   date: { color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9 },
+  compareToggle: { minHeight: 28, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x2 },
+  compareToggleActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },
+  compareToggleText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 9 },
+  compareToggleTextActive: { color: palette.paleBrass },
   cardTitle: { marginTop: spacing.x2, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 18 },
   cardSummary: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   detail: { marginTop: spacing.x4, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x2 },
