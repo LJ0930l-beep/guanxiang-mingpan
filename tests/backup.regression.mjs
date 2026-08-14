@@ -96,7 +96,20 @@ test('本机备份拒绝重复 ID，避免恢复后覆盖数据', () => {
 
 test('本机备份拒绝同一记录下重复的反馈 ID', () => {
   const duplicateFeedback = { ...reading, feedback: [reading.feedback[0], reading.feedback[0]] };
-  const raw = createLocalBackupText({ user: null, profiles: [profile], selectedProfileId: profile.id, readings: [duplicateFeedback] });
+  const rawDocument = JSON.parse(createLocalBackupText({ user: null, profiles: [profile], selectedProfileId: profile.id, readings: [reading] }));
+  rawDocument.data.readings[0] = duplicateFeedback;
+  const raw = JSON.stringify(rawDocument);
 
   assert.throws(() => parseLocalBackupText(raw), /重复的反馈 ID/);
+});
+
+test('P3-D 导出前的 Archive Integrity 拒绝孤儿记录和模块错配', () => {
+  assert.throws(
+    () => createLocalBackupText({ user: null, profiles: [profile], selectedProfileId: profile.id, readings: [{ ...reading, profileId: 'missing-profile' }] }),
+    /找不到命主/,
+  );
+  assert.throws(
+    () => createLocalBackupText({ user: null, profiles: [profile], selectedProfileId: profile.id, readings: [{ ...reading, payload: { ...reading.payload, module: 'bazi' } }] }),
+    /模块与保存结果不一致/,
+  );
 });

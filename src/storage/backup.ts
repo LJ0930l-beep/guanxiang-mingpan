@@ -138,6 +138,7 @@ function validateReadings(value: unknown): SavedReading[] {
 }
 
 export function createLocalBackupText(data: LocalBackupData, exportedAt = new Date().toISOString()): string {
+  validateArchiveIntegrity(data);
   const document: LocalBackupDocument = {
     format: LOCAL_BACKUP_FORMAT,
     backupVersion: LOCAL_BACKUP_VERSION,
@@ -146,6 +147,31 @@ export function createLocalBackupText(data: LocalBackupData, exportedAt = new Da
     data,
   };
   return `${JSON.stringify(document, null, 2)}\n`;
+}
+
+/**
+ * Validate cross-record references before a backup leaves the device. This is
+ * deliberately independent of the JSON decoder so export and import share the
+ * same archive invariants.
+ */
+export function validateArchiveIntegrity(data: LocalBackupData): void {
+  const profileIds = new Set(data.profiles.map((profile) => profile.id));
+  if (data.selectedProfileId !== null && !profileIds.has(data.selectedProfileId)) {
+    throw new BackupFormatError('本地档案的当前命主选择无效。');
+  }
+  const readingIds = new Set<string>();
+  for (const reading of data.readings) {
+    if (readingIds.has(reading.id)) throw new BackupFormatError('本地档案中存在重复的记录 ID。');
+    readingIds.add(reading.id);
+    if (!profileIds.has(reading.profileId)) throw new BackupFormatError('本地档案中存在找不到命主的记录。');
+    if (reading.payload.module !== reading.module) throw new BackupFormatError('记录模块与保存结果不一致。');
+    const feedbackIds = new Set<string>();
+    for (const feedback of reading.feedback ?? []) {
+      if (feedbackIds.has(feedback.id)) throw new BackupFormatError('同一记录中存在重复的反馈 ID。');
+      feedbackIds.add(feedback.id);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(feedback.observedAt)) throw new BackupFormatError('事实反馈必须使用日级日期。');
+    }
+  }
 }
 
 export function parseLocalBackupText(raw: string): LocalBackupDocument {
@@ -173,16 +199,18 @@ export function parseLocalBackupText(raw: string): LocalBackupDocument {
     throw new BackupFormatError('备份文件中的当前命主不存在。');
   }
 
+  const data: LocalBackupData = {
+    user: validateUser(parsed.data.user),
+    profiles,
+    selectedProfileId,
+    readings: validateReadings(parsed.data.readings),
+  };
+  validateArchiveIntegrity(data);
   return {
     format: LOCAL_BACKUP_FORMAT,
     backupVersion: LOCAL_BACKUP_VERSION,
     storageSchemaVersion: STORAGE_SCHEMA_VERSION,
     exportedAt: parsed.exportedAt,
-    data: {
-      user: validateUser(parsed.data.user),
-      profiles,
-      selectedProfileId,
-      readings: validateReadings(parsed.data.readings),
-    },
+    data,
   };
 }
