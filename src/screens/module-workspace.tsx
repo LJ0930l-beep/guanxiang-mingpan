@@ -302,6 +302,94 @@ function BaziEvidencePanel({ result }: { result: BaziChartView }) {
   );
 }
 
+function formatEvidenceFacts(facts: Record<string, unknown>): string {
+  return Object.entries(facts)
+    .filter(([, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${key}=${Array.isArray(value) ? value.join('、') : String(value)}`)
+    .join(' · ');
+}
+
+function BaziInterpretationExplorer({ result }: { result: BaziChartView }) {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [rawEvidenceId, setRawEvidenceId] = useState<string | null>(null);
+  const evidenceById = new Map(result.evidenceGraph.nodes.map((node) => [node.id, node]));
+  const confidenceLabel = { high: '高置信', medium: '中置信', low: '低置信' } as const;
+  return (
+    <View style={styles.interpretationExplorer}>
+      <View style={styles.interpretationHeading}>
+        <View>
+          <Text style={styles.resultSectionKicker}>INTERPRETATION LAYERS</Text>
+          <Text style={styles.interpretationTitle}>深度判断</Text>
+        </View>
+        <Text style={styles.interpretationVersion}>{result.interpretation.interpretationVersion}</Text>
+      </View>
+      <View style={styles.strengthOverview}>
+        <View style={styles.strengthStatusSeal}>
+          <Text style={styles.strengthStatusText}>
+            {result.strengthAssessment.status === 'strong' ? '偏强' : result.strengthAssessment.status === 'weak' ? '偏弱' : result.strengthAssessment.status === 'balanced' ? '平衡' : '待定'}
+          </Text>
+          <Text style={styles.strengthConfidence}>{confidenceLabel[result.strengthAssessment.confidence]}</Text>
+        </View>
+        <View style={styles.strengthOverviewCopy}>
+          <Text style={styles.strengthOverviewTitle}>先看结论，再查看依据</Text>
+          <Text style={styles.strengthOverviewText}>{result.interpretation.results[0]?.conclusion}</Text>
+        </View>
+      </View>
+      {!!result.interpretation.structureTags.length && (
+        <View style={styles.structureTagRow}>
+          {result.interpretation.structureTags.map((tag) => <Text key={tag.id} style={styles.structureTag}>{tag.label}</Text>)}
+        </View>
+      )}
+      <View style={styles.interpretationList}>
+        {result.interpretation.results.map((item) => {
+          const expanded = expandedId === item.id;
+          const refs = [...item.evidenceRefs, ...item.counterEvidenceRefs.filter((ref) => !item.evidenceRefs.includes(ref))];
+          return (
+            <View key={item.id} style={styles.interpretationCard}>
+              <Pressable
+                accessibilityLabel={`${expanded ? '收起' : '展开'}${item.title}判断依据`}
+                accessibilityRole="button"
+                accessibilityState={{ expanded }}
+                onPress={() => setExpandedId((current) => current === item.id ? null : item.id)}
+                style={({ pressed }) => [styles.interpretationCardHeader, pressed && styles.pressed]}>
+                <View style={styles.interpretationCardCopy}>
+                  <View style={styles.interpretationCardTitleRow}><Text style={styles.interpretationCardTitle}>{item.title}</Text><Text style={styles.confidenceChip}>{confidenceLabel[item.confidence]}</Text></View>
+                  <Text style={styles.interpretationConclusion}>{item.conclusion}</Text>
+                </View>
+                <Text style={styles.interpretationToggle}>{expanded ? '收起' : '查看依据'}</Text>
+              </Pressable>
+              {expanded && (
+                <View style={styles.interpretationEvidenceList}>
+                  {refs.length === 0 && <Text style={styles.emptyEvidenceText}>本条没有可展开的证据节点。</Text>}
+                  {refs.map((ref) => {
+                    const node = evidenceById.get(ref);
+                    if (!node) return null;
+                    const isCounter = item.counterEvidenceRefs.includes(ref);
+                    const rawOpen = rawEvidenceId === ref;
+                    return (
+                      <View key={ref} style={styles.evidenceReference}>
+                        <View style={styles.evidenceReferenceHeader}>
+                          <Text style={[styles.evidenceReferenceType, isCounter && styles.evidenceReferenceCounter]}>{isCounter ? '反证' : '依据'}</Text>
+                          <Text style={styles.evidenceReferenceLabel}>{node.label}</Text>
+                          <Pressable accessibilityLabel={`${rawOpen ? '收起' : '展开'}证据${ref}`} accessibilityRole="button" onPress={() => setRawEvidenceId((current) => current === ref ? null : ref)} style={({ pressed }) => [styles.evidenceReferenceAction, pressed && styles.pressed]}>
+                            <Text style={styles.evidenceReferenceActionText}>{rawOpen ? '收起' : '原始证据'}</Text>
+                          </Pressable>
+                        </View>
+                        {rawOpen && <View style={styles.rawEvidence}><Text style={styles.rawEvidenceId}>{ref}</Text><Text style={styles.rawEvidenceFacts}>{formatEvidenceFacts(node.facts)}</Text><Text style={styles.rawEvidenceRule}>规则 {node.ruleVersion} · 来源 {node.source}</Text></View>}
+                      </View>
+                    );
+                  })}
+                  {item.caveats.map((caveat) => <Text key={caveat} style={styles.interpretationCaveat}>提示：{caveat}</Text>)}
+                </View>
+              )}
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 function FocusList({ items }: { items: string[] }) {
   return (
     <View style={styles.focusList}>
@@ -378,6 +466,7 @@ function BaziResult({ result }: { result: BaziChartView }) {
         <Text style={styles.evidenceLabel}>真太阳时</Text>
         <Text style={styles.evidenceValue}>{result.calculationEvidence.trueSolarCorrection.applied ? `${result.calculationEvidence.trueSolarCorrection.model} · ${result.calculationEvidence.trueSolarCorrection.correctionMinutes} 分钟` : '未启用'}</Text>
       </View>
+      <BaziInterpretationExplorer result={result} />
       <BaziEvidencePanel result={result} />
       {!!result.relations.length && <View style={styles.tagWrap}>{result.relations.map((item, index) => <Text key={`${item}-${index}`} style={styles.evidenceTag}>{item}</Text>)}</View>}
       <FocusList items={result.focus} />
@@ -665,6 +754,43 @@ const styles = StyleSheet.create({
   evidenceDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x3, borderBottomWidth: 1, borderColor: palette.hairline, paddingVertical: spacing.x3 },
   evidenceDetailLabel: { width: 72, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
   evidenceDetailValue: { flex: 1, color: palette.ricePaper, fontFamily: fontFamilies.data, fontSize: 10, lineHeight: 16 },
+  interpretationExplorer: { marginTop: spacing.x6, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x5 },
+  interpretationHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: spacing.x3 },
+  resultSectionKicker: { color: palette.brass, fontFamily: fontFamilies.data, fontSize: 8, letterSpacing: 1.8 },
+  interpretationTitle: { marginTop: spacing.x1, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 21 },
+  interpretationVersion: { color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9 },
+  strengthOverview: { marginTop: spacing.x4, flexDirection: 'row', alignItems: 'center', gap: spacing.x4, borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, backgroundColor: 'rgba(93,143,128,0.08)', padding: spacing.x4 },
+  strengthStatusSeal: { width: 72, height: 72, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.paleBrass, borderRadius: 36, backgroundColor: palette.deepJade },
+  strengthStatusText: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 20 },
+  strengthConfidence: { marginTop: 2, color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9 },
+  strengthOverviewCopy: { flex: 1 },
+  strengthOverviewTitle: { color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 12, fontWeight: '600' },
+  strengthOverviewText: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
+  structureTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x3 },
+  structureTag: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10, borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.pill, paddingHorizontal: spacing.x3, paddingVertical: spacing.x2 },
+  interpretationList: { marginTop: spacing.x4, gap: spacing.x2 },
+  interpretationCard: { borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, backgroundColor: palette.obsidian },
+  interpretationCardHeader: { minHeight: 72, flexDirection: 'row', alignItems: 'center', gap: spacing.x3, paddingHorizontal: spacing.x4, paddingVertical: spacing.x3 },
+  interpretationCardCopy: { flex: 1 },
+  interpretationCardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.x2 },
+  interpretationCardTitle: { color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 15 },
+  confidenceChip: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9, borderWidth: 1, borderColor: palette.patina, borderRadius: radii.pill, paddingHorizontal: spacing.x2, paddingVertical: 2 },
+  interpretationConclusion: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
+  interpretationToggle: { flexShrink: 0, color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10 },
+  interpretationEvidenceList: { borderTopWidth: 1, borderColor: palette.hairline, paddingHorizontal: spacing.x4, paddingBottom: spacing.x3 },
+  emptyEvidenceText: { paddingVertical: spacing.x3, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
+  evidenceReference: { borderBottomWidth: 1, borderColor: palette.hairline, paddingVertical: spacing.x3 },
+  evidenceReferenceHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.x2 },
+  evidenceReferenceType: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
+  evidenceReferenceCounter: { color: '#D88978' },
+  evidenceReferenceLabel: { flex: 1, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
+  evidenceReferenceAction: { minHeight: 28, justifyContent: 'center' },
+  evidenceReferenceActionText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 9 },
+  rawEvidence: { marginTop: spacing.x2, borderLeftWidth: 1, borderLeftColor: palette.patina, backgroundColor: 'rgba(93,143,128,0.06)', padding: spacing.x3 },
+  rawEvidenceId: { color: palette.brass, fontFamily: fontFamilies.data, fontSize: 8, lineHeight: 13 },
+  rawEvidenceFacts: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9, lineHeight: 15 },
+  rawEvidenceRule: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 14 },
+  interpretationCaveat: { marginTop: spacing.x2, color: '#C5A878', fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 17 },
   tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x3 },
   evidenceTag: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.pill, paddingHorizontal: spacing.x3, paddingVertical: spacing.x2 },
   focusList: { marginTop: spacing.x6 },
