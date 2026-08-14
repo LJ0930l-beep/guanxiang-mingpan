@@ -12,11 +12,12 @@ Result:
 
 - Critical: 0
 - High: 18
-- Moderate: 9
+- Moderate: 10
 - Low: 0
-- Total: 27
+- Total: 28
 
-This is the production-only audit view, but Expo SDK 57 and React Native are
+This is the production-only audit view after adding the Expo 57 file, sharing
+and document-picker modules for local backup. Expo SDK 57 and React Native are
 runtime dependencies in this app, so their Metro/configuration dependency
 chain is included. The findings include `brace-expansion`, `image-size`,
 `js-yaml`, `nanoid`, `postcss`, `uuid` and the Expo/Metro/RN chain. The

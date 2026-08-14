@@ -1,0 +1,142 @@
+import { STORAGE_SCHEMA_VERSION } from '@/storage/schema';
+import type { BirthProfile, LocalUser, SavedReading } from '@/types/domain';
+
+export const LOCAL_BACKUP_FORMAT = 'guanxiang-local-backup' as const;
+export const LOCAL_BACKUP_VERSION = 1 as const;
+
+export interface LocalBackupData {
+  user: LocalUser | null;
+  profiles: BirthProfile[];
+  selectedProfileId: string | null;
+  readings: SavedReading[];
+}
+
+export interface LocalBackupDocument {
+  format: typeof LOCAL_BACKUP_FORMAT;
+  backupVersion: typeof LOCAL_BACKUP_VERSION;
+  storageSchemaVersion: typeof STORAGE_SCHEMA_VERSION;
+  exportedAt: string;
+  data: LocalBackupData;
+}
+
+export class BackupFormatError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'BackupFormatError';
+  }
+}
+
+type RecordLike = Record<string, unknown>;
+
+function isRecord(value: unknown): value is RecordLike {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0;
+}
+
+function requireString(value: unknown, label: string): string {
+  if (!isString(value)) throw new BackupFormatError(`备份文件缺少有效的${label}。`);
+  return value;
+}
+
+function validateUser(value: unknown): LocalUser | null {
+  if (value === null) return null;
+  if (!isRecord(value)) throw new BackupFormatError('备份文件中的账户资料无效。');
+  const provider = value.provider;
+  if (!isString(value.id) || !isString(value.displayName) || !['phone', 'apple', 'wechat'].includes(String(provider))) {
+    throw new BackupFormatError('备份文件中的账户资料无效。');
+  }
+  return value as unknown as LocalUser;
+}
+
+function validateProfiles(value: unknown): BirthProfile[] {
+  if (!Array.isArray(value)) throw new BackupFormatError('备份文件中的命主列表无效。');
+  const ids = new Set<string>();
+  return value.map((item) => {
+    if (!isRecord(item)) throw new BackupFormatError('备份文件中的命主资料无效。');
+    const id = requireString(item.id, '命主 ID');
+    if (ids.has(id)) throw new BackupFormatError('备份文件中存在重复的命主 ID。');
+    ids.add(id);
+    if (!isString(item.name) || !isString(item.birthDate) || !isString(item.birthCity) || !isString(item.createdAt) || !isString(item.updatedAt)) {
+      throw new BackupFormatError('备份文件中的命主资料不完整。');
+    }
+    if (!['本人', '伴侣', '家人', '朋友', '其他'].includes(String(item.relationship))) {
+      throw new BackupFormatError('备份文件中的命主关系无效。');
+    }
+    if (!['solar', 'lunar'].includes(String(item.calendar)) || typeof item.timeKnown !== 'boolean') {
+      throw new BackupFormatError('备份文件中的命主历法资料无效。');
+    }
+    if (item.gender !== undefined && !['male', 'female'].includes(String(item.gender))) {
+      throw new BackupFormatError('备份文件中的命主性别无效。');
+    }
+    return item as unknown as BirthProfile;
+  });
+}
+
+function validateReadings(value: unknown): SavedReading[] {
+  if (!Array.isArray(value)) throw new BackupFormatError('备份文件中的排盘记录无效。');
+  const ids = new Set<string>();
+  return value.map((item) => {
+    if (!isRecord(item)) throw new BackupFormatError('备份文件中的排盘记录无效。');
+    const id = requireString(item.id, '记录 ID');
+    if (ids.has(id)) throw new BackupFormatError('备份文件中存在重复的记录 ID。');
+    ids.add(id);
+    if (!isString(item.profileId) || !isString(item.profileName) || !isString(item.module) || !isString(item.title) || !isString(item.summary) || !isString(item.createdAt) || !isString(item.engineVersion) || !isString(item.interpretationVersion) || !isRecord(item.snapshotMeta) || !isRecord(item.inputSnapshot) || !isRecord(item.payload)) {
+      throw new BackupFormatError('备份文件中的排盘记录不完整。');
+    }
+    if (!['bazi', 'liuyao', 'ziwei', 'astrology'].includes(String(item.module))) {
+      throw new BackupFormatError('备份文件中的排盘模块无效。');
+    }
+    return item as unknown as SavedReading;
+  });
+}
+
+export function createLocalBackupText(data: LocalBackupData, exportedAt = new Date().toISOString()): string {
+  const document: LocalBackupDocument = {
+    format: LOCAL_BACKUP_FORMAT,
+    backupVersion: LOCAL_BACKUP_VERSION,
+    storageSchemaVersion: STORAGE_SCHEMA_VERSION,
+    exportedAt,
+    data,
+  };
+  return `${JSON.stringify(document, null, 2)}\n`;
+}
+
+export function parseLocalBackupText(raw: string): LocalBackupDocument {
+  if (raw.length > 10_000_000) throw new BackupFormatError('备份文件过大，已拒绝导入。');
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new BackupFormatError('备份文件不是有效的 JSON。');
+  }
+
+  if (!isRecord(parsed) || parsed.format !== LOCAL_BACKUP_FORMAT || parsed.backupVersion !== LOCAL_BACKUP_VERSION || parsed.storageSchemaVersion !== STORAGE_SCHEMA_VERSION || !isString(parsed.exportedAt) || !isRecord(parsed.data)) {
+    throw new BackupFormatError('备份文件版本不兼容，请使用观象导出的本机备份。');
+  }
+
+  const profiles = validateProfiles(parsed.data.profiles);
+  const selectedProfileId = parsed.data.selectedProfileId;
+  if (selectedProfileId !== null && !isString(selectedProfileId)) {
+    throw new BackupFormatError('备份文件中的当前命主选择无效。');
+  }
+  if (selectedProfileId !== null && !profiles.some((profile) => profile.id === selectedProfileId)) {
+    throw new BackupFormatError('备份文件中的当前命主不存在。');
+  }
+
+  return {
+    format: LOCAL_BACKUP_FORMAT,
+    backupVersion: LOCAL_BACKUP_VERSION,
+    storageSchemaVersion: STORAGE_SCHEMA_VERSION,
+    exportedAt: parsed.exportedAt,
+    data: {
+      user: validateUser(parsed.data.user),
+      profiles,
+      selectedProfileId,
+      readings: validateReadings(parsed.data.readings),
+    },
+  };
+}

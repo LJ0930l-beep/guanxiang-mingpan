@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { PropsWithChildren, createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { resolveCityCoordinates } from '@/data/china-cities';
+import { createLocalBackupText, parseLocalBackupText } from '@/storage/backup';
 import {
   decodeStorageValue,
   encodeStorageValue,
@@ -58,6 +59,8 @@ interface AppContextValue {
   deleteReading: (readingId: string) => Promise<void>;
   clearReadings: () => Promise<void>;
   clearLocalData: () => Promise<void>;
+  createLocalBackup: () => string;
+  restoreLocalBackup: (raw: string) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -287,6 +290,29 @@ export function AppProvider({ children }: PropsWithChildren) {
     setReadings([]);
   };
 
+  const createLocalBackup = () => {
+    Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
+    return createLocalBackupText({ user, profiles, selectedProfileId, readings });
+  };
+
+  const restoreLocalBackup = async (raw: string) => {
+    const backup = parseLocalBackupText(raw);
+    Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
+    const { data } = backup;
+    await AsyncStorage.multiSet([
+      [STORAGE.user, encodeStorageValue(data.user)],
+      [STORAGE.profiles, encodeStorageValue(data.profiles)],
+      [STORAGE.selectedProfile, encodeStorageValue(data.selectedProfileId)],
+      [STORAGE.readings, encodeStorageValue(data.readings)],
+    ]);
+    blockedStorageKeysRef.current = new Set();
+    setStorageBlockedKeys([]);
+    setUser(data.user);
+    setProfiles(data.profiles);
+    setSelectedProfileId(data.selectedProfileId);
+    setReadings(data.readings);
+  };
+
   const selectedProfile = useMemo(
     () => profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0] ?? null,
     [profiles, selectedProfileId],
@@ -310,6 +336,8 @@ export function AppProvider({ children }: PropsWithChildren) {
     deleteReading,
     clearReadings,
     clearLocalData,
+    createLocalBackup,
+    restoreLocalBackup,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

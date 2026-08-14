@@ -10,11 +10,14 @@
     "expo": "~57.0.7",
     "expo-constants": "~57.0.6",
     "expo-device": "~57.0.1",
+    "expo-document-picker": "~57.0.1",
+    "expo-file-system": "~57.0.1",
     "expo-font": "~57.0.1",
     "expo-glass-effect": "~57.0.1",
     "expo-image": "~57.0.1",
     "expo-linking": "~57.0.3",
     "expo-router": "~57.0.7",
+    "expo-sharing": "~57.0.11",
     "expo-splash-screen": "~57.0.4",
     "expo-status-bar": "~57.0.1",
     "expo-symbols": "~57.0.1",
@@ -36,6 +39,7 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.39.5",
     "eslint-config-expo": "~57.0.0",
+    "react-test-renderer": "19.2.3",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -46,7 +50,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "test": "node --experimental-strip-types --experimental-loader ./scripts/ts-path-loader.mjs --test tests/chart-engine.regression.mjs tests/storage-schema.regression.mjs",
+    "test": "node --experimental-strip-types --experimental-loader ./scripts/ts-path-loader.mjs --test tests/chart-engine.regression.mjs tests/storage-schema.regression.mjs tests/backup.regression.mjs tests/storage-operations.regression.mjs",
     "test:charts": "node --experimental-strip-types --experimental-loader ./scripts/ts-path-loader.mjs --test tests/chart-engine.regression.mjs",
     "build:web": "expo export --platform web",
     "postinstall": "node scripts/patch-iztro.cjs"
