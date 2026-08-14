@@ -346,7 +346,11 @@ function migrateReading(value: unknown): SavedReading | null {
     module,
     createdAt: typeof value.createdAt === 'string' ? value.createdAt : generatedAt,
     engineVersion,
-    interpretationVersion: typeof value.interpretationVersion === 'string' ? value.interpretationVersion : 'rules-v1',
+    interpretationVersion: typeof value.interpretationVersion === 'string'
+      ? value.interpretationVersion
+      : module === 'bazi' && isRecord(rawPayload.interpretation) && typeof rawPayload.interpretation.interpretationVersion === 'string'
+        ? rawPayload.interpretation.interpretationVersion
+        : 'rules-v1',
     snapshotMeta,
     inputSnapshot,
     favorite: value.favorite === true,

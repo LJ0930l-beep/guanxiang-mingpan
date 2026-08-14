@@ -131,6 +131,48 @@ test('当前 schema 读取旧版字段时会保留有效反馈并补齐收藏默
   assert.match(reading.payload.calculationEvidence.warnings[0], /历史记录/);
 });
 
+test('八字历史快照存在时，迁移会沿用保存的解释版本而不重算内容', () => {
+  const raw = JSON.stringify({
+    schemaVersion: STORAGE_SCHEMA_VERSION,
+    value: [{
+      id: 'reading-p2-f',
+      profileId: 'profile-1',
+      profileName: '深度命主',
+      module: 'bazi',
+      title: '深度快照',
+      summary: '已保存解释',
+      createdAt: '2026-08-15T00:00:00.000Z',
+      engineVersion: 'taibu-core@3.4.0/bazi',
+      payload: {
+        module: 'bazi',
+        generatedAt: '2026-08-15T00:00:00.000Z',
+        engineVersion: 'taibu-core@3.4.0/bazi',
+        snapshotVersion: 1,
+        calculationSettings: {
+          timezone: 'Asia/Shanghai',
+          dayBoundary: 'midnight',
+          trueSolarTime: false,
+          solarTimeModel: 'none',
+          locationDatasetVersion: 'china-cities-p1f-mainland-v1',
+          calendarResolverVersion: 'solar-terms-p1b-v1',
+        },
+        inputSnapshot: { type: 'birth', timezone: 'Asia/Shanghai', birthDate: '1980-01-01', birthTime: '12:00', timeKnown: true, birthCity: '北京市', calendar: 'solar' },
+        calculationEvidence: {},
+        normalizedChart: { modelVersion: 'bazi-normalized-v1' },
+        evidenceGraph: { evidenceVersion: 'bazi-evidence-v1' },
+        interpretation: { interpretationVersion: 'bazi-rules-v2', results: [], structureTags: [] },
+        focus: ['深度'],
+      },
+    }],
+  });
+  const decoded = decodeStorageValue(raw, [], migrateReadings);
+  const [reading] = decoded.value;
+
+  assert.equal(reading.interpretationVersion, 'bazi-rules-v2');
+  assert.equal(reading.interpretationSnapshot.interpretationVersion, 'bazi-rules-v2');
+  assert.deepEqual(reading.interpretationSnapshot.results, []);
+});
+
 test('未来 schema 不会被当前版本覆盖', () => {
   const future = JSON.stringify({ schemaVersion: STORAGE_SCHEMA_VERSION + 1, value: { preserved: true } });
   const decoded = decodeStorageValue(future, { fallback: true }, (input) => input);
