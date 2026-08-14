@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -24,8 +25,9 @@ const relationships: Relationship[] = ['本人', '伴侣', '家人', '朋友', '
 
 export function ProfilesScreen() {
   useScrollToTopOnMount();
-  const { profiles, selectedProfile, addProfile, selectProfile } = useApp();
+  const { profiles, selectedProfile, addProfile, selectProfile, updateProfile, deleteProfile, storageBlockedKeys } = useApp();
   const [showForm, setShowForm] = useState(profiles.length === 0);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [relationship, setRelationship] = useState<Relationship>('本人');
   const [birthDate, setBirthDate] = useState('');
@@ -37,28 +39,92 @@ export function ProfilesScreen() {
   const [gender, setGender] = useState<Gender>('female');
   const [error, setError] = useState('');
 
+  const profilesReadOnly = storageBlockedKeys.includes('@guanxiang/profiles');
+  const selectionReadOnly = storageBlockedKeys.includes('@guanxiang/selected-profile');
+  const recordsReadOnly = storageBlockedKeys.includes('@guanxiang/readings');
+  const profileDeleteBlocked = profilesReadOnly || selectionReadOnly || recordsReadOnly;
+
+  const resetForm = () => {
+    setEditingId(null);
+    setName('');
+    setRelationship('本人');
+    setBirthDate('');
+    setBirthTime('');
+    setBirthCity('');
+    setTimeKnown(true);
+    setCalendar('solar');
+    setIsLeapMonth(false);
+    setGender('female');
+    setError('');
+  };
+
+  const startEdit = (profile: (typeof profiles)[number]) => {
+    setEditingId(profile.id);
+    setName(profile.name);
+    setRelationship(profile.relationship);
+    setBirthDate(profile.birthDate);
+    setBirthTime(profile.birthTime ?? '');
+    setBirthCity(profile.birthCity);
+    setTimeKnown(profile.timeKnown);
+    setCalendar(profile.calendar);
+    setIsLeapMonth(Boolean(profile.isLeapMonth));
+    setGender(profile.gender ?? 'female');
+    setError('');
+    setShowForm(true);
+  };
+
+  const confirmDelete = (profile: (typeof profiles)[number]) => {
+    Alert.alert(
+      '删除命主',
+      `将删除「${profile.name}」及其关联的排盘记录，且无法撤销。`,
+      [
+        { text: '取消', style: 'cancel' },
+        {
+          text: '确认删除',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteProfile(profile.id);
+              if (editingId === profile.id) {
+                resetForm();
+                setShowForm(false);
+              }
+            } catch (operationError) {
+              setError(operationError instanceof Error ? operationError.message : '删除失败，请稍后重试。');
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const save = async () => {
     if (!name.trim()) return setError('请填写命主称呼。');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return setError('出生日期请使用 YYYY-MM-DD 格式。');
     if (timeKnown && !/^([01]\d|2[0-3]):[0-5]\d$/.test(birthTime)) return setError('出生时间请使用 HH:mm 格式。');
     if (!birthCity.trim()) return setError('请填写出生城市。');
 
-    await addProfile({
-      name: name.trim(),
-      relationship,
-      birthDate,
-      birthTime: timeKnown ? birthTime : undefined,
-      birthCity: birthCity.trim(),
-      calendar,
-      isLeapMonth: calendar === 'lunar' ? isLeapMonth : undefined,
-      gender,
-    });
-    setName('');
-    setBirthDate('');
-    setBirthTime('');
-    setBirthCity('');
-    setError('');
-    setShowForm(false);
+    try {
+      const input = {
+        name: name.trim(),
+        relationship,
+        birthDate,
+        birthTime: timeKnown ? birthTime : undefined,
+        birthCity: birthCity.trim(),
+        calendar,
+        isLeapMonth: calendar === 'lunar' ? isLeapMonth : undefined,
+        gender,
+      };
+      if (editingId) {
+        await updateProfile(editingId, input);
+      } else {
+        await addProfile(input);
+      }
+      resetForm();
+      setShowForm(false);
+    } catch (operationError) {
+      setError(operationError instanceof Error ? operationError.message : '保存失败，请稍后重试。');
+    }
   };
 
   return (
@@ -75,15 +141,26 @@ export function ProfilesScreen() {
             <Pressable
               accessibilityLabel={showForm ? '收起新增命主表单' : '新增命主'}
               accessibilityRole="button"
-              onPress={() => setShowForm((current) => !current)}
-              style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}>
-              <Text style={styles.addButtonText}>{showForm ? '收起' : '新增命主'}</Text>
+              disabled={profilesReadOnly}
+              onPress={() => {
+                if (showForm) resetForm();
+                setShowForm((current) => !current);
+              }}
+              style={({ pressed }) => [styles.addButton, profilesReadOnly && styles.disabled, pressed && styles.pressed]}>
+              <Text style={styles.addButtonText}>{profilesReadOnly ? '命主只读' : showForm ? '收起' : '新增命主'}</Text>
             </Pressable>
           </View>
 
+          {profilesReadOnly && (
+            <View style={styles.readOnlyBanner}>
+              <Text style={styles.readOnlyTitle}>命主数据只读</Text>
+              <Text style={styles.readOnlyText}>这份数据由更新版本写入，当前版本不会覆盖它。请先升级应用后再编辑或删除。</Text>
+            </View>
+          )}
+
           {showForm && (
             <View style={styles.formPanel}>
-              <Text style={styles.formTitle}>建立命主</Text>
+              <Text style={styles.formTitle}>{editingId ? '编辑命主' : '建立命主'}</Text>
               <Text style={styles.formHint}>不知道具体时辰可以关闭“时辰已知”，我们不会自动猜测。</Text>
 
               <Text style={styles.label}>称呼</Text>
@@ -177,7 +254,7 @@ export function ProfilesScreen() {
               <TextInput accessibilityLabel="出生城市" onChangeText={setBirthCity} placeholder="例如：广东省深圳市" placeholderTextColor="#65736D" style={styles.input} value={birthCity} />
 
               {!!error && <Text style={styles.error}>{error}</Text>}
-              <ActionButton accessibilityLabel="保存命主" onPress={save} style={styles.saveButton}>保存命主</ActionButton>
+              <ActionButton accessibilityLabel={editingId ? '保存命主修改' : '保存命主'} onPress={save} style={styles.saveButton}>{editingId ? '保存修改' : '保存命主'}</ActionButton>
             </View>
           )}
 
@@ -197,23 +274,33 @@ export function ProfilesScreen() {
               {profiles.map((profile) => {
                 const active = selectedProfile?.id === profile.id;
                 return (
-                  <Pressable
-                    accessibilityLabel={`选择命主${profile.name}`}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: active }}
-                    key={profile.id}
-                    onPress={() => selectProfile(profile.id)}
-                    style={({ pressed }) => [styles.profileCard, active && styles.profileCardActive, pressed && styles.pressed]}>
-                    <View style={styles.profileMonogram}><Text style={styles.profileMonogramText}>{profile.name.slice(0, 1)}</Text></View>
-                    <View style={styles.profileCopy}>
-                      <View style={styles.profileNameRow}>
-                        <Text style={styles.profileName}>{profile.name}</Text>
-                        <Text style={styles.relationship}>{profile.relationship}</Text>
+                  <View style={[styles.profileCard, active && styles.profileCardActive]} key={profile.id}>
+                    <Pressable
+                      accessibilityLabel={`选择命主${profile.name}`}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: active }}
+                      disabled={selectionReadOnly}
+                      onPress={() => selectProfile(profile.id)}
+                      style={({ pressed }) => [styles.profileSelectArea, pressed && styles.pressed]}>
+                      <View style={styles.profileMonogram}><Text style={styles.profileMonogramText}>{profile.name.slice(0, 1)}</Text></View>
+                      <View style={styles.profileCopy}>
+                        <View style={styles.profileNameRow}>
+                          <Text style={styles.profileName}>{profile.name}</Text>
+                          <Text style={styles.relationship}>{profile.relationship}</Text>
+                        </View>
+                        <Text style={styles.profileMeta}>{profile.birthDate} · {profile.birthTime ?? '时辰未提供'} · {profile.gender === 'male' ? '男' : profile.gender === 'female' ? '女' : '性别待补'} · {profile.birthCity}</Text>
                       </View>
-                      <Text style={styles.profileMeta}>{profile.birthDate} · {profile.birthTime ?? '时辰未提供'} · {profile.gender === 'male' ? '男' : profile.gender === 'female' ? '女' : '性别待补'} · {profile.birthCity}</Text>
+                      <View style={[styles.selection, active && styles.selectionActive]} />
+                    </Pressable>
+                    <View style={styles.profileActions}>
+                      <Pressable accessibilityLabel={`编辑命主${profile.name}`} accessibilityRole="button" disabled={profilesReadOnly} onPress={() => startEdit(profile)} style={({ pressed }) => [styles.profileAction, profilesReadOnly && styles.disabled, pressed && styles.pressed]}>
+                        <Text style={styles.profileActionText}>编辑</Text>
+                      </Pressable>
+                      <Pressable accessibilityLabel={`删除命主${profile.name}`} accessibilityRole="button" disabled={profileDeleteBlocked} onPress={() => confirmDelete(profile)} style={({ pressed }) => [styles.profileAction, styles.deleteAction, profileDeleteBlocked && styles.disabled, pressed && styles.pressed]}>
+                        <Text style={[styles.profileActionText, styles.deleteActionText]}>删除</Text>
+                      </Pressable>
                     </View>
-                    <View style={[styles.selection, active && styles.selectionActive]} />
-                  </Pressable>
+                  </View>
                 );
               })}
             </View>
@@ -236,6 +323,9 @@ const styles = StyleSheet.create({
   description: { marginTop: spacing.x3, maxWidth: 520, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 13, lineHeight: 21 },
   addButton: { flexShrink: 0, minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, paddingHorizontal: spacing.x4 },
   addButtonText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 12 },
+  readOnlyBanner: { marginTop: spacing.x5, borderWidth: 1, borderColor: 'rgba(216, 137, 120, 0.48)', borderRadius: radii.card, backgroundColor: 'rgba(120, 48, 36, 0.14)', padding: spacing.x4 },
+  readOnlyTitle: { color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 13, fontWeight: '600' },
+  readOnlyText: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   formPanel: { marginTop: spacing.x8, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.panel, backgroundColor: 'rgba(8, 26, 22, 0.88)', padding: spacing.x6 },
   formTitle: { color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 23, letterSpacing: 1 },
   formHint: { marginTop: spacing.x2, marginBottom: spacing.x5, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 20 },
@@ -265,8 +355,9 @@ const styles = StyleSheet.create({
   emptyTitle: { marginTop: spacing.x3, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 18 },
   emptyText: { maxWidth: 360, marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 20, textAlign: 'center' },
   profileList: { gap: spacing.x3 },
-  profileCard: { minHeight: 84, flexDirection: 'row', alignItems: 'center', gap: spacing.x4, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.card, backgroundColor: palette.deepJade, padding: spacing.x4 },
+  profileCard: { minHeight: 84, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.card, backgroundColor: palette.deepJade, padding: spacing.x4 },
   profileCardActive: { borderColor: palette.hairlineStrong },
+  profileSelectArea: { minHeight: 64, flexDirection: 'row', alignItems: 'center', gap: spacing.x4 },
   profileMonogram: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.hairlineStrong, backgroundColor: palette.obsidian },
   profileMonogramText: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 18 },
   profileCopy: { flex: 1 },
@@ -276,5 +367,11 @@ const styles = StyleSheet.create({
   profileMeta: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11 },
   selection: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, borderColor: palette.ashGreen },
   selectionActive: { borderColor: palette.brass, backgroundColor: palette.brass },
+  profileActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.x2, borderTopWidth: 1, borderColor: palette.hairline, marginTop: spacing.x3, paddingTop: spacing.x2 },
+  profileAction: { minHeight: 36, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
+  profileActionText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },
+  deleteAction: { borderColor: 'rgba(216, 137, 120, 0.42)' },
+  deleteActionText: { color: '#E4A89A' },
+  disabled: { opacity: 0.42 },
   pressed: { opacity: 0.68 },
 });

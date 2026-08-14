@@ -52,7 +52,12 @@ interface AppContextValue {
   signOut: () => Promise<void>;
   addProfile: (input: NewProfileInput) => Promise<BirthProfile>;
   selectProfile: (profileId: string) => Promise<void>;
+  updateProfile: (profileId: string, input: NewProfileInput) => Promise<BirthProfile>;
+  deleteProfile: (profileId: string) => Promise<void>;
   saveReading: (input: { profile: BirthProfile; title: string; summary: string; payload: ChartPayload }) => Promise<SavedReading>;
+  deleteReading: (readingId: string) => Promise<void>;
+  clearReadings: () => Promise<void>;
+  clearLocalData: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -183,6 +188,45 @@ export function AppProvider({ children }: PropsWithChildren) {
     return profile;
   };
 
+  const updateProfile = async (profileId: string, input: NewProfileInput) => {
+    assertStorageWritable(STORAGE.profiles, blockedStorageKeysRef.current);
+    const current = profiles.find((profile) => profile.id === profileId);
+    if (!current) throw new Error('找不到要更新的命主。');
+    const timestamp = new Date().toISOString();
+    const city = resolveCityCoordinates(input.birthCity);
+    const updated: BirthProfile = {
+      ...current,
+      ...input,
+      birthTime: input.birthTime || undefined,
+      timeKnown: Boolean(input.birthTime),
+      latitude: city?.latitude,
+      longitude: city?.longitude,
+      updatedAt: timestamp,
+    };
+    const nextProfiles = profiles.map((profile) => profile.id === profileId ? updated : profile);
+    await setStoredValue(STORAGE.profiles, nextProfiles);
+    setProfiles(nextProfiles);
+    return updated;
+  };
+
+  const deleteProfile = async (profileId: string) => {
+    assertStorageWritable(STORAGE.profiles, blockedStorageKeysRef.current);
+    assertStorageWritable(STORAGE.selectedProfile, blockedStorageKeysRef.current);
+    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+    const nextProfiles = profiles.filter((profile) => profile.id !== profileId);
+    if (nextProfiles.length === profiles.length) throw new Error('找不到要删除的命主。');
+    const nextReadings = readings.filter((reading) => reading.profileId !== profileId);
+    const nextSelectedProfileId = selectedProfileId === profileId ? nextProfiles[0]?.id ?? null : selectedProfileId;
+    await Promise.all([
+      setStoredValue(STORAGE.profiles, nextProfiles),
+      setStoredValue(STORAGE.selectedProfile, nextSelectedProfileId),
+      setStoredValue(STORAGE.readings, nextReadings),
+    ]);
+    setProfiles(nextProfiles);
+    setSelectedProfileId(nextSelectedProfileId);
+    setReadings(nextReadings);
+  };
+
   const selectProfile = async (profileId: string) => {
     assertStorageWritable(STORAGE.selectedProfile, blockedStorageKeysRef.current);
     setSelectedProfileId(profileId);
@@ -218,6 +262,31 @@ export function AppProvider({ children }: PropsWithChildren) {
     return reading;
   };
 
+  const deleteReading = async (readingId: string) => {
+    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+    const nextReadings = readings.filter((reading) => reading.id !== readingId);
+    if (nextReadings.length === readings.length) throw new Error('找不到要删除的排盘记录。');
+    await setStoredValue(STORAGE.readings, nextReadings);
+    setReadings(nextReadings);
+  };
+
+  const clearReadings = async () => {
+    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+    await setStoredValue(STORAGE.readings, []);
+    setReadings([]);
+  };
+
+  const clearLocalData = async () => {
+    Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
+    await AsyncStorage.multiRemove(Object.values(STORAGE));
+    blockedStorageKeysRef.current = new Set();
+    setStorageBlockedKeys([]);
+    setUser(null);
+    setProfiles([]);
+    setSelectedProfileId(null);
+    setReadings([]);
+  };
+
   const selectedProfile = useMemo(
     () => profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0] ?? null,
     [profiles, selectedProfileId],
@@ -235,7 +304,12 @@ export function AppProvider({ children }: PropsWithChildren) {
     signOut,
     addProfile,
     selectProfile,
+    updateProfile,
+    deleteProfile,
     saveReading,
+    deleteReading,
+    clearReadings,
+    clearLocalData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
