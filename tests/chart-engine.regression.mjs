@@ -10,6 +10,7 @@ import {
   calculateLiuyaoView,
   calculateZiweiView,
 } from '../src/services/chart-engine.ts';
+import { resolveCityCoordinates } from '../src/data/china-cities.ts';
 
 const generatedAt = '2026-01-01T00:00:00.000Z';
 const projectRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -59,7 +60,7 @@ test('八字固定样例保持四柱与关系证据稳定', () => {
     dayBoundary: 'midnight',
     trueSolarTime: false,
     solarTimeModel: 'none',
-    locationDatasetVersion: 'china-cities-p1a-sparse-v1',
+    locationDatasetVersion: 'china-cities-p1f-mainland-v1',
     calendarResolverVersion: 'solar-terms-p1b-v1',
   });
   assert.equal(result.calculationEvidence.solarTermBoundary.status, 'resolved');
@@ -231,4 +232,13 @@ test('输入边界不会把缺失时辰或未知城市伪装成精确结果', ()
   assert.equal(result.midheaven, undefined);
   assert.equal(result.factors.some((factor) => factor.key === 'ascendant' || factor.key === 'midheaven'), false);
   assert.equal(result.factors.some((factor) => factor.house !== undefined), false);
+});
+
+test('城市坐标只接受版本化表内精确匹配，不按包含关系猜测', () => {
+  const shenzhen = resolveCityCoordinates('广东省深圳市');
+  assert.equal(shenzhen?.locationId, 'CN-GD-SHENZHEN');
+  assert.equal(shenzhen?.datasetVersion, 'china-cities-p1f-mainland-v1');
+  assert.equal(shenzhen?.timezone, 'Asia/Shanghai');
+  assert.equal(resolveCityCoordinates('深圳市南山区'), undefined);
+  assert.equal(resolveCityCoordinates('福建省泉州市'), undefined);
 });

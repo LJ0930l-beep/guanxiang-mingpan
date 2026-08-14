@@ -16,6 +16,12 @@ export interface BirthProfile {
   calendar: 'solar' | 'lunar';
   isLeapMonth?: boolean;
   gender?: Gender;
+  locationId?: string;
+  locationProvince?: string;
+  locationCity?: string;
+  locationDistrict?: string;
+  locationDatasetVersion?: string;
+  locationSource?: string;
   latitude?: number;
   longitude?: number;
   createdAt: string;

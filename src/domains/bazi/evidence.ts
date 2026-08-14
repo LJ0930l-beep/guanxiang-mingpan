@@ -98,10 +98,15 @@ export function createBaziCalculationEvidence(
     locationUsed: profile.latitude != null && profile.longitude != null
       ? {
           name: profile.birthCity,
+          locationId: profile.locationId,
+          province: profile.locationProvince,
+          city: profile.locationCity,
+          district: profile.locationDistrict,
           latitude: profile.latitude,
           longitude: profile.longitude,
           timezone: settings.timezone,
-          datasetVersion: settings.locationDatasetVersion,
+          datasetVersion: profile.locationDatasetVersion ?? settings.locationDatasetVersion,
+          source: profile.locationSource,
         }
       : undefined,
     warnings,

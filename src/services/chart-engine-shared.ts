@@ -99,6 +99,8 @@ export function birthInputSnapshot(
   if (profile.birthTime) snapshot.birthTime = profile.birthTime;
   if (profile.isLeapMonth !== undefined) snapshot.isLeapMonth = profile.isLeapMonth;
   if (effectiveGender) snapshot.gender = effectiveGender;
+  if (profile.locationId) snapshot.locationId = profile.locationId;
+  if (profile.locationDatasetVersion) snapshot.locationDatasetVersion = profile.locationDatasetVersion;
   if (profile.latitude !== undefined) snapshot.latitude = profile.latitude;
   if (profile.longitude !== undefined) snapshot.longitude = profile.longitude;
   return snapshot;

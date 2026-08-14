@@ -22,6 +22,8 @@ export interface BirthInputSnapshot {
   calendar: 'solar' | 'lunar';
   isLeapMonth?: boolean;
   gender?: Gender;
+  locationId?: string;
+  locationDatasetVersion?: string;
   latitude?: number;
   longitude?: number;
 }

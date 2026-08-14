@@ -254,6 +254,54 @@ function Caveats({ items }: { items: string[] }) {
   );
 }
 
+function BaziEvidencePanel({ result }: { result: BaziChartView }) {
+  const [expanded, setExpanded] = useState(false);
+  const evidence = result.calculationEvidence;
+  const conversion = evidence.calendarConversion;
+  const location = evidence.locationUsed;
+  const row = (label: string, value: string) => (
+    <View key={label} style={styles.evidenceDetailRow}>
+      <Text style={styles.evidenceDetailLabel}>{label}</Text>
+      <Text style={styles.evidenceDetailValue}>{value}</Text>
+    </View>
+  );
+  return (
+    <View style={styles.evidencePanel}>
+      <Pressable
+        accessibilityLabel={expanded ? '收起本次八字计算依据' : '展开本次八字计算依据'}
+        accessibilityRole="button"
+        accessibilityState={{ expanded }}
+        onPress={() => setExpanded((current) => !current)}
+        style={({ pressed }) => [styles.evidencePanelHeader, pressed && styles.pressed]}>
+        <View>
+          <Text style={styles.evidencePanelKicker}>CALCULATION EVIDENCE</Text>
+          <Text style={styles.evidencePanelTitle}>本次计算依据</Text>
+        </View>
+        <Text style={styles.evidencePanelAction}>{expanded ? '收起' : '展开'}</Text>
+      </Pressable>
+      {expanded && (
+        <View style={styles.evidenceDetails}>
+          {row('输入历法', evidence.sourceCalendar === 'lunar' ? '农历' : '公历')}
+          {row('民用时刻', evidence.normalizedCivilTime)}
+          {row('有效时刻', evidence.effectiveCalculationTime)}
+          {row('业务时区', evidence.timezone)}
+          {row('日界规则', evidence.dayBoundaryRule === 'ziEarly' ? '子初换日（23:00）' : '午夜换日（00:00）')}
+          {row('历法换算', conversion.note)}
+          {row('换算数据', `${conversion.dataSource}@${conversion.dataVersion} · ${conversion.resolverVersion}`)}
+          {row('节气依据', evidence.solarTermBoundary.currentMonthBasis ?? evidence.solarTermBoundary.note)}
+          {row('真太阳时', evidence.trueSolarCorrection.applied
+            ? `${evidence.trueSolarCorrection.model} · ${evidence.trueSolarCorrection.correctionMinutes} 分钟 · ${evidence.trueSolarCorrection.note ?? ''}`
+            : '未启用；有效时刻等于民用时刻')}
+          {row('出生地', location
+            ? `${location.name}${location.province ? ` · ${location.province}` : ''} · ${location.latitude}, ${location.longitude} · ${location.datasetVersion}`
+            : '未命中离线城市表，未声明坐标精度')}
+          {evidence.warnings.length > 0 && row('提示', evidence.warnings.join('；'))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function FocusList({ items }: { items: string[] }) {
   return (
     <View style={styles.focusList}>
@@ -330,6 +378,7 @@ function BaziResult({ result }: { result: BaziChartView }) {
         <Text style={styles.evidenceLabel}>真太阳时</Text>
         <Text style={styles.evidenceValue}>{result.calculationEvidence.trueSolarCorrection.applied ? `${result.calculationEvidence.trueSolarCorrection.model} · ${result.calculationEvidence.trueSolarCorrection.correctionMinutes} 分钟` : '未启用'}</Text>
       </View>
+      <BaziEvidencePanel result={result} />
       {!!result.relations.length && <View style={styles.tagWrap}>{result.relations.map((item, index) => <Text key={`${item}-${index}`} style={styles.evidenceTag}>{item}</Text>)}</View>}
       <FocusList items={result.focus} />
       <Caveats items={result.caveats} />
@@ -607,6 +656,15 @@ const styles = StyleSheet.create({
   evidenceStrip: { marginTop: spacing.x4, flexDirection: 'row', alignItems: 'center', gap: spacing.x4, borderTopWidth: 1, borderBottomWidth: 1, borderColor: palette.hairline, paddingVertical: spacing.x3 },
   evidenceLabel: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 11 },
   evidenceValue: { flex: 1, color: palette.ricePaper, fontFamily: fontFamilies.data, fontSize: 11 },
+  evidencePanel: { marginTop: spacing.x4, borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, backgroundColor: 'rgba(8, 26, 22, 0.68)' },
+  evidencePanelHeader: { minHeight: 58, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.x3, paddingHorizontal: spacing.x4, paddingVertical: spacing.x3 },
+  evidencePanelKicker: { color: palette.brass, fontFamily: fontFamilies.data, fontSize: 8, letterSpacing: 1.8 },
+  evidencePanelTitle: { marginTop: 3, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 16 },
+  evidencePanelAction: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },
+  evidenceDetails: { borderTopWidth: 1, borderColor: palette.hairline, paddingHorizontal: spacing.x4, paddingBottom: spacing.x3 },
+  evidenceDetailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x3, borderBottomWidth: 1, borderColor: palette.hairline, paddingVertical: spacing.x3 },
+  evidenceDetailLabel: { width: 72, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
+  evidenceDetailValue: { flex: 1, color: palette.ricePaper, fontFamily: fontFamilies.data, fontSize: 10, lineHeight: 16 },
   tagWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x3 },
   evidenceTag: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.pill, paddingHorizontal: spacing.x3, paddingVertical: spacing.x2 },
   focusList: { marginTop: spacing.x6 },

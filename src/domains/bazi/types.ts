@@ -22,7 +22,7 @@ export const DEFAULT_BAZI_CALCULATION_SETTINGS: BaziCalculationSettings = {
   dayBoundary: 'midnight',
   trueSolarTime: false,
   solarTimeModel: 'none',
-  locationDatasetVersion: 'china-cities-p1a-sparse-v1',
+  locationDatasetVersion: 'china-cities-p1f-mainland-v1',
   calendarResolverVersion: 'solar-terms-p1b-v1',
 };
 
@@ -56,10 +56,14 @@ export interface TrueSolarCorrectionEvidence {
 export interface BaziLocationEvidence {
   locationId?: string;
   name: string;
+  province?: string;
+  city?: string;
+  district?: string;
   latitude?: number;
   longitude?: number;
   timezone: CalculationTimezone;
   datasetVersion: string;
+  source?: string;
 }
 
 /** Evidence fields are deliberately explicit when a resolver is not ready. */

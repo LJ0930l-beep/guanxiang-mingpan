@@ -89,9 +89,9 @@
 - **状态与存储**：`src/state/app-context.tsx` 负责本地会话、命主、当前命主和排盘记录。键名为 `@guanxiang/user`、`@guanxiang/profiles`、`@guanxiang/selected-profile`、`@guanxiang/readings`。
 - **排盘适配层**：`src/services/chart-engine.ts` 是稳定的公共 facade；四个独立计算器位于 `src/services/engines/`，将不同开源引擎的输出统一为应用自己的 `ChartPayload`。页面只消费这个统一数据协议，后续替换引擎时应先维护该协议。
 - **可复现快照**：`ChartSnapshotMeta`、`snapshotVersion`、`calculationSettings` 和 `inputSnapshot` 会随每个 `ChartPayload` 保存；首版计算业务时区固定为 `Asia/Shanghai`，六爻还会保留 `seed`、`date` 与 `seedScope`。`SavedReading` 同步保存 `snapshotMeta`，便于迁移、导出和复盘。
-- **八字可信度 P1-A～P1-E**：`src/domains/bazi/` 维护独立来源 Golden Case、节气边界解析、午夜/子初日界线、UTC-only 真太阳时修正、农历/闰月解析、八字规则设置和 `BaziCalculationEvidence`。证据会记录模型、经度、标准经线、修正分钟数、历法换算、精度和有效时刻；旧八字记录迁移时会标为“历史默认规则”，不静默重算。
+- **八字可信度 P1-A～P1-F**：`src/domains/bazi/` 维护独立来源 Golden Case、节气边界解析、午夜/子初日界线、UTC-only 真太阳时修正、农历/闰月解析、八字规则设置和 `BaziCalculationEvidence`。证据会记录模型、经度、标准经线、修正分钟数、历法换算、精度和有效时刻；结果页可展开查看完整依据；旧八字记录迁移时会标为“历史默认规则”，不静默重算。
 - **本地存储迁移**：`src/storage/schema.ts` 为每个 AsyncStorage 值写入 `STORAGE_SCHEMA_VERSION` 包装，兼容首版未版本化数据、未来版本阻断写回，并为旧记录补齐快照字段。读取到 future schema 的 key 会进入只读/不兼容状态，用户写操作会拒绝且不会覆盖原始值。
-- **坐标数据**：`src/data/china-cities.ts` 内置少量常用中国城市坐标，用于西方本命盘是否可以计算角点和宫位的判断；不是全国城市库。
+- **坐标数据**：`src/data/china-cities.ts` 内置 `china-cities-p1f-mainland-v1`，带 `locationId`、省市、经纬度、业务时区、来源、许可和别名；当前覆盖大陆直辖市、省会/自治区首府及常用地级市，不是全国完整地级市库。输入只做精确匹配，未知地点不猜测；数据说明见 `docs/DATASET_PROVENANCE.md`。
 - **本机备份**：`src/storage/backup.ts` 定义带 `backupVersion` 和 `storageSchemaVersion` 的普通 JSON 格式；`src/storage/encrypted-backup.ts` 在相同数据格式外包一层 scrypt + AES-256-GCM，使用随机 salt/nonce 和认证标签；`src/services/local-backup-io.ts` 在 Web 走浏览器下载，在 iPhone 走临时目录与系统分享面板，在恢复前校验版本、ID 和当前命主引用。
 - **路由/页面**：模块工作台集中在 `src/screens/module-workspace.tsx`，记录页在 `src/screens/records-screen.tsx`，命主页在 `src/screens/profiles-screen.tsx`。
 
@@ -134,7 +134,7 @@
 | 里程碑 | 进度 | 已达到 | 未达到 |
 |---|---:|---|---|
 | M0：跨端体验骨架 | 100% | 路由、视觉系统、模块入口、本地命主、基础工程检查。 | 无。 |
-| M1：确定性排盘核心 | 94% | 四类本地排盘、统一结果协议、输入边界、独立来源 Golden Case；P1-A 设置/证据骨架、P1-B 节气边界、P1-C 午夜/子初日界线、P1-D 真太阳时和 P1-E 农历/闰月换算已落地。 | 全国城市库、流派设置、夏令时等完整 Golden 回归测试。 |
+| M1：确定性排盘核心 | 97% | 四类本地排盘、统一结果协议、输入边界、独立来源 Golden Case；P1-A 设置/证据骨架、P1-B 节气边界、P1-C 午夜/子初日界线、P1-D 真太阳时、P1-E 农历/闰月换算和 P1-F 可回看的完整计算依据已落地。 | 全国地级市完整覆盖、流派设置、夏令时公开样例和更多边界 Golden 回归测试。 |
 | M2：本地档案与备份 | 90% | 命主与结果自动归档、记录展开查看、版本字段、快照元数据、Storage Schema Version 与首版迁移；命主/记录编辑删除与清空；带版本普通 JSON 与 scrypt + AES-256-GCM 加密备份导出/导入；收藏筛选与按日事实反馈已可持久化。 | 设备迁移冲突合并、真机文件流转验收、完整迁移策略。 |
 | M3：中国大陆真实账号 | 5% | 三种登录入口的界面与本地流程。 | 短信、Apple、微信认证，手机号绑定，权益同步，账户安全与注销。 |
 | M4：商业化和 AI | 0% | 产品边界已确定。 | 支付、订阅、单次付费、服务端权益、AI 成本控制、内容安全。 |
@@ -146,7 +146,7 @@
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm test`（四模块固定样例、P1-A 独立来源 Golden Case、P1-B 节气边界 T-1/T/T+1 与跨 TZ、P1-C 日界线 22:59/23:00/23:01、P1-D 真太阳时跨 TZ、P1-E 农历/闰月/春节换算与跨 TZ、缺失时辰、六爻复现、真实用户写操作写保护、收藏/反馈持久化、普通/加密本机备份格式，共 31 项测试）
+- `npm test`（四模块固定样例、P1-A 独立来源 Golden Case、P1-B 节气边界 T-1/T/T+1 与跨 TZ、P1-C 日界线 22:59/23:00/23:01、P1-D 真太阳时跨 TZ、P1-E 农历/闰月/春节换算与跨 TZ、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、收藏/反馈持久化、普通/加密本机备份格式，共 32 项测试）
 - `npm run build:web`（静态 Web 构建成功，8 条路由）
 - GitHub Actions CI：安装依赖后自动执行 typecheck、lint、npm test 和 Web 构建；Web Export 使用 `always()`，不会因测试失败被跳过。
 - 浏览器手工走查：首页、八字落柱、六爻起卦、紫微十二宫、星盘精确/近似分支、自动保存及记录展开。
