@@ -193,10 +193,10 @@
 ## 9. 建议的下一轮执行顺序
 
 1. **完成 P5-0 项目总账本与 Phase 5 启动基线**：以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 作为后续批次入口，保留当前 Phase 0～4 代码事实，不回退已完成能力。
-2. **只派发 P5-A1：城市覆盖盘点 + 数据来源/许可 + Golden fixture 合同**：先建立可验收的小批，不把整个 Phase 5 一次交给执行者；未知地点继续精确未命中，不猜坐标。
-3. **经主管独立验收后再进入 P5-A 后续小批**：逐步处理全国城市数据、边界回归和默认策略；每批递增数据/解释版本，历史 Snapshot 不静默重算。
-4. **再进入 Level A 设备、隐私与发布门**：完成实体 iPhone/TestFlight 文件流签字、首次使用本地保存说明、隐私政策/用户协议、商店与许可证材料。
-5. **真实登录、跨端权益、支付和 AI 按总账本的 P5-E～P5-H 逐批决策**：它们不是当前 P5-A 的隐含范围；基础版继续不依赖 AI、广告或支付。
+2. **只派发 P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**：建立统一字段/分类策略和当前四术用例清单，区分 `independent-validation` 与 `regression-only`，不得伪造专业真值；城市覆盖属于 P5-B，不进入本小批。
+3. **经主管独立验收后再进入 P5-A 后续小批，再按母文档顺序进入 P5-B～P5-I**：城市数据在 P5-B；UX/可访问性、性能稳定性、Release Security、隐私合规、Web、iPhone/TestFlight 和 App Store 材料各自保留独立 DoD。只有相关 schema、dataset、rules、interpretation 或 explanation 发生兼容性变化时才评估并递增版本，不能无条件递增。
+4. **完成 Phase 5 后进入 OWNER DECISION**：明确公开版本继续本地入口，还是首发前先完成真实账号；该决定不能由执行者默认推断。
+5. **若选择首发前真实账号，按独立 Phase 6 推进真实账号与可选权益；若选择公开版本地入口，则 Level A 发布门仍需先完成 Phase 5 证据。** Phase 7 的订阅、单次付费和付费 AI 只在后续条件满足后推进，基础版继续不依赖 AI、广告或支付。
 
 详细的 Phase 5 批次图、DoD、风险和统一验收模板见 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md)。
 
