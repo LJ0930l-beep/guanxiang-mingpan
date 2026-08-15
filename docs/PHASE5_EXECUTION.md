@@ -1,8 +1,10 @@
 # Phase 5 · P5-A1 四术 Golden Case 合同与现状盘点
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2 均已由 Sol High 独立验收 PASS；整个 P5-A 与 Phase 5 仍未完成
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试，以及香港天文台 published-reference Golden
+批次状态：P5-A1、P5-A2 已由 Sol High 独立验收 PASS；P5-A3a 实现完成、等待 Sol High 独立验收；整个 P5-A 与 Phase 5 仍未完成
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden，以及本次 P5-A3a 真太阳时版本兼容与 Storage Schema 3 实现记录
+
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节为当前 P5-A3a handoff，仅表示实现完成等待主管验收，不表示整个 P5-A3、P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -173,6 +175,22 @@ npm run build:web      PASS（8 routes）
 
 Sol High 独立验收结论：**PASS**。本结论只覆盖 P5-A2 两条 HKO published-reference Golden 及其离线证据；整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
 
-### 8.4 P5-A3 候选风险（仅登记，未批准）
+### 8.4 P5-A3 风险与授权边界
 
-核实 `src/domains/bazi/true-solar-time.ts`：当前 `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但实现公式并非本批 HKO 引用或 NOAA 229.18 系数公式，且该常量当前未进入保存 evidence。P5-A3 是未授权的重大决策门：由 Sol High 决定继续当前近似式并纠正来源标签，或切换 NOAA 公式并处理版本/历史兼容；本批不预先选择公式，也不修改真太阳时代码、版本名或快照。
+P5-A2 时登记的真太阳时来源标签风险已进入单独的 P5-A3a handoff。P5-A3a 只按主管已明确选择的方案 A 实现核心版本兼容；P5-A3b 的记录页显式复核和 UI 展示仍未授权。整个 P5-A3 仍未完成，不能把本批实现写成最终专业真值或发布结论。
+
+## 9. P5-A3a 真太阳时版本兼容与 Storage Schema 3（实现完成，等待主管验收）
+
+### 9.1 Scope 与实现摘要
+
+- 新计算默认使用 `true-solar-time-v2-noaa`：按 NOAA `solareqns.PDF` 的 229.18 系数、年内日序和民用时分秒计算均时差；计算只使用固定 `Asia/Shanghai` 民用字段和 UTC-only 日期运算，不读取 process/OS 时区。
+- 保留 `true-solar-time-v1-approx` 的原近似公式与原 `Math.round` 行为，只有显式版本复现时使用；`legacy-unknown` 在要求实际真太阳时计算时拒绝，不猜版本。
+- v2 证据保存 raw correction、展示 correction、实际应用分钟、对称 half-away-from-zero 舍入规则、`dataSource`、`dataVersion`、NOAA PDF URL 和 `provenanceStatus`；新 payload 与 `snapshotMeta.calculationSettings` 一致。
+- `Storage Schema 2 → 3` 只补版本/来源/证据元数据，不调用 `calculateBaziView`，保留历史四柱、归一化盘、证据图、解释、生成时间、引擎版本、输入/命主快照、反馈和收藏；缺失真太阳时证据以 `applied` unknown（缺省）表达，不合成 `false`。
+- 普通/加密备份接受 schema 1、2、3；旧 schema 2 明文及其加密载荷都经过同一无计算迁移，future schema 4 仍保持 blocked/write-protected。
+
+### 9.2 测试与限制
+
+新增/强化回归覆盖：UTC 与 `Asia/Shanghai` 环境 deepEqual、NOAA 数值与闰年 fixture、正负 0.5 对称舍入、北京 116.4074E 的 09:13/09:14/09:15 实际时柱边界、东经 121 度跨时辰/子初/午夜、schema 2 → 3 不重算与 snapshot-only settings、缺失证据 unknown、普通/加密 schema 2 导入、merge/replace 和 payload/snapshot settings 一致性。统一 `npm test` 当前为 98 项。
+
+本批明确不做：P5-A3b 记录页显式复核、UI 证据展示、其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3b 是未授权的后续决策门；整个 P5-A、P5-A3 和 Phase 5 仍未完成，当前状态等待 Sol High 独立验收。

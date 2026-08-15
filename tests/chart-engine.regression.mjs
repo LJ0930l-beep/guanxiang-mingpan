@@ -60,6 +60,7 @@ test('八字固定样例保持四柱与关系证据稳定', () => {
     dayBoundary: 'midnight',
     trueSolarTime: false,
     solarTimeModel: 'none',
+    trueSolarTimeVersion: 'true-solar-time-v2-noaa',
     locationDatasetVersion: 'china-cities-p1f-mainland-v1',
     calendarResolverVersion: 'solar-terms-p1b-v1',
   });

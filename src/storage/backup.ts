@@ -1,10 +1,15 @@
-import { STORAGE_SCHEMA_VERSION } from '@/storage/schema';
+import { migrateReadings, STORAGE_SCHEMA_VERSION } from '@/storage/schema';
+import {
+  BAZI_TRUE_SOLAR_TIME_UNKNOWN,
+  BAZI_TRUE_SOLAR_TIME_V1,
+  BAZI_TRUE_SOLAR_TIME_V2,
+} from '@/domains/bazi/types';
 import type { BirthProfile, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import { validateExplanationSnapshot } from '@/domains/explanation/snapshot';
 
 export const LOCAL_BACKUP_FORMAT = 'guanxiang-local-backup' as const;
 export const LOCAL_BACKUP_VERSION = 1 as const;
-const LEGACY_STORAGE_SCHEMA_VERSIONS = [1] as const;
+const LEGACY_STORAGE_SCHEMA_VERSIONS = [1, 2] as const;
 
 export interface LocalBackupData {
   user: LocalUser | null;
@@ -36,6 +41,60 @@ function isRecord(value: unknown): value is RecordLike {
 
 function isString(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0;
+}
+
+function isBaziSolarTimeVersion(value: unknown): boolean {
+  return value === BAZI_TRUE_SOLAR_TIME_V1
+    || value === BAZI_TRUE_SOLAR_TIME_V2
+    || value === BAZI_TRUE_SOLAR_TIME_UNKNOWN;
+}
+
+function sameJson(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return left.length === right.length && left.every((item, index) => sameJson(item, right[index]));
+  }
+  if (isRecord(left) && isRecord(right)) {
+    const leftKeys = Object.keys(left).sort();
+    const rightKeys = Object.keys(right).sort();
+    return leftKeys.length === rightKeys.length
+      && leftKeys.every((key, index) => key === rightKeys[index] && sameJson(left[key], right[key]));
+  }
+  return false;
+}
+
+/**
+ * Schema 3 records are already expected to carry the P5-A3a metadata.  A
+ * record that does not is treated as an older-shaped value and sent through
+ * the same metadata-only migration used by schema 1/2; it is never silently
+ * accepted as if its calculation provenance were complete.
+ */
+function hasCurrentBaziMetadata(reading: SavedReading): boolean {
+  if (reading.module !== 'bazi') return true;
+  const payload = reading.payload as unknown as RecordLike;
+  const payloadSettings = payload.calculationSettings;
+  const snapshotSettings = reading.snapshotMeta.calculationSettings;
+  if (!isRecord(payloadSettings) || !isRecord(snapshotSettings)
+    || !isBaziSolarTimeVersion(payloadSettings.trueSolarTimeVersion)
+    || !isBaziSolarTimeVersion(snapshotSettings.trueSolarTimeVersion)
+    || !sameJson(payloadSettings, snapshotSettings)) {
+    return false;
+  }
+  const evidence = payload.calculationEvidence;
+  const correction = isRecord(evidence) && isRecord(evidence.trueSolarCorrection)
+    ? evidence.trueSolarCorrection
+    : null;
+  if (!correction
+    || !isBaziSolarTimeVersion(correction.algorithmVersion)
+    || typeof correction.rawCorrectionMinutes !== 'number'
+    || typeof correction.appliedCorrectionMinutes !== 'number'
+    || typeof correction.roundingRule !== 'string'
+    || typeof correction.dataSource !== 'string'
+    || typeof correction.dataVersion !== 'string'
+    || !['current', 'legacy', 'unknown', 'not-applied'].includes(String(correction.provenanceStatus))) {
+    return false;
+  }
+  return correction.provenanceStatus === 'unknown' || typeof correction.applied === 'boolean';
 }
 
 function requireString(value: unknown, label: string): string {
@@ -204,7 +263,7 @@ export function parseLocalBackupText(raw: string): LocalBackupDocument {
   }
 
   const supportedStorageSchema = isRecord(parsed)
-    && (parsed.storageSchemaVersion === STORAGE_SCHEMA_VERSION || LEGACY_STORAGE_SCHEMA_VERSIONS.includes(parsed.storageSchemaVersion as 1));
+    && (parsed.storageSchemaVersion === STORAGE_SCHEMA_VERSION || LEGACY_STORAGE_SCHEMA_VERSIONS.includes(parsed.storageSchemaVersion as 1 | 2));
   if (!isRecord(parsed) || parsed.format !== LOCAL_BACKUP_FORMAT || parsed.backupVersion !== LOCAL_BACKUP_VERSION || !supportedStorageSchema || !isString(parsed.exportedAt) || !isRecord(parsed.data)) {
     throw new BackupFormatError('备份文件版本不兼容，请使用观象导出的本机备份。');
   }
@@ -218,11 +277,25 @@ export function parseLocalBackupText(raw: string): LocalBackupDocument {
     throw new BackupFormatError('备份文件中的当前命主不存在。');
   }
 
+  const validatedReadings = validateReadings(parsed.data.readings);
+  const migratedReadings = migrateReadings(validatedReadings);
+  if (migratedReadings.length !== validatedReadings.length) {
+    throw new BackupFormatError('备份文件中的排盘记录无法迁移到当前版本。');
+  }
+  const migratedById = new Map(migratedReadings.map((reading) => [reading.id, reading]));
+  const normalizedReadings = parsed.storageSchemaVersion === STORAGE_SCHEMA_VERSION
+    ? validatedReadings.map((reading) => hasCurrentBaziMetadata(reading)
+      ? reading
+      : migratedById.get(reading.id) as SavedReading)
+    : migratedReadings;
   const data: LocalBackupData = {
     user: validateUser(parsed.data.user),
     profiles,
     selectedProfileId,
-    readings: validateReadings(parsed.data.readings),
+    // Every supported archive schema invokes the same metadata-only
+    // normalizer.  A complete schema3 Bazi reading is retained byte-for-byte;
+    // an older-shaped/malformed one uses the normalized migration result.
+    readings: normalizedReadings,
   };
   validateArchiveIntegrity(data);
   return {

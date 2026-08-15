@@ -1,6 +1,11 @@
 import { CHART_SNAPSHOT_VERSION, DEFAULT_CALCULATION_TIMEZONE } from '@/types/charts';
 import type { BirthInputSnapshot, CalculationSettings, CalculationTimezone } from '@/types/charts';
-import { DEFAULT_BAZI_CALCULATION_SETTINGS } from '@/domains/bazi/types';
+import {
+  BAZI_TRUE_SOLAR_TIME_UNKNOWN,
+  BAZI_TRUE_SOLAR_TIME_V1,
+  BAZI_TRUE_SOLAR_TIME_V2,
+  DEFAULT_BAZI_CALCULATION_SETTINGS,
+} from '@/domains/bazi/types';
 import type { BaziCalculationSettings } from '@/domains/bazi/types';
 import type { BirthProfile, Gender } from '@/types/domain';
 
@@ -73,6 +78,9 @@ export function baziCalculationSettings(options?: CalculationOptions): BaziCalcu
   }
   if ((base.trueSolarTime && base.solarTimeModel === 'none') || (!base.trueSolarTime && base.solarTimeModel !== 'none')) {
     throw new Error('真太阳时设置无效：启用时必须选择 localMeanSolarTime 或 apparentSolarTime。');
+  }
+  if (![BAZI_TRUE_SOLAR_TIME_V1, BAZI_TRUE_SOLAR_TIME_V2, BAZI_TRUE_SOLAR_TIME_UNKNOWN].includes(base.trueSolarTimeVersion)) {
+    throw new Error('真太阳时规则版本无效。');
   }
   return base;
 }

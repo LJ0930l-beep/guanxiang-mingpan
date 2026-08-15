@@ -14,7 +14,7 @@ test('本地存储写入统一 schema version，并能读取当前版本', () =>
   const raw = encodeStorageValue(value);
   const decoded = decodeStorageValue(raw, [], (input) => input);
 
-  assert.equal(STORAGE_SCHEMA_VERSION, 2);
+  assert.equal(STORAGE_SCHEMA_VERSION, 3);
   assert.deepEqual(decoded.value, value);
   assert.equal(decoded.needsRewrite, false);
   assert.equal(decoded.blocked, false);

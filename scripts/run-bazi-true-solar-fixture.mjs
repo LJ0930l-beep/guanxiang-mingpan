@@ -21,11 +21,13 @@ const result = calculateBaziView(profile, undefined, {
   bazi: {
     trueSolarTime: true,
     solarTimeModel: 'apparentSolarTime',
+    trueSolarTimeVersion: 'true-solar-time-v2-noaa',
   },
 });
 
 console.log(JSON.stringify({
   settings: result.calculationSettings,
+  snapshotMeta: { calculationSettings: result.calculationSettings },
   pillars: result.pillars.map(({ key, stem, branch }) => ({ key, stem, branch })),
   evidence: result.calculationEvidence,
 }));

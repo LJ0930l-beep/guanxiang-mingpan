@@ -6,12 +6,18 @@ import type {
   CalculationSettings,
   LiuyaoInputSnapshot,
 } from '@/types/charts';
-import { DEFAULT_BAZI_CALCULATION_SETTINGS } from '@/domains/bazi/types';
-import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
+import {
+  BAZI_TRUE_SOLAR_TIME_UNKNOWN,
+  BAZI_TRUE_SOLAR_TIME_V1,
+  BAZI_TRUE_SOLAR_TIME_V2,
+  DEFAULT_BAZI_CALCULATION_SETTINGS,
+} from '@/domains/bazi/types';
+import type { BaziCalculationEvidence, BaziCalculationSettings, BaziSolarTimeVersion } from '@/domains/bazi/types';
+import { TRUE_SOLAR_DATA_URL } from '@/domains/bazi/true-solar-time';
 import type { BirthProfile, DivinationModule, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import { migrateExplanationSnapshot } from '@/domains/explanation/snapshot';
 
-export const STORAGE_SCHEMA_VERSION = 2 as const;
+export const STORAGE_SCHEMA_VERSION = 3 as const;
 
 export interface VersionedStorageValue<T> {
   schemaVersion: typeof STORAGE_SCHEMA_VERSION;
@@ -161,18 +167,40 @@ function isInputSnapshot(value: unknown): value is ChartInputSnapshot {
   return isRecord(value) && ['birth', 'liuyao', 'legacy'].includes(String(value.type));
 }
 
+function isCompleteLegacyBaziSettings(value: unknown): value is RecordLike {
+  return isRecord(value)
+    && typeof value.dayBoundary === 'string'
+    && typeof value.trueSolarTime === 'boolean'
+    && typeof value.solarTimeModel === 'string'
+    && typeof value.locationDatasetVersion === 'string'
+    && typeof value.calendarResolverVersion === 'string';
+}
+
+function isBaziSolarTimeVersion(value: unknown): value is BaziSolarTimeVersion {
+  return value === BAZI_TRUE_SOLAR_TIME_V1 || value === BAZI_TRUE_SOLAR_TIME_V2 || value === BAZI_TRUE_SOLAR_TIME_UNKNOWN;
+}
+
 function migrateCalculationSettings(value: unknown, module?: DivinationModule): CalculationSettings {
   if (module === 'bazi') {
     const raw = isRecord(value) ? value : {};
+    const hasCompleteLegacySettings = isCompleteLegacyBaziSettings(raw);
+    const trueSolarTimeVersion = isBaziSolarTimeVersion(raw.trueSolarTimeVersion)
+      ? raw.trueSolarTimeVersion
+      : raw.trueSolarTimeVersion !== undefined
+        ? BAZI_TRUE_SOLAR_TIME_UNKNOWN
+        : hasCompleteLegacySettings
+          ? BAZI_TRUE_SOLAR_TIME_V1
+          : BAZI_TRUE_SOLAR_TIME_UNKNOWN;
     return {
       ...DEFAULT_BAZI_CALCULATION_SETTINGS,
       timezone: DEFAULT_CALCULATION_TIMEZONE,
       ...(raw.dayBoundary === 'midnight' || raw.dayBoundary === 'ziEarly' ? { dayBoundary: raw.dayBoundary } : {}),
       ...(typeof raw.trueSolarTime === 'boolean' ? { trueSolarTime: raw.trueSolarTime } : {}),
       ...(raw.solarTimeModel === 'none' || raw.solarTimeModel === 'localMeanSolarTime' || raw.solarTimeModel === 'apparentSolarTime' ? { solarTimeModel: raw.solarTimeModel } : {}),
+      trueSolarTimeVersion,
       ...(typeof raw.locationDatasetVersion === 'string' ? { locationDatasetVersion: raw.locationDatasetVersion } : {}),
       ...(typeof raw.calendarResolverVersion === 'string' ? { calendarResolverVersion: raw.calendarResolverVersion } : {}),
-    } satisfies BaziCalculationSettings;
+    } as BaziCalculationSettings;
   }
   return { timezone: DEFAULT_CALCULATION_TIMEZONE };
 }
@@ -191,6 +219,7 @@ function legacyBaziEvidence(inputSnapshot: ChartInputSnapshot, settings: Calcula
   const civilTime = birth
     ? `${birth.birthDate}T${birth.birthTime ? `${birth.birthTime}:00` : '00:00:00'}`
     : '历史记录未保存原始出生时刻';
+  const trueSolarEvidenceIsUnknown = baziSettings.trueSolarTime;
   return {
     sourceCalendar: birth?.calendar ?? 'solar',
     normalizedCivilTime: civilTime,
@@ -213,11 +242,18 @@ function legacyBaziEvidence(inputSnapshot: ChartInputSnapshot, settings: Calcula
     },
     dayBoundaryRule: baziSettings.dayBoundary,
     trueSolarCorrection: {
-      applied: false,
+      ...(trueSolarEvidenceIsUnknown ? {} : { applied: false }),
       model: baziSettings.solarTimeModel,
+      algorithmVersion: baziSettings.trueSolarTimeVersion,
       civilTime,
       effectiveTime: civilTime,
+      rawCorrectionMinutes: 0,
       correctionMinutes: 0,
+      appliedCorrectionMinutes: 0,
+      roundingRule: trueSolarEvidenceIsUnknown ? 'legacy-unknown' : 'not-applied',
+      dataSource: trueSolarEvidenceIsUnknown ? 'legacy-record' : 'not-applicable',
+      dataVersion: trueSolarEvidenceIsUnknown ? BAZI_TRUE_SOLAR_TIME_UNKNOWN : baziSettings.trueSolarTimeVersion,
+      provenanceStatus: trueSolarEvidenceIsUnknown ? 'unknown' : 'not-applied',
     },
     locationUsed: birth
       ? {
@@ -228,8 +264,93 @@ function legacyBaziEvidence(inputSnapshot: ChartInputSnapshot, settings: Calcula
           datasetVersion: baziSettings.locationDatasetVersion,
         }
       : undefined,
-    warnings: ['历史记录未保存 P1-A 计算证据，已标记为历史默认规则；原始结果未重新计算。'],
+    warnings: [trueSolarEvidenceIsUnknown
+      ? '历史记录未保存真太阳时证据，应用状态未知；原始结果未重新计算。'
+      : '历史记录未保存 P1-A 计算证据，已标记为历史默认规则；原始结果未重新计算。'],
   };
+}
+
+function migrateTrueSolarCorrection(value: unknown, settings: BaziCalculationSettings): RecordLike {
+  const raw = isRecord(value) ? value : {};
+  const hasAppliedFlag = typeof raw.applied === 'boolean';
+  const applied = hasAppliedFlag ? raw.applied : undefined;
+  const evidenceIsUnknown = settings.trueSolarTime && !hasAppliedFlag
+    && !isBaziSolarTimeVersion(raw.algorithmVersion)
+    && raw.provenanceStatus === undefined;
+  const correctionMinutes = typeof raw.correctionMinutes === 'number' ? raw.correctionMinutes : 0;
+  return {
+    ...raw,
+    ...(evidenceIsUnknown ? {} : { applied: applied ?? false }),
+    algorithmVersion: isBaziSolarTimeVersion(raw.algorithmVersion)
+      ? raw.algorithmVersion
+      : settings.trueSolarTimeVersion,
+    rawCorrectionMinutes: typeof raw.rawCorrectionMinutes === 'number' ? raw.rawCorrectionMinutes : correctionMinutes,
+    appliedCorrectionMinutes: typeof raw.appliedCorrectionMinutes === 'number'
+      ? raw.appliedCorrectionMinutes
+      : applied === true
+        ? Math.round(correctionMinutes)
+        : 0,
+    roundingRule: typeof raw.roundingRule === 'string'
+      ? raw.roundingRule
+      : evidenceIsUnknown
+        ? 'legacy-unknown'
+        : applied === true
+          ? 'legacy-js-math-round-after-tenth'
+          : 'not-applied',
+    dataSource: typeof raw.dataSource === 'string'
+      ? raw.dataSource
+      : evidenceIsUnknown
+        ? 'legacy-record'
+        : applied === true
+          ? 'legacy-record'
+          : 'not-applicable',
+    dataVersion: typeof raw.dataVersion === 'string'
+      ? raw.dataVersion
+      : evidenceIsUnknown
+        ? BAZI_TRUE_SOLAR_TIME_UNKNOWN
+        : settings.trueSolarTimeVersion,
+    ...(typeof raw.dataSourceUrl === 'string'
+      ? { dataSourceUrl: raw.dataSourceUrl }
+      : raw.provenanceStatus === 'current' && raw.algorithmVersion === BAZI_TRUE_SOLAR_TIME_V2
+        ? { dataSourceUrl: TRUE_SOLAR_DATA_URL }
+        : {}),
+    provenanceStatus: raw.provenanceStatus === 'current'
+      || raw.provenanceStatus === 'legacy'
+      || raw.provenanceStatus === 'unknown'
+      || raw.provenanceStatus === 'not-applied'
+      ? raw.provenanceStatus
+      : evidenceIsUnknown
+        ? 'unknown'
+        : applied === true
+          ? 'legacy'
+          : 'not-applied',
+  };
+}
+
+function migrateBaziEvidence(value: unknown, inputSnapshot: ChartInputSnapshot, settings: BaziCalculationSettings): BaziCalculationEvidence {
+  const fallback = legacyBaziEvidence(inputSnapshot, settings);
+  if (!isRecord(value)) return fallback;
+  return {
+    ...value,
+    calendarConversion: isRecord(value.calendarConversion)
+      ? value.calendarConversion
+      : fallback.calendarConversion,
+    trueSolarCorrection: migrateTrueSolarCorrection(value.trueSolarCorrection, settings),
+  } as unknown as BaziCalculationEvidence;
+}
+
+function calculationSettingsOrigin(
+  module: DivinationModule,
+  rawSettings: unknown,
+  settings: CalculationSettings,
+): ChartSnapshotMeta['calculationSettingsOrigin'] {
+  if (module !== 'bazi') return 'current';
+  const baziSettings = settings as BaziCalculationSettings;
+  if (baziSettings.trueSolarTimeVersion === BAZI_TRUE_SOLAR_TIME_V2 && isBaziSolarTimeVersion(isRecord(rawSettings) ? rawSettings.trueSolarTimeVersion : undefined)) {
+    return 'current';
+  }
+  if (baziSettings.trueSolarTimeVersion === BAZI_TRUE_SOLAR_TIME_V1) return 'legacy-true-solar-v1';
+  return 'legacy-unknown';
 }
 
 function legacyInputSnapshot(module: DivinationModule, payload: RecordLike, reading: RecordLike): ChartInputSnapshot {
@@ -273,14 +394,12 @@ function migrateReading(value: unknown): SavedReading | null {
   const inputSnapshot = migrateInputSnapshot(value.inputSnapshot)
     ?? migrateInputSnapshot(rawPayload.inputSnapshot)
     ?? legacyInputSnapshot(module, rawPayload, value);
-  const rawCalculationSettings = value.calculationSettings ?? rawPayload.calculationSettings;
+  const rawSnapshotMeta = isRecord(value.snapshotMeta) ? value.snapshotMeta : undefined;
+  const rawCalculationSettings = rawPayload.calculationSettings
+    ?? rawSnapshotMeta?.calculationSettings
+    ?? value.calculationSettings;
   const calculationSettings = migrateCalculationSettings(rawCalculationSettings, module);
-  const hasBaziSettings = module !== 'bazi' || (isRecord(rawCalculationSettings)
-    && typeof rawCalculationSettings.dayBoundary === 'string'
-    && typeof rawCalculationSettings.trueSolarTime === 'boolean'
-    && typeof rawCalculationSettings.solarTimeModel === 'string'
-    && typeof rawCalculationSettings.locationDatasetVersion === 'string'
-    && typeof rawCalculationSettings.calendarResolverVersion === 'string');
+  const hasBaziSettings = module !== 'bazi' || isCompleteLegacyBaziSettings(rawCalculationSettings);
   const generatedAt = typeof value.createdAt === 'string'
     ? value.createdAt
     : typeof rawPayload.generatedAt === 'string'
@@ -292,16 +411,9 @@ function migrateReading(value: unknown): SavedReading | null {
       ? rawPayload.engineVersion
       : 'legacy-unknown';
   const payloadInputSnapshot = migrateInputSnapshot(rawPayload.inputSnapshot) ?? inputSnapshot;
-  const payloadCalculationSettings = migrateCalculationSettings(rawPayload.calculationSettings ?? calculationSettings, module);
+  const payloadCalculationSettings = calculationSettings;
   const payloadBaziEvidence = module === 'bazi'
-    ? !isRecord(rawPayload.calculationEvidence)
-      ? legacyBaziEvidence(payloadInputSnapshot, payloadCalculationSettings)
-      : !isRecord(rawPayload.calculationEvidence.calendarConversion)
-        ? {
-            ...rawPayload.calculationEvidence,
-            calendarConversion: legacyBaziEvidence(payloadInputSnapshot, payloadCalculationSettings).calendarConversion,
-          }
-        : rawPayload.calculationEvidence
+    ? migrateBaziEvidence(rawPayload.calculationEvidence, payloadInputSnapshot, payloadCalculationSettings as BaziCalculationSettings)
     : undefined;
   const explanationSnapshot = migrateExplanationSnapshot(value.explanationSnapshot ?? rawPayload.explanation);
   const rawPayloadWithoutExplanation = Object.fromEntries(
@@ -325,18 +437,23 @@ function migrateReading(value: unknown): SavedReading | null {
       : {}),
     ...(explanationSnapshot ? { explanation: explanationSnapshot } : {}),
   } as unknown as ChartPayload;
-  const snapshotMeta = isRecord(value.snapshotMeta)
+  const migratedOrigin = calculationSettingsOrigin(module, rawCalculationSettings, calculationSettings);
+  const snapshotMeta = rawSnapshotMeta
     ? {
-        snapshotVersion: value.snapshotMeta.snapshotVersion ?? CHART_SNAPSHOT_VERSION,
-        generatedAt: value.snapshotMeta.generatedAt ?? generatedAt,
-        engineVersion: value.snapshotMeta.engineVersion ?? engineVersion,
-        calculationSettings: migrateCalculationSettings(value.snapshotMeta.calculationSettings ?? calculationSettings, module),
-        calculationSettingsOrigin: value.snapshotMeta.calculationSettingsOrigin === 'legacy-default' || !hasBaziSettings ? 'legacy-default' : 'current',
-        inputSnapshot: migrateInputSnapshot(value.snapshotMeta.inputSnapshot) ?? inputSnapshot,
+        snapshotVersion: rawSnapshotMeta.snapshotVersion ?? CHART_SNAPSHOT_VERSION,
+        generatedAt: rawSnapshotMeta.generatedAt ?? generatedAt,
+        engineVersion: rawSnapshotMeta.engineVersion ?? engineVersion,
+        calculationSettings: payloadCalculationSettings,
+        calculationSettingsOrigin: rawSnapshotMeta.calculationSettingsOrigin === 'legacy-default'
+          || rawSnapshotMeta.calculationSettingsOrigin === 'legacy-true-solar-v1'
+          || rawSnapshotMeta.calculationSettingsOrigin === 'legacy-unknown'
+          ? rawSnapshotMeta.calculationSettingsOrigin
+          : migratedOrigin,
+        inputSnapshot: migrateInputSnapshot(rawSnapshotMeta.inputSnapshot) ?? inputSnapshot,
       } as ChartSnapshotMeta
     : {
         ...snapshotMetaFromPayload(payload),
-        calculationSettingsOrigin: hasBaziSettings ? 'current' : 'legacy-default',
+        calculationSettingsOrigin: module === 'bazi' ? migratedOrigin : hasBaziSettings ? 'current' : 'legacy-default',
       };
   const liuyaoPayload = module === 'liuyao' && payload.module === 'liuyao' ? payload : null;
   const baziSnapshots = module === 'bazi'

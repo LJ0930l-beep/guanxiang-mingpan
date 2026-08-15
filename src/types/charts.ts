@@ -63,7 +63,7 @@ export interface ChartSnapshotMeta {
   engineVersion: string;
   calculationSettings: CalculationSettings;
   /** Old records are explicitly labeled instead of being silently reinterpreted. */
-  calculationSettingsOrigin?: 'current' | 'legacy-default';
+  calculationSettingsOrigin?: 'current' | 'legacy-default' | 'legacy-true-solar-v1' | 'legacy-unknown';
   inputSnapshot: ChartInputSnapshot;
 }
 

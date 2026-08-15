@@ -2,8 +2,8 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-A1 四术 Golden Case 统一合同、分类门禁与现状盘点
-> 本批状态：Sol High 独立验收 PASS（2026-08-15）
+> 批次：P5-A3a 真太阳时版本兼容、NOAA v2 与 Storage Schema 3
+> 本批状态：实现完成，等待 Sol High 独立验收（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -187,9 +187,17 @@ P5-A1 已按本批 handoff 完成实现并经 Sol High 独立验收 **PASS**，*
 
 本 PASS 只覆盖 P5-A2 两条 HKO published-reference Golden 及其离线质量证据；整个 P5-A、Phase 5、Level A 发布门均未完成。
 
-### P5-A3 决策风险登记（仅候选）
+### P5-A3 风险与授权边界登记
 
 `src/domains/bazi/true-solar-time.ts` 的 `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但当前公式并非本批 HKO 引用或 NOAA 229.18 系数公式，且常量当前未进入保存 evidence。P5-A3 是未授权的重大决策门：由 Sol High 决定继续当前近似式并纠正来源标签，或切换 NOAA 公式并处理版本/历史兼容；本批不预先选择公式，不修改真太阳时代码、版本或快照。
+
+上一段保留的是 P5-A2 当时的历史候选风险原文；主管已另行授权进入 P5-A3a 方案 A 实现。新计算使用 `true-solar-time-v2-noaa` 与 NOAA `solareqns.PDF` 229.18 系数，保留 `true-solar-time-v1-approx` 原公式/原 `Math.round` 行为，并将 `legacy-unknown` 作为拒绝实际计算的明确版本。v2 使用 UTC-only 运算、固定 `Asia/Shanghai` 业务时区、民用时分秒 gamma、对称 half-away-from-zero 舍入，并保存 raw/display/applied 修正、舍入规则、来源/版本、NOAA URL 和 provenance。
+
+Storage Schema 2 → 3 与普通/加密备份导入均只做无计算元数据迁移：完整旧八字设置缺 version 标记 v1，设置或证据不可信标记 unknown；历史 pillars、normalized chart、evidence graph、interpretation/explanation、时间戳、engineVersion、input/profile snapshot、feedback/favorite 及既有 correction 时刻/数值均不重算、不覆盖。缺失证据的 `applied` 保持缺省并以 `provenanceStatus=unknown` 表达，不能合成 `false`。schema3 完整八字记录保持原样，旧形态仍进入同一迁移函数；future schema4 继续 blocked/write-protected。
+
+## 5.3 P5-A3a 真太阳时版本兼容与 Storage Schema 3（实现完成，等待主管验收）
+
+回归覆盖 98 项统一测试：跨 `TZ=UTC`/`Asia/Shanghai` deepEqual、NOAA 数值/闰年、正负 0.5 舍入、北京 116.4074E 09:13/09:14/09:15 实际时柱、东经 121 度跨时辰/子初/午夜、schema2→3 no-recalc、snapshot-only settings、unknown evidence、普通/加密 schema2 导入与 merge/replace、payload/snapshot settings 一致性。P5-A3b 复核与 UI 证据展示不在本批授权范围；本批当前状态为实现完成等待 Sol High 独立验收。整个 P5-A3、P5-A 和 Phase 5 仍未完成。
 
 ## 6. 统一批次验收模板
 
@@ -219,6 +227,8 @@ P5-A1 已按本批 handoff 完成实现并经 Sol High 独立验收 **PASS**，*
 | Node 测试 loader/module warning | 当前测试使用 Node experimental strip-types/loader，可能产生 warning；不影响本基线结果，但升级 Node 或依赖时需复核。 | 维护统一 `npm test`，在兼容 Node 版本升级时消除或记录 warning。 |
 | 真太阳时来源标签（P5-A3 未授权重大决策门） | `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但当前公式并非本批 HKO 引用或 NOAA 229.18 系数公式，且常量当前未进入保存 evidence。 | 由 Sol High 在 P5-A3 决定继续近似式并纠正来源标签，或切换 NOAA 公式并处理版本/历史兼容；本批不预先选择公式、不改代码。 |
 
+> 上述真太阳时表格行是 P5-A2 历史登记；当前 P5-A3a 方案 A 已实现并等待 Sol High 验收，P5-A3b 显式复核/UI 展示仍未授权。
+
 ## 8. 下一步授权边界
 
 主管在 P5-0 验收后已授权并完成实现、且已独立验收通过 **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**；**P5-A2 香港天文台 published-reference Golden 已完成实现并经 Sol High 独立验收 PASS**：
@@ -227,6 +237,6 @@ P5-A1 已按本批 handoff 完成实现并经 Sol High 独立验收 **PASS**，*
 - 对每条用例标注 `independent-validation`、`regression-only` 或待验证；未有独立来源/专业复核的用例只能作为 regression-only，不得伪造专业真值或“权威正确”结论。
 - P5-A1 仅做当前四术用例和门禁现状盘点；城市覆盖、来源/许可逐条补全属于 P5-B，不进入 P5-A。
 - P5-A2 仅增加 HKO 公开资料支持的两条 published-reference Golden 与离线测试，不改变任何 resolver/engine 输出；立春只比较分钟，农历只比较日期，且不验证四柱流派结论。
-- P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS。P5-A3 只列真太阳时来源标签风险与未授权重大决策门，不预先批准实现或选择公式。
+- P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成实现并等待独立验收。P5-A3b 的记录页显式复核/UI 展示仍是未授权重大决策门，不预先扩展本批范围。
 
-P5-A1、P5-A2 均已经 Sol High 独立验收通过；整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
+P5-A1、P5-A2 已经 Sol High 独立验收通过，P5-A3a 已完成方案 A 实现并等待独立验收；P5-A3b 仍是未授权重大决策门。整个 P5-A、P5-A3、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
