@@ -3,7 +3,7 @@
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
 > 批次：P5-A4b1 安全输入校验、可识别错误与 resolution overlay
-> 本批状态：实现完成，待 Sol High 独立预审；P5-A4a 仍为历史已验收批次（2026-08-15）
+> 本批状态：Sol High 独立验收 PASS；P5-A4a 仍为历史已验收批次（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -268,7 +268,7 @@ Sol High 独立验收结论：**P5-A3b PASS**。P5-A3a 与 P5-A3b 均完成，P5
 
 Sol High 独立验收结论：**P5-A4a PASS**。本批没有使用 Expo API，Expo v57 文档约束已核对。P5-A4a 不关闭整个 P5-A；P5-A4b、P5-B、P5-C 以及负责人决策项仍需独立授权，整个 P5-A 与 Phase 5 仍未完成。
 
-## 5.6 P5-A4b1 安全输入校验、可识别错误与 resolution overlay（实现待 Sol High 独立验收）
+## 5.6 P5-A4b1 安全输入校验、可识别错误与 resolution overlay（Sol High 独立验收 PASS）
 
 ### Scope 与允许范围
 
@@ -285,9 +285,11 @@ P5-A4a 的 immutable registry、条目事实和 `41 / 18 / 15 / 5 / 2 / 1` 统�
 
 ### 测试与限制
 
-`tests/p5-input-validation.regression.mjs` 新增并接入统一测试，覆盖 overlay、错误实例/合同字段、闰日、非法日期、partial/non-finite/out-of-range 坐标、合法坐标、Ziwei lunar、overlay validator 负向门禁与 UTC/`Asia/Shanghai` 一致性；A4a 测试仍保留未知坐标 `0,0` probe。当前预审已通过 `git diff --check`、typecheck、lint、`npm test`（120/120）和 `npm run build:web`（8 routes，Web Export 实际执行）。
+`tests/p5-input-validation.regression.mjs` 新增并接入统一测试，覆盖 overlay、错误实例/合同字段、闰日、非法日期、partial/non-finite/out-of-range 坐标、合法坐标、Ziwei lunar、overlay validator 负向门禁与 UTC/`Asia/Shanghai` 一致性；A4a 测试仍保留未知坐标 `0,0` probe。主管本地独立复跑 `git diff --check`、typecheck、lint、`npm test`（120/120）和 `npm run build:web`（8 routes，Web Export 实际执行），全部 PASS。
 
-本小批不关闭 cross error taxonomy、unknown-coordinate `0,0`、公开日期范围、DST、缺时辰或其余 A4a gap/decision-required；P5-A 与 Phase 5 仍未完成。Sol High 仍需独立 review 和 acceptance。
+实现交付与远端验收证据：local `0d279c677c1c05eb2492f9ae3b779267feb8b165`；remote `8ab5c6981c89590f6f19fabdc688c34ae60650ed`；[GitHub Actions run 31882220415](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31882220415) 为 `completed/success`，validate job 的 Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功，Web Export 未 skip。Node 20 action runtime warning 继续沿既有非阻断 CI maintenance 记录。
+
+本小批经 Sol High 独立验收 **PASS**，但不关闭 cross error taxonomy、unknown-coordinate `0,0`、公开日期范围、DST、缺时辰或其余 A4a gap/decision-required；P5-A 与 Phase 5 仍未完成。
 
 ## 6. 统一批次验收模板
 
@@ -330,4 +332,4 @@ P5-A4a 的 immutable registry、条目事实和 `41 / 18 / 15 / 5 / 2 / 1` 统�
 - P5-A2 仅增加 HKO 公开资料支持的两条 published-reference Golden 与离线测试，不改变任何 resolver/engine 输出；立春只比较分钟，农历只比较日期，且不验证四柱流派结论。
 - P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成实现与最小兼容修复，并经 Sol High 独立验收 PASS。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现并经 Sol High 独立验收 PASS，范围为历史证据展示与显式“按当前规则复核”。
 
-P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4a 的 gap、decision-required 和 P5-B/P5-C 路由不代表算法已修复。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
+P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4a/P5-A4b1 的 gap、decision-required 和 P5-B/P5-C 路由不代表算法已修复。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。

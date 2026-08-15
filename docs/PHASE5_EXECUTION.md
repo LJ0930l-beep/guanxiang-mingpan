@@ -1,10 +1,10 @@
 # Phase 5 · P5-A1～P5-A4b1 四术可信度与输入边界审计
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a 已由 Sol High 独立验收 PASS；P5-A4b1 已完成实现并待 Sol High 独立预审；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和预审证据，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -282,7 +282,7 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 
 Sol High 独立验收结论：**P5-A4a PASS**。本结论只覆盖四术边界/输入审计合同、机器门禁和已登记的现状事实；P5-A4a 不关闭整个 P5-A，真实 gap、负责人决策项、P5-A4b、P5-B、P5-C 及 Phase 5 仍需独立授权和验收。
 
-## 12. P5-A4b1 安全输入校验、可识别错误与 resolution overlay（实现待 Sol High 独立验收）
+## 12. P5-A4b1 安全输入校验、可识别错误与 resolution overlay（Sol High 独立验收 PASS）
 
 ### 12.1 Scope 与明确不做
 
@@ -308,7 +308,7 @@ P5-A4a 原 registry 与历史统计 `41 / 18 / 15 / 5 / 2 / 1` 未改，原始�
 
 新增 `tests/p5-input-validation.regression.mjs` 并接入统一 `npm test`，覆盖 overlay 合同、错误实例/纯合同守卫、非法日期、合法闰日（含世纪闰年）、partial/NaN/Infinity/越界/边界坐标、合法坐标、城市 resolver 命中、Ziwei lunar 绕过 Gregorian validator、overlay validator 负向门禁，以及 UTC/`Asia/Shanghai` 结果与错误一致性。A4a 回归保留 immutable registry 与未知坐标 `0,0` probe，不再要求已修复的非法日期旧行为。
 
-当前工作树预审命令结果：
+主管本地独立验收命令结果：
 
 ```text
 git diff --check       PASS
@@ -318,4 +318,6 @@ npm test               PASS（120/120，含本批新增 8 项）
 npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
-上述结果不构成 Sol High 验收；实现仍待 Sol High 独立 review/acceptance。即使本批通过，cross error taxonomy、unknown-coordinate `0,0`、日期支持范围、DST、缺时辰及其余 A4a gap/decision-required 项仍未完成，P5-A 与 Phase 5 仍未完成。
+实现交付与独立验收证据：local `0d279c677c1c05eb2492f9ae3b779267feb8b165`；remote `8ab5c6981c89590f6f19fabdc688c34ae60650ed`；[GitHub Actions run 31882220415](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31882220415) 为 `completed/success`，validate job 的 Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功，Web Export 未 skip。主管独立复跑 `git diff --check`、typecheck、lint、`npm test` 120/120 与 Web Export 8 routes，全部 PASS。Node 20 action runtime warning 仍按既有非阻断 CI maintenance 登记，不新增结论。
+
+Sol High 独立验收结论：**P5-A4b1 PASS**。本结论只覆盖本批安全输入校验、可识别错误合同、resolution overlay 和对应工程回归；不关闭 cross error taxonomy、unknown-coordinate `0,0`、日期支持范围、DST、缺时辰或其余 A4a gap/decision-required 项，P5-A 与 Phase 5 仍未完成。

@@ -69,7 +69,7 @@ runtime validator 会检查纯 JSON（拒绝函数、`Date`、循环引用、NaN
 
 P5-A4a 已完成“盘点 + 合同 + 机器门禁 + 只读 probes”的实现，并通过 Sol High 独立验收 **PASS**。该结论只覆盖审计合同、机器门禁和已登记的工程现状，不把项目回归、第三方库返回或 CI 通过提升为四术专业真值。P5-A 不能因此关闭：真实 gap 尚未修复，决策项尚未批准，P5-A4b/P5-B/P5-C 仍需单独 handoff；整个 P5-A 与 Phase 5 仍未完成。任何对外文案只能说当前输入边界和工程回归已被记录，不能说四术结论已经获得专业验证。
 
-## 8. P5-A4b1 resolution overlay（实现待 Sol High 独立验收）
+## 8. P5-A4b1 resolution overlay（Sol High 独立验收 PASS）
 
 P5-A4a 的审计 registry 是 immutable snapshot，本节不修改其 41 项条目或 `covered / gap / decision-required / not-applicable / routed-p5-b = 18 / 15 / 5 / 2 / 1` 统计。新增纯 JSON 合同 `p5-a4b-input-resolution.v1` 只关闭以下三个原始 `gap`，每项均保留原 `auditCaseId` 并指向 `P5-A4b`：
 
@@ -81,4 +81,4 @@ P5-A4a 的审计 registry 是 immutable snapshot，本节不修改其 41 项条�
 
 overlay validator 强制 `auditCaseId` 存在于本 registry、原状态为 `gap` 且 target 为 `P5-A4b`，并检查纯 JSON、唯一 resolution/audit ID 和 `tests/` 引用；不预填 commit SHA。A4a 的未知城市 `0,0` probe 仍保留为 gap：两坐标都缺失继续沿现有 resolver/`0,0` 行为，城市命中仍为 exact。
 
-本批不解决 cross error taxonomy、unknown-coordinate `0,0` 语义、公开日期支持范围、DST、缺时辰、Astrology lunar 策略或其余 gap/decision-required；P5-A 与 Phase 5 仍未完成。当前实现预审已通过 `git diff --check`、typecheck、lint、统一 `npm test`（120/120）和 `npm run build:web`（8 routes，Web Export 实际执行），Sol High 尚未独立验收。
+本批不解决 cross error taxonomy、unknown-coordinate `0,0` 语义、公开日期支持范围、DST、缺时辰、Astrology lunar 策略或其余 gap/decision-required；P5-A 与 Phase 5 仍未完成。实现 local `0d279c677c1c05eb2492f9ae3b779267feb8b165` / remote `8ab5c6981c89590f6f19fabdc688c34ae60650ed`；[CI run 31882220415](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31882220415) 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行，Web Export 未 skip；主管本地 `git diff --check`、typecheck、lint、`npm test` 120/120、`npm run build:web` 8 routes 全部 PASS。Node 20 action runtime warning 继续沿既有非阻断 CI maintenance 登记。Sol High 独立验收结论：**P5-A4b1 PASS**；该结论不表示整个 P5-A 或 Phase 5 已完成。
