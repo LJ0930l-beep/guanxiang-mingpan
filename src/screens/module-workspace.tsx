@@ -594,6 +594,11 @@ function ZiweiResult({ result }: { result: ZiweiChartView }) {
         <View><Text style={styles.resultEyebrow}>命主 / 身主</Text><Text style={styles.ziweiMetaValue}>{result.lifeMasterStar} / {result.bodyMasterStar}</Text></View>
         <View><Text style={styles.resultEyebrow}>农历</Text><Text style={styles.ziweiMetaValue}>{result.lunarDate}</Text></View>
       </View>
+      <ExplanationLayer
+        snapshot={result.explanation}
+        evidenceNodes={result.evidenceGraph.nodes}
+        glossaryTerms={listGlossaryTerms('ziwei')}
+      />
       <View style={styles.palaceBoard}>
         {result.palaces.map((palace, index) => (
           <AnimatedReveal delay={(index % 6) * 55} key={`${palace.name}-${palace.stemBranch}`} style={[styles.palaceCard, wide ? styles.palaceCardWide : styles.palaceCardNarrow]}>

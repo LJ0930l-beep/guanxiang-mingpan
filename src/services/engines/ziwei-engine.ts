@@ -6,6 +6,7 @@ import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeZiweiChart } from '@/domains/ziwei/model/normalized-chart';
 import { buildZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
+import { buildZiweiExplanation } from '@/domains/ziwei/explanation/index';
 
 export function calculateZiweiView(
   profile: BirthProfile,
@@ -39,11 +40,12 @@ export function calculateZiweiView(
   const source = { engineVersion: ENGINE_VERSIONS.ziwei, snapshotVersion: CHART_SNAPSHOT_VERSION };
   const normalizedChart = normalizeZiweiChart(result, source);
   const evidenceGraph = buildZiweiEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.ziwei });
+  const generated = generatedAt(options);
 
   return {
     module: 'ziwei',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
-    generatedAt: generatedAt(options),
+    generatedAt: generated,
     engineVersion: ENGINE_VERSIONS.ziwei,
     calculationSettings: settings,
     inputSnapshot: birthInputSnapshot(profile, gender, settings),
@@ -59,6 +61,7 @@ export function calculateZiweiView(
     palaces,
     normalizedChart,
     evidenceGraph,
+    explanation: buildZiweiExplanation({ chart: normalizedChart, evidenceGraph, generatedAt: generated }),
     mutagens,
     focus: [
       `命宫落「${lifePalace?.stemBranch ?? result.earthlyBranchOfSoulPalace}」，${lifePalace?.stars.length ? `主星为 ${lifePalace.stars.join('、')}` : '本宫无十四主星坐守'}。`,
