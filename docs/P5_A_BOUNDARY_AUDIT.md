@@ -82,7 +82,7 @@ P5-A4a 的审计 registry 是 immutable snapshot，本节不修改其 41 项条�
 overlay validator 强制 `auditCaseId` 存在于本 registry、原状态为 `gap` 且 target 为 `P5-A4b`，并检查纯 JSON、唯一 resolution/audit ID 和 `tests/` 引用；不预填 commit SHA。A4a 的未知城市 `0,0` probe 仍保留为 gap：两坐标都缺失继续沿现有 resolver/`0,0` 行为，城市命中仍为 exact。
 
 本批不解决 cross error taxonomy、unknown-coordinate `0,0` 语义、公开日期支持范围、DST、缺时辰、Astrology lunar 策略或其余 gap/decision-required；P5-A 与 Phase 5 仍未完成。实现 local `0d279c677c1c05eb2492f9ae3b779267feb8b165` / remote `8ab5c6981c89590f6f19fabdc688c34ae60650ed`；[CI run 31882220415](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31882220415) 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行，Web Export 未 skip；主管本地 `git diff --check`、typecheck、lint、`npm test` 120/120、`npm run build:web` 8 routes 全部 PASS。Node 20 action runtime warning 继续沿既有非阻断 CI maintenance 登记。Sol High 独立验收结论：**P5-A4b1 PASS**；该结论不表示整个 P5-A 或 Phase 5 已完成。
-## 9. P5-A4b2 六爻输入 resolution overlay（待 Sol High 独立验收）
+## 9. P5-A4b2 六爻输入 resolution overlay（Sol High 独立验收 PASS）
 
 P5-A4a 的 41 项 registry 与 `covered / gap / decision-required / not-applicable / routed-p5-b = 18 / 15 / 5 / 2 / 1` immutable snapshot 不变；P5-A4b1 的 v1 overlay 原三项 export、registry 和 validator 不变。本小批只关闭六爻两个原始 gap。
 
@@ -93,4 +93,4 @@ P5-A4a 的 41 项 registry 与 `covered / gap / decision-required / not-applicab
 
 新增纯 JSON `p5-a4b-input-resolution.v2` 五项 registry（原三项 + 上述两项），版本感知、resolution/audit ID 唯一、每项关联原始 `gap` 与 `targetBatch=P5-A4b`，不写 commit SHA。A4a 旧 probe 不再要求空 seed 成功；`0,0` probe 与其他统计保持不变。
 
-实现新增 `tests/p5-liuyao-input-validation.regression.mjs` 8 项回归并接入统一 `npm test`；本地实现者与主管预审的 `git diff --check`、typecheck、lint、`npm test` 128/128、build:web 8 routes 均 PASS（Web Export 实际执行）。远端 CI 与 Sol High 最终验收仍待执行。覆盖 legal local/seconds/millis、Z/`+08:00`/`+0800`、非法 date/offset/seed 矩阵、Unicode payload/inputSnapshot、deepEqual、自动 seed 和 UTC/Asia/Shanghai 结果/错误一致性。六爻 engine/cross error taxonomy、unknown-coordinate `0,0`、公开日期范围、DST、缺时辰及其余 gap/decision-required 仍未完成，P5-A 与 Phase 5 仍未完成。
+实现新增 `tests/p5-liuyao-input-validation.regression.mjs` 8 项回归并接入统一 `npm test`；实现 local `0815612cb8e2261325828ccf0d07e51525f34280` / remote `a976b4f07a2d516713db10cb2c0f2b53c98aa51a`；GitHub Actions run `31884436927` 为 `completed/success`，validate job `95011564415` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；主管本地独立门禁 `git diff --check`、typecheck、lint、`npm test` 128/128、build:web 8 routes 均 PASS（Web Export 实际执行）。Sol High 独立验收结论：**P5-A4b2 PASS**。覆盖 legal local/seconds/millis、Z/`+08:00`/`+0800`、非法 date/offset/seed 矩阵、Unicode payload/inputSnapshot、deepEqual、自动 seed 和 UTC/Asia/Shanghai 结果/错误一致性。六爻 engine/cross error taxonomy、unknown-coordinate `0,0`、公开日期范围、DST、缺时辰、owner decisions 及其余 gap/decision-required 仍未完成，P5-A 与 Phase 5 仍未完成。

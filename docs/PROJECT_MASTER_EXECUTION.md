@@ -3,7 +3,7 @@
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
 > 批次：P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现
-> 本批状态：实现完成待 Sol High 独立验收；P5-A4b1/P5-A4a 为历史已验收批次（2026-08-15）
+> 本批状态：Sol High 独立验收 PASS；P5-A4b1/P5-A4a 为历史已验收批次（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -291,7 +291,7 @@ P5-A4a 的 immutable registry、条目事实和 `41 / 18 / 15 / 5 / 2 / 1` 统�
 
 本小批经 Sol High 独立验收 **PASS**，但不关闭 cross error taxonomy、unknown-coordinate `0,0`、公开日期范围、DST、缺时辰或其余 A4a gap/decision-required；P5-A 与 Phase 5 仍未完成。
 
-## 5.7 P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现（待 Sol High 独立验收）
+## 5.7 P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现（Sol High 独立验收 PASS）
 
 ### Scope 与白名单
 
@@ -316,7 +316,7 @@ npm test               PASS（128/128）
 npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
-本地实现者与主管预审的 diff-check、typecheck、lint、npm test 128/128 和 build:web 8 routes 均 PASS；远端 CI 与 Sol High 最终验收仍待执行。本批只关闭六爻 date/seed 两项；六爻 engine/cross taxonomy、`0,0`、日期范围、DST、缺时辰及其他 gap/decision-required 未完成，P5-A 与 Phase 5 仍未完成。Sol High 独立完成最终 review/acceptance；本实现者不接受自己的工作。
+实现 local `0815612cb8e2261325828ccf0d07e51525f34280` / remote `a976b4f07a2d516713db10cb2c0f2b53c98aa51a`；GitHub Actions run `31884436927` 为 `completed/success`，validate job `95011564415` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；主管本地独立门禁 `git diff --check`、typecheck、lint、`npm test` 128/128 和 `build:web` 8 routes 均 PASS。Sol High 独立验收结论：**P5-A4b2 PASS**。本批只关闭六爻 date/seed 两项；六爻 engine/cross taxonomy、`0,0`、日期范围、DST、缺时辰、owner decisions 及其他 gap/decision-required 未完成，P5-A 与 Phase 5 仍未完成。
 
 ## 6. 统一批次验收模板
 
