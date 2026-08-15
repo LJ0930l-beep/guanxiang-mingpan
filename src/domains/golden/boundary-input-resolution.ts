@@ -4,6 +4,9 @@ import {
 } from '@/domains/golden/boundary-input-contract';
 
 export const BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION = 'p5-a4b-input-resolution.v1' as const;
+/** Explicit v1 aliases keep the original short exports source-compatible. */
+export const BOUNDARY_INPUT_RESOLUTION_V1_CONTRACT_VERSION = BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION;
+export const BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION = 'p5-a4b-input-resolution.v2' as const;
 export const BOUNDARY_INPUT_RESOLUTION_STATUS = 'resolved' as const;
 
 export const BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS = [
@@ -12,7 +15,16 @@ export const BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS = [
   'p5-a4a-astrology-invalid-coordinate',
 ] as const;
 
+export const BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS = [
+  ...BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS,
+  'p5-a4a-liuyao-invalid-date',
+  'p5-a4a-liuyao-invalid-seed',
+] as const;
+
+export const BOUNDARY_INPUT_RESOLUTION_V1_AUDIT_CASE_IDS = BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS;
+
 export type BoundaryInputResolutionAuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS)[number];
+export type BoundaryInputResolutionV2AuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS)[number];
 
 export interface BoundaryInputResolution {
   contractVersion: typeof BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION;
@@ -24,6 +36,20 @@ export interface BoundaryInputResolution {
   testRefs: readonly string[];
   notes: string;
 }
+
+export interface BoundaryInputResolutionV2 {
+  contractVersion: typeof BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION;
+  resolutionId: string;
+  auditCaseId: BoundaryInputResolutionV2AuditCaseId;
+  status: typeof BOUNDARY_INPUT_RESOLUTION_STATUS;
+  targetBatch: 'P5-A4b';
+  summary: string;
+  testRefs: readonly string[];
+  notes: string;
+}
+
+export type BoundaryInputResolutionV1 = BoundaryInputResolution;
+export type BoundaryInputResolutionVersioned = BoundaryInputResolution | BoundaryInputResolutionV2;
 
 const RESOLUTION_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const TEST_REF_PATTERN = /^tests\/[^\s#]+(?:#[^\s]+)?$/;
@@ -70,7 +96,31 @@ function isResolutionAuditCaseId(value: unknown): value is BoundaryInputResoluti
     && BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS.includes(value as BoundaryInputResolutionAuditCaseId);
 }
 
-function validateResolutionValue(value: unknown, path: string): string[] {
+function isResolutionV2AuditCaseId(value: unknown): value is BoundaryInputResolutionV2AuditCaseId {
+  return typeof value === 'string'
+    && BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS.includes(value as BoundaryInputResolutionV2AuditCaseId);
+}
+
+interface ResolutionContractSpec {
+  contractVersion: string;
+  auditCaseIds: readonly string[];
+}
+
+const V1_RESOLUTION_SPEC: ResolutionContractSpec = {
+  contractVersion: BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION,
+  auditCaseIds: BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS,
+};
+
+const V2_RESOLUTION_SPEC: ResolutionContractSpec = {
+  contractVersion: BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION,
+  auditCaseIds: BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS,
+};
+
+function isResolutionAuditCaseIdForSpec(value: unknown, spec: ResolutionContractSpec): boolean {
+  return typeof value === 'string' && spec.auditCaseIds.includes(value);
+}
+
+function validateResolutionValue(value: unknown, path: string, spec: ResolutionContractSpec): string[] {
   const errors: string[] = [];
   if (!isRecord(value)) return [`${path} must be an object`];
   collectJsonErrors(value, path, errors, new WeakSet<object>());
@@ -78,13 +128,13 @@ function validateResolutionValue(value: unknown, path: string): string[] {
   for (const property of ['contractVersion', 'resolutionId', 'auditCaseId', 'status', 'targetBatch', 'summary', 'testRefs', 'notes']) {
     if (!Object.prototype.hasOwnProperty.call(value, property)) errors.push(`${path}.${property} is required`);
   }
-  if (value.contractVersion !== BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION) {
-    errors.push(`${path}.contractVersion must be ${BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION}`);
+  if (value.contractVersion !== spec.contractVersion) {
+    errors.push(`${path}.contractVersion must be ${spec.contractVersion}`);
   }
   if (typeof value.resolutionId !== 'string' || !RESOLUTION_ID_PATTERN.test(value.resolutionId)) {
     errors.push(`${path}.resolutionId must be a stable kebab-case identifier`);
   }
-  if (!isResolutionAuditCaseId(value.auditCaseId)) errors.push(`${path}.auditCaseId is not supported`);
+  if (!isResolutionAuditCaseIdForSpec(value.auditCaseId, spec)) errors.push(`${path}.auditCaseId is not supported`);
   if (value.status !== BOUNDARY_INPUT_RESOLUTION_STATUS) errors.push(`${path}.status must be resolved`);
   if (value.targetBatch !== 'P5-A4b') errors.push(`${path}.targetBatch must be P5-A4b`);
   if (!isNonEmptyString(value.summary)) errors.push(`${path}.summary must be a non-empty string`);
@@ -104,7 +154,7 @@ export function getBoundaryInputResolutionValidationErrors(
   path = 'boundaryInputResolution',
   auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
 ): readonly string[] {
-  const errors = validateResolutionValue(value, path);
+  const errors = validateResolutionValue(value, path, V1_RESOLUTION_SPEC);
   if (errors.length > 0 || !isRecord(value) || !isResolutionAuditCaseId(value.auditCaseId)) return errors;
   const auditCase = auditCaseById(auditRegistry).get(value.auditCaseId);
   if (!auditCase) {
@@ -120,6 +170,74 @@ export function validateBoundaryInputResolution(value: unknown): BoundaryInputRe
   const errors = getBoundaryInputResolutionValidationErrors(value);
   if (errors.length > 0) throw new Error(`Invalid P5-A4b boundary input resolution:\n${errors.join('\n')}`);
   return value as BoundaryInputResolution;
+}
+
+export function getBoundaryInputResolutionV2ValidationErrors(
+  value: unknown,
+  path = 'boundaryInputResolution',
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  const errors = validateResolutionValue(value, path, V2_RESOLUTION_SPEC);
+  if (errors.length > 0 || !isRecord(value) || !isResolutionV2AuditCaseId(value.auditCaseId)) return errors;
+  const auditCase = auditCaseById(auditRegistry).get(value.auditCaseId);
+  if (!auditCase) {
+    errors.push(`${path}.auditCaseId must exist in the P5-A4a audit registry`);
+  } else {
+    if (auditCase.status !== 'gap') errors.push(`${path}.auditCaseId must map from an original gap case`);
+    if (auditCase.targetBatch !== 'P5-A4b') errors.push(`${path}.auditCaseId must map from targetBatch P5-A4b`);
+  }
+  return errors;
+}
+
+export function validateBoundaryInputResolutionV2(value: unknown): BoundaryInputResolutionV2 {
+  const errors = getBoundaryInputResolutionV2ValidationErrors(value);
+  if (errors.length > 0) throw new Error(`Invalid P5-A4b v2 boundary input resolution:\n${errors.join('\n')}`);
+  return value as BoundaryInputResolutionV2;
+}
+
+function getBoundaryInputResolutionRegistryValidationErrorsForSpec(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[],
+  spec: ResolutionContractSpec,
+  validateItem: (item: unknown, path: string, auditRegistry: readonly BoundaryInputAuditCase[]) => readonly string[],
+): readonly string[] {
+  if (!Array.isArray(value)) return ['boundaryInputResolutions must be an array'];
+  const errors: string[] = [];
+  const ids = new Set<string>();
+  const auditIds = new Set<string>();
+  const auditMap = auditCaseById(auditRegistry);
+
+  value.forEach((item, index) => {
+    const path = `boundaryInputResolutions[${index}]`;
+    const itemErrors = validateItem(item, path, auditRegistry);
+    errors.push(...itemErrors);
+    if (itemErrors.length === 0 && isRecord(item)) {
+      const resolutionId = item.resolutionId;
+      const auditCaseId = item.auditCaseId;
+      if (typeof resolutionId === 'string') {
+        if (ids.has(resolutionId)) errors.push(`${path}.resolutionId duplicates ${resolutionId}`);
+        ids.add(resolutionId);
+      }
+      if (typeof auditCaseId === 'string') {
+        if (auditIds.has(auditCaseId)) errors.push(`${path}.auditCaseId duplicates ${auditCaseId}`);
+        auditIds.add(auditCaseId);
+      }
+    }
+  });
+
+  if (value.length !== spec.auditCaseIds.length) {
+    errors.push(`boundaryInputResolutions must contain exactly ${spec.auditCaseIds.length} resolutions`);
+  }
+  for (const auditCaseId of spec.auditCaseIds) {
+    if (!auditMap.has(auditCaseId)) errors.push(`audit registry is missing ${auditCaseId}`);
+    if (!auditIds.has(auditCaseId)) errors.push(`resolution registry is missing ${auditCaseId}`);
+  }
+  for (const auditCaseId of auditIds) {
+    if (!spec.auditCaseIds.includes(auditCaseId)) {
+      errors.push(`resolution registry contains unsupported auditCaseId ${auditCaseId}`);
+    }
+  }
+  return errors;
 }
 
 export function getBoundaryInputResolutionRegistryValidationErrors(
@@ -169,6 +287,69 @@ export function validateBoundaryInputResolutionRegistry(
   return value as readonly BoundaryInputResolution[];
 }
 
+export function getBoundaryInputResolutionV2RegistryValidationErrors(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  return getBoundaryInputResolutionRegistryValidationErrorsForSpec(
+    value,
+    auditRegistry,
+    V2_RESOLUTION_SPEC,
+    getBoundaryInputResolutionV2ValidationErrors,
+  );
+}
+
+export function validateBoundaryInputResolutionV2Registry(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly BoundaryInputResolutionV2[] {
+  const errors = getBoundaryInputResolutionV2RegistryValidationErrors(value, auditRegistry);
+  if (errors.length > 0) throw new Error(`Invalid P5-A4b v2 boundary input resolution registry:\n${errors.join('\n')}`);
+  return value as readonly BoundaryInputResolutionV2[];
+}
+
+/** Version-aware entry points for consumers that receive a serialized overlay. */
+export function getBoundaryInputResolutionVersionedValidationErrors(
+  value: unknown,
+  path = 'boundaryInputResolution',
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  if (isRecord(value) && value.contractVersion === BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION) {
+    return getBoundaryInputResolutionV2ValidationErrors(value, path, auditRegistry);
+  }
+  return getBoundaryInputResolutionValidationErrors(value, path, auditRegistry);
+}
+
+export function validateBoundaryInputResolutionVersioned(value: unknown): BoundaryInputResolutionVersioned {
+  const errors = getBoundaryInputResolutionVersionedValidationErrors(value);
+  if (errors.length > 0) throw new Error(`Invalid P5-A4b boundary input resolution:\n${errors.join('\n')}`);
+  return value as BoundaryInputResolutionVersioned;
+}
+
+export function getBoundaryInputResolutionVersionedRegistryValidationErrors(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    return ['boundaryInputResolutions must be a non-empty array'];
+  }
+  const versions = new Set(value.map((item) => (isRecord(item) ? item.contractVersion : undefined)));
+  if (versions.size !== 1) return ['boundaryInputResolutions must contain exactly one contract version'];
+  if (versions.has(BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION)) {
+    return getBoundaryInputResolutionV2RegistryValidationErrors(value, auditRegistry);
+  }
+  return getBoundaryInputResolutionRegistryValidationErrors(value, auditRegistry);
+}
+
+export function validateBoundaryInputResolutionVersionedRegistry(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly BoundaryInputResolutionVersioned[] {
+  const errors = getBoundaryInputResolutionVersionedRegistryValidationErrors(value, auditRegistry);
+  if (errors.length > 0) throw new Error(`Invalid P5-A4b boundary input resolution registry:\n${errors.join('\n')}`);
+  return value as readonly BoundaryInputResolutionVersioned[];
+}
+
 export const P5_A4B_INPUT_RESOLUTION_CASES: readonly BoundaryInputResolution[] = [
   {
     contractVersion: BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION,
@@ -202,4 +383,32 @@ export const P5_A4B_INPUT_RESOLUTION_CASES: readonly BoundaryInputResolution[] =
   },
 ] as const;
 
+export const P5_A4B_INPUT_RESOLUTION_V2_CASES: readonly BoundaryInputResolutionV2[] = [
+  ...P5_A4B_INPUT_RESOLUTION_CASES.map((resolution): BoundaryInputResolutionV2 => ({
+    ...resolution,
+    contractVersion: BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION,
+  })),
+  {
+    contractVersion: BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION,
+    resolutionId: 'p5-a4b-resolve-liuyao-invalid-date',
+    auditCaseId: 'p5-a4a-liuyao-invalid-date',
+    status: 'resolved',
+    targetBatch: 'P5-A4b',
+    summary: '六爻日期先按原始 civil 年月日时分秒严格校验，再将 Z 或数值偏移转换为 Asia/Shanghai 民用时间。',
+    testRefs: ['tests/p5-liuyao-input-validation.regression.mjs#liuyao-invalid-date'],
+    notes: '只关闭六爻日期输入合法性 gap；日期范围、DST、缺时辰和引擎错误分类仍不在本批。',
+  },
+  {
+    contractVersion: BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION,
+    resolutionId: 'p5-a4b-resolve-liuyao-invalid-seed',
+    auditCaseId: 'p5-a4a-liuyao-invalid-seed',
+    status: 'resolved',
+    targetBatch: 'P5-A4b',
+    summary: '六爻 seed 仅接受原始长度不超过 256 的非空字符串，并保留合法原字符串进入 payload 与 inputSnapshot。',
+    testRefs: ['tests/p5-liuyao-input-validation.regression.mjs#liuyao-invalid-seed'],
+    notes: '只关闭六爻 seed 输入合法性 gap；seedScope 仍固定为 guanxiang-local-v1，不改变引擎失败 taxonomy。',
+  },
+] as const;
+
 validateBoundaryInputResolutionRegistry(P5_A4B_INPUT_RESOLUTION_CASES);
+validateBoundaryInputResolutionV2Registry(P5_A4B_INPUT_RESOLUTION_V2_CASES);

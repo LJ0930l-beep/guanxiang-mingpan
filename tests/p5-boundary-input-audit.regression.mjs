@@ -202,8 +202,6 @@ test('P5-A4a 六爻输入失败路径与当前固定 scope 行为可复现', asy
     () => calculateLiuyaoView('问题', '不存在的用神', fixedLiuyaoOptions),
     /yongShenTargets 含非法值/,
   );
-  const emptySeed = await calculateLiuyaoView('问题', '官鬼', { ...fixedLiuyaoOptions, seed: '' });
-  assert.equal(emptySeed.seed, '');
   await assert.rejects(
     () => calculateLiuyaoView('问题', '官鬼', { ...fixedLiuyaoOptions, date: '2026-02-30T12:00:00' }),
     /六爻日期无效/,

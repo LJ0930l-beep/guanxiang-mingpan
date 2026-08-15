@@ -1,10 +1,10 @@
-# Phase 5 · P5-A1～P5-A4b1 四术可信度与输入边界审计
+# Phase 5 · P5-A1～P5-A4b2 四术可信度与输入边界审计
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1 已由 Sol High 独立验收 PASS；P5-A4b2 已完成实现待 Sol High 独立验收；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和待独立验收证据，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -321,3 +321,32 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 实现交付与独立验收证据：local `0d279c677c1c05eb2492f9ae3b779267feb8b165`；remote `8ab5c6981c89590f6f19fabdc688c34ae60650ed`；[GitHub Actions run 31882220415](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31882220415) 为 `completed/success`，validate job 的 Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功，Web Export 未 skip。主管独立复跑 `git diff --check`、typecheck、lint、`npm test` 120/120 与 Web Export 8 routes，全部 PASS。Node 20 action runtime warning 仍按既有非阻断 CI maintenance 登记，不新增结论。
 
 Sol High 独立验收结论：**P5-A4b1 PASS**。本结论只覆盖本批安全输入校验、可识别错误合同、resolution overlay 和对应工程回归；不关闭 cross error taxonomy、unknown-coordinate `0,0`、日期支持范围、DST、缺时辰或其余 A4a gap/decision-required 项，P5-A 与 Phase 5 仍未完成。
+
+## 13. P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现（待 Sol High 独立验收）
+
+### 13.1 Scope 与明确不做
+
+本小批只关闭 P5-A4a 中六爻的两个安全输入 gap：`p5-a4a-liuyao-invalid-date` 与 `p5-a4a-liuyao-invalid-seed`。本批不处理六爻引擎失败 taxonomy、cross error taxonomy、unknown-coordinate `0,0`、公开日期范围、DST、缺时辰、scope 选择、用神/算法或 UI/Storage/schema/备份/城市/依赖/lockfile/CI。
+
+### 13.2 实现摘要与合同
+
+- `ChartInputError` 增加 `INVALID_LIUYAO_DATE` 与 `INVALID_LIUYAO_SEED`，稳定字段分别为 `date` 与 `seed`；canonical message 由错误码决定，不接受调用方覆盖。
+- `normalizeLiuyaoDate` 先按原始 civil 年月日时分秒校验 Gregorian 合法性，再处理 timezone-free、空格分隔、Z、`±HH:MM`、`±HHMM`；带偏移输入统一转换为 `Asia/Shanghai` 的 `YYYY-MM-DDTHH:MM:SS`，毫秒固定丢弃，禁止依赖宿主 TZ。
+- `normalizeLiuyaoSeed` 只用 `trim()` 判空，按原始字符串 `Array.from(input).length` 限制 1～256，并保留合法原字符串；自动 seed 也走同一校验。`seedScope` 继续固定为 `guanxiang-local-v1`。
+- `p5-a4b-input-resolution.v1` 的原三项 export、registry 和 validator 保持不变；新增纯 JSON、唯一、版本感知的 `p5-a4b-input-resolution.v2` 五项 registry，追加上述两个 A4a gap，所有 resolution 仍要求原 audit gap 与 `targetBatch=P5-A4b`，不写 commit SHA。
+
+### 13.3 测试与质量门
+
+新增 `tests/p5-liuyao-input-validation.regression.mjs` 8 项回归并接入统一 `npm test`，覆盖 v1 三项、v2 五项及负向 validator；合法 local/seconds/millis、Z/`+08:00`/`+0800`、offset Feb30、24:00/分秒 60/坏 offset/非字符串等非法矩阵；空白/超长/非字符串 seed、合法 Unicode seed 原样进入 payload/inputSnapshot、相同 seed/date deepEqual、自动 seed 合法，以及 UTC/Asia/Shanghai 宿主 TZ 下结果和错误完全一致。A4a 的 41/18/15/5/2/1 snapshot、unknown-coordinate `0,0` probe 和其他 v1 行为保持不变；A4a probe 不再要求空 seed 成功。
+
+本地实现质量门结果：
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS
+npm test               PASS（128/128）
+npm run build:web      PASS（8 routes，Web Export 实际执行）
+```
+
+本地实现者与主管预审的 diff-check、typecheck、lint、npm test 128/128 和 build:web 8 routes 均 PASS；远端 CI 与 Sol High 最终验收仍待执行。当前仅关闭六爻 date/seed 两项；六爻引擎错误/跨模块 taxonomy、`0,0`、公开日期范围、DST、缺时辰和其余 gap/decision-required 仍未完成，P5-A 与 Phase 5 仍未完成。Sol High 不得把本实现者的自测或主管预审视为最终验收。

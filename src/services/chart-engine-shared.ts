@@ -18,6 +18,7 @@ export const ENGINE_VERSIONS = {
 } as const;
 
 export const LIUYAO_SEED_SCOPE = 'guanxiang-local-v1' as const;
+export const LIUYAO_SEED_MAX_LENGTH = 256 as const;
 
 export const signLabels: Record<string, string> = {
   aries: '白羊座', taurus: '金牛座', gemini: '双子座', cancer: '巨蟹座',
@@ -212,29 +213,93 @@ function formatDateInTimezone(value: Date, timezone: CalculationTimezone): strin
  * Passing a timezone-free civil timestamp makes those getters represent the
  * already-normalized Asia/Shanghai wall clock, independent of the host TZ.
  */
-export function normalizeLiuyaoDate(input: string, timezone: CalculationTimezone = DEFAULT_CALCULATION_TIMEZONE): string {
-  const normalized = input.trim().replace(' ', 'T');
-  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(normalized)) {
-    const parsed = new Date(normalized);
-    if (Number.isNaN(parsed.getTime())) throw new Error('六爻日期无效，请检查年月日时分是否合理。');
-    return formatDateInTimezone(parsed, timezone);
-  }
+const LIUYAO_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2})(?:\.(\d{1,3}))?)?(Z|[+-]\d{2}:?\d{2})?$/i;
 
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})(?::(\d{2}))?(?:\.\d{1,3})?$/.exec(normalized);
-  if (!match) throw new Error('六爻日期必须包含时间，请使用 ISO 时间或 YYYY-MM-DDTHH:MM[:SS]。');
-  const [, year, month, day, hour, minute, second = '00'] = match;
-  const check = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second)));
+function invalidLiuyaoDate(): never {
+  throw new ChartInputError({ code: 'INVALID_LIUYAO_DATE', field: 'date' });
+}
+
+function invalidLiuyaoSeed(): never {
+  throw new ChartInputError({ code: 'INVALID_LIUYAO_SEED', field: 'seed' });
+}
+
+function assertLiuyaoCivilDate(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+): void {
   if (
-    check.getUTCFullYear() !== Number(year)
-    || check.getUTCMonth() !== Number(month) - 1
-    || check.getUTCDate() !== Number(day)
-    || check.getUTCHours() !== Number(hour)
-    || check.getUTCMinutes() !== Number(minute)
-    || check.getUTCSeconds() !== Number(second)
+    month < 1
+    || month > 12
+    || day < 1
+    || day > daysInGregorianMonth(year, month)
+    || hour < 0
+    || hour > 23
+    || minute < 0
+    || minute > 59
+    || second < 0
+    || second > 59
   ) {
-    throw new Error('六爻日期无效，请检查年月日时分是否合理。');
+    invalidLiuyaoDate();
   }
-  return `${year}-${month}-${day}T${hour}:${minute}:${second}`;
+}
+
+function offsetMinutes(value: string): number {
+  if (value.toUpperCase() === 'Z') return 0;
+  const match = /^([+-])(\d{2}):?(\d{2})$/.exec(value);
+  if (!match) invalidLiuyaoDate();
+  const hours = Number(match[2]);
+  const minutes = Number(match[3]);
+  if (hours > 23 || minutes > 59) invalidLiuyaoDate();
+  const total = hours * 60 + minutes;
+  return match[1] === '+' ? total : -total;
+}
+
+/**
+ * Normalizes a Liuyao date without consulting the host process timezone.
+ * Date fields are checked before any Date object is created so JavaScript
+ * cannot silently roll an invalid civil date into the following month.
+ */
+export function normalizeLiuyaoDate(input: unknown, timezone: CalculationTimezone = DEFAULT_CALCULATION_TIMEZONE): string {
+  if (typeof input !== 'string') invalidLiuyaoDate();
+  const normalized = input.trim().replace(' ', 'T');
+  const match = LIUYAO_DATE_PATTERN.exec(normalized);
+  if (!match) invalidLiuyaoDate();
+
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, , offsetText] = match;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const second = Number(secondText ?? '00');
+  assertLiuyaoCivilDate(year, month, day, hour, minute, second);
+
+  if (!offsetText) return `${yearText}-${monthText}-${dayText}T${hourText}:${minuteText}:${secondText ?? '00'}`;
+
+  const offset = offsetMinutes(offsetText);
+  const civil = new Date(0);
+  civil.setUTCFullYear(year, month - 1, day);
+  civil.setUTCHours(hour, minute, second, 0);
+  const parsed = new Date(civil.getTime() - offset * 60_000);
+  if (Number.isNaN(parsed.getTime())) invalidLiuyaoDate();
+  return formatDateInTimezone(parsed, timezone);
+}
+
+/**
+ * Validates replay seeds while preserving the caller's original string. The
+ * trimmed value is used only for the emptiness check; the original string's
+ * Unicode code-point length enforces the limit, and surrounding whitespace is
+ * therefore not silently rewritten in a persisted payload.
+ */
+export function normalizeLiuyaoSeed(input: unknown): string {
+  if (typeof input !== 'string') invalidLiuyaoSeed();
+  const trimmed = input.trim();
+  if (trimmed.length === 0 || Array.from(input).length > LIUYAO_SEED_MAX_LENGTH) invalidLiuyaoSeed();
+  return input;
 }
 
 export function birthParts(profile: BirthProfile): BirthParts {

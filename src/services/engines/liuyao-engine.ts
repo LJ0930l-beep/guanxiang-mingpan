@@ -1,7 +1,7 @@
 import { calculateLiuyao } from 'taibu-core/liuyao';
 
 import type { LiuyaoChartView } from '@/types/charts';
-import { calculationSettings, CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generatedAt, LIUYAO_SEED_SCOPE, normalizeLiuyaoDate, strengthLabels } from '@/services/chart-engine-shared';
+import { calculationSettings, CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generatedAt, LIUYAO_SEED_SCOPE, normalizeLiuyaoDate, normalizeLiuyaoSeed, strengthLabels } from '@/services/chart-engine-shared';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 import { buildLiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
@@ -12,8 +12,9 @@ export async function calculateLiuyaoView(
   target: string,
   options?: CalculationOptions,
 ): Promise<LiuyaoChartView> {
-  const seed = options?.seed ?? `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  const date = options?.date ?? new Date().toISOString();
+  const autoSeed = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  const seed = normalizeLiuyaoSeed(options?.seed === undefined ? autoSeed : options.seed);
+  const date = options?.date === undefined ? new Date().toISOString() : options.date;
   const settings = calculationSettings(options);
   const calculationDate = normalizeLiuyaoDate(date, settings.timezone);
   const seedScope = LIUYAO_SEED_SCOPE;

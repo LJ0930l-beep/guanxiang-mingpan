@@ -82,3 +82,15 @@ P5-A4a 的审计 registry 是 immutable snapshot，本节不修改其 41 项条�
 overlay validator 强制 `auditCaseId` 存在于本 registry、原状态为 `gap` 且 target 为 `P5-A4b`，并检查纯 JSON、唯一 resolution/audit ID 和 `tests/` 引用；不预填 commit SHA。A4a 的未知城市 `0,0` probe 仍保留为 gap：两坐标都缺失继续沿现有 resolver/`0,0` 行为，城市命中仍为 exact。
 
 本批不解决 cross error taxonomy、unknown-coordinate `0,0` 语义、公开日期支持范围、DST、缺时辰、Astrology lunar 策略或其余 gap/decision-required；P5-A 与 Phase 5 仍未完成。实现 local `0d279c677c1c05eb2492f9ae3b779267feb8b165` / remote `8ab5c6981c89590f6f19fabdc688c34ae60650ed`；[CI run 31882220415](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31882220415) 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行，Web Export 未 skip；主管本地 `git diff --check`、typecheck、lint、`npm test` 120/120、`npm run build:web` 8 routes 全部 PASS。Node 20 action runtime warning 继续沿既有非阻断 CI maintenance 登记。Sol High 独立验收结论：**P5-A4b1 PASS**；该结论不表示整个 P5-A 或 Phase 5 已完成。
+## 9. P5-A4b2 六爻输入 resolution overlay（待 Sol High 独立验收）
+
+P5-A4a 的 41 项 registry 与 `covered / gap / decision-required / not-applicable / routed-p5-b = 18 / 15 / 5 / 2 / 1` immutable snapshot 不变；P5-A4b1 的 v1 overlay 原三项 export、registry 和 validator 不变。本小批只关闭六爻两个原始 gap。
+
+| auditCaseId | 本批关闭事实 |
+|---|---|
+| `p5-a4a-liuyao-invalid-date` | `normalizeLiuyaoDate` 先拒绝非法原始 civil 年月日时分秒、缺时间、24:00、分/秒 60、坏 offset、非字符串和 offset 下 Feb30，再把 Z/`±HH:MM`/`±HHMM` 转为 `Asia/Shanghai` 秒级民用时间。 |
+| `p5-a4a-liuyao-invalid-seed` | `normalizeLiuyaoSeed` 只以 trim 判空、按原始 Unicode code-point 长度 1～256 校验，保留合法原字符串；自动 seed 同样验证，scope 继续固定。 |
+
+新增纯 JSON `p5-a4b-input-resolution.v2` 五项 registry（原三项 + 上述两项），版本感知、resolution/audit ID 唯一、每项关联原始 `gap` 与 `targetBatch=P5-A4b`，不写 commit SHA。A4a 旧 probe 不再要求空 seed 成功；`0,0` probe 与其他统计保持不变。
+
+实现新增 `tests/p5-liuyao-input-validation.regression.mjs` 8 项回归并接入统一 `npm test`；本地实现者与主管预审的 `git diff --check`、typecheck、lint、`npm test` 128/128、build:web 8 routes 均 PASS（Web Export 实际执行）。远端 CI 与 Sol High 最终验收仍待执行。覆盖 legal local/seconds/millis、Z/`+08:00`/`+0800`、非法 date/offset/seed 矩阵、Unicode payload/inputSnapshot、deepEqual、自动 seed 和 UTC/Asia/Shanghai 结果/错误一致性。六爻 engine/cross error taxonomy、unknown-coordinate `0,0`、公开日期范围、DST、缺时辰及其余 gap/decision-required 仍未完成，P5-A 与 Phase 5 仍未完成。
