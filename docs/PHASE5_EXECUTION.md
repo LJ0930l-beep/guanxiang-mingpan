@@ -1,7 +1,7 @@
 # Phase 5 · P5-A1 四术 Golden Case 合同与现状盘点
 
 更新日期：2026-08-15  
-批次状态：P5-A1 已经 Sol High 独立验收 PASS；P5-A2 实现完成，等待 Sol High 独立验收
+批次状态：P5-A1、P5-A2 均已由 Sol High 独立验收 PASS；整个 P5-A 与 Phase 5 仍未完成
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试，以及香港天文台 published-reference Golden
 
 ## 1. Scope 与明确不做
@@ -125,9 +125,9 @@ Sol High 独立验收结论：**PASS**。主管发现的两项问题已在同一
 
 本批没有声称节气边界、子初、闰月、跨日、未知时辰、未知城市或所有流派已经获得独立专业金标准；这些仍属于后续输入/边界证据工作。城市覆盖和来源/许可审计仍属于 P5-B，不在本批范围。
 
-**P5-A2 已按独立 handoff 授权并完成实现，见下节；本批仍等待 Sol High 独立验收。** P5-A3 只保留候选风险与决策门，不预先批准任何算法或来源变更。
+**P5-A2 已按独立 handoff 完成实现并经 Sol High 独立验收 PASS，见下节；这不等于整个 P5-A 或 Phase 5 完成。** P5-A3 只保留未授权的重大决策门，不预先批准任何算法或来源变更。
 
-## 8. P5-A2 香港天文台 published-reference Golden（实现完成，等待主管验收）
+## 8. P5-A2 香港天文台 published-reference Golden（Sol High 独立验收 PASS）
 
 ### 8.1 Scope 与明确不做
 
@@ -158,8 +158,21 @@ Sol High 独立验收结论：**PASS**。主管发现的两项问题已在同一
 - 农历正月初一日期映射与 calendar evidence/source calendar 保留；
 - registry 分类统计更新，紫微/占星/六爻仍无 `independent-validation`。
 
-统一 `npm test` 由 83 项增加为 87 项；P5-A2 实现提交前必须完成 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run build:web`（8 routes）和白名单检查。远端 CI 必须为 Success 且实际执行 Web Export；本节最终证据由主管验收时回填。
+统一 `npm test` 由 83 项增加为 87 项。主管在本地独立复跑以下质量门并全部通过：
+
+```text
+git diff --check       PASS
+白名单检查             PASS
+npm run typecheck      PASS
+npm run lint           PASS
+npm test               PASS（87/87）
+npm run build:web      PASS（8 routes）
+```
+
+交付证据：本地 commit `a9efd1b05d4a2387a8375b7bd5cc913cc136d232`；远端等价 commit `3ffdda0caa8fd4b7c91aef45f65c63ad22f815bb`；[GitHub Actions run 31869188065](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31869188065) 为 `completed/success`。run 的 `validate` job 中 Regression tests 与 Web export 两个步骤均实际执行并为 `success`。
+
+Sol High 独立验收结论：**PASS**。本结论只覆盖 P5-A2 两条 HKO published-reference Golden 及其离线证据；整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
 
 ### 8.4 P5-A3 候选风险（仅登记，未批准）
 
-核实 `src/domains/bazi/true-solar-time.ts`：当前 `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但实现公式并非本批 HKO 引用或 NOAA 229.18 系数公式，且该常量当前未进入保存 evidence。P5-A3 需要 Sol High 决策：继续当前近似式并纠正来源标签，或切换 NOAA 公式并处理版本/历史兼容。本小批不修改真太阳时代码、版本名或快照。
+核实 `src/domains/bazi/true-solar-time.ts`：当前 `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但实现公式并非本批 HKO 引用或 NOAA 229.18 系数公式，且该常量当前未进入保存 evidence。P5-A3 是未授权的重大决策门：由 Sol High 决定继续当前近似式并纠正来源标签，或切换 NOAA 公式并处理版本/历史兼容；本批不预先选择公式，也不修改真太阳时代码、版本名或快照。
