@@ -192,12 +192,13 @@
 
 ## 9. 建议的下一轮执行顺序
 
-1. **按 [Phase 1 八字执行跟踪](PHASE1_BAZI_EXECUTION.md) 完成 P1-B→P1-F**：先做节气边界、日界、地点/真太阳时、农历证据和 UI，再扩大 Golden 集。
-2. **补城市与专业设置**：完成全国城市覆盖，决定真太阳时/子初换日等产品默认策略。
-3. **补本地档案复盘与加密备份**：Phase 3 代码基线已完成；下一步只剩设备验收和上线前合规材料，继续兑现“只保存在本地、可由用户备份”的承诺。
-4. **做 iPhone 真机验收与发布材料**：用真实设备发现 Web 中看不出的输入、导航、存储和动画问题。
-5. **再接真实登录后端**：账号只同步身份和权益，命盘保持用户主动备份/同步选择。
-6. **最后加入支付和 AI**：支付、订阅、单次解读先有权益服务；AI 只作为后续付费增强，不作为基础功能依赖。
+1. **完成 P5-0 项目总账本与 Phase 5 启动基线**：以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 作为后续批次入口，保留当前 Phase 0～4 代码事实，不回退已完成能力。
+2. **只派发 P5-A1：城市覆盖盘点 + 数据来源/许可 + Golden fixture 合同**：先建立可验收的小批，不把整个 Phase 5 一次交给执行者；未知地点继续精确未命中，不猜坐标。
+3. **经主管独立验收后再进入 P5-A 后续小批**：逐步处理全国城市数据、边界回归和默认策略；每批递增数据/解释版本，历史 Snapshot 不静默重算。
+4. **再进入 Level A 设备、隐私与发布门**：完成实体 iPhone/TestFlight 文件流签字、首次使用本地保存说明、隐私政策/用户协议、商店与许可证材料。
+5. **真实登录、跨端权益、支付和 AI 按总账本的 P5-E～P5-H 逐批决策**：它们不是当前 P5-A 的隐含范围；基础版继续不依赖 AI、广告或支付。
+
+详细的 Phase 5 批次图、DoD、风险和统一验收模板见 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md)。
 
 ## 10. 日常运行与维护
 
@@ -232,6 +233,7 @@ npm audit --omit=dev --json
 
 - [README.md](../README.md)：快速启动、当前能力和基础数据边界。
 - [ROADMAP.md](ROADMAP.md)：路线图与重大决策门槛。
+- [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md)：Phase 5 总账本、批次图、风险与验收模板。
 - [SECURITY_NOTES.md](SECURITY_NOTES.md)：依赖审计基线。
 - [设计系统主规范](../design-system/guanxiang/MASTER.md)：色彩、字体、动效、无障碍和产品语气。
 - [开源方案清单](../../metaphysics-app-research/SOURCE_MANIFEST.md)：固定提交、许可证与采用边界。
