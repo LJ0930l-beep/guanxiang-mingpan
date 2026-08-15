@@ -7,6 +7,7 @@ import { resolveTrueSolarTime } from '@/domains/bazi/true-solar-time';
 import { normalizeBaziChart } from '@/domains/bazi/model/normalized-chart';
 import { buildBaziEvidenceGraph } from '@/domains/bazi/evidence/index';
 import { buildBaziInterpretation } from '@/domains/bazi/interpretation/rules';
+import { buildBaziExplanation } from '@/domains/bazi/explanation/index';
 import type { BaziChartView } from '@/types/charts';
 import { baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
@@ -117,11 +118,13 @@ export function calculateBaziView(
   });
   const evidenceGraph = buildBaziEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.bazi });
   const interpretation = buildBaziInterpretation(normalizedChart, evidenceGraph);
+  const generated = generatedAt(options);
+  const explanation = buildBaziExplanation({ evidenceGraph, interpretation, generatedAt: generated });
 
   return {
     module: 'bazi',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
-    generatedAt: generatedAt(options),
+    generatedAt: generated,
     engineVersion: ENGINE_VERSIONS.bazi,
     calculationSettings: settings,
     calculationEvidence: createBaziCalculationEvidence(profile, settings, dayBoundaryResolution, trueSolarResolution, calendarResolution),
@@ -129,6 +132,7 @@ export function calculateBaziView(
     evidenceGraph,
     strengthAssessment: evidenceGraph.strengthAssessment!,
     interpretation,
+    explanation,
     inputSnapshot: birthInputSnapshot(profile, gender, settings),
     completeness: 'complete',
     caveats: [

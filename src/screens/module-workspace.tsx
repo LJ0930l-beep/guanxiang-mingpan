@@ -16,6 +16,7 @@ import { ActionButton } from '@/components/action-button';
 import { AnimatedReveal } from '@/components/animated-reveal';
 import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
+import { ExplanationLayer } from '@/components/explanation-layer';
 import { ModuleSigil } from '@/components/module-sigil';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
 import { moduleBySlug, type ModuleDefinition } from '@/data/modules';
@@ -26,6 +27,7 @@ import {
   calculateZiweiView,
 } from '@/services/chart-engine';
 import { useApp } from '@/state/app-context';
+import { listGlossaryTerms } from '@/domains/explanation/glossary';
 import type {
   AstrologyChartView,
   BaziChartView,
@@ -466,6 +468,7 @@ function BaziResult({ result }: { result: BaziChartView }) {
         <Text style={styles.evidenceLabel}>真太阳时</Text>
         <Text style={styles.evidenceValue}>{result.calculationEvidence.trueSolarCorrection.applied ? `${result.calculationEvidence.trueSolarCorrection.model} · ${result.calculationEvidence.trueSolarCorrection.correctionMinutes} 分钟` : '未启用'}</Text>
       </View>
+      <ExplanationLayer evidenceNodes={result.evidenceGraph.nodes} glossaryTerms={listGlossaryTerms('bazi')} snapshot={result.explanation} />
       <BaziInterpretationExplorer result={result} />
       <BaziEvidencePanel result={result} />
       {!!result.relations.length && <View style={styles.tagWrap}>{result.relations.map((item, index) => <Text key={`${item}-${index}`} style={styles.evidenceTag}>{item}</Text>)}</View>}
