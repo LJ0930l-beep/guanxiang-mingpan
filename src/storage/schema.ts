@@ -220,10 +220,28 @@ function legacyBaziEvidence(inputSnapshot: ChartInputSnapshot, settings: Calcula
     ? `${birth.birthDate}T${birth.birthTime ? `${birth.birthTime}:00` : '00:00:00'}`
     : '历史记录未保存原始出生时刻';
   const trueSolarEvidenceIsUnknown = baziSettings.trueSolarTime;
+  const trueSolarCorrection: BaziCalculationEvidence['trueSolarCorrection'] = {
+    ...(trueSolarEvidenceIsUnknown ? {} : { applied: false }),
+    model: baziSettings.solarTimeModel,
+    algorithmVersion: trueSolarEvidenceIsUnknown ? BAZI_TRUE_SOLAR_TIME_UNKNOWN : baziSettings.trueSolarTimeVersion,
+    civilTime,
+    ...(trueSolarEvidenceIsUnknown
+      ? {}
+      : {
+          effectiveTime: civilTime,
+          rawCorrectionMinutes: 0,
+          correctionMinutes: 0,
+          appliedCorrectionMinutes: 0,
+        }),
+    roundingRule: trueSolarEvidenceIsUnknown ? 'legacy-unknown' : 'not-applied',
+    dataSource: trueSolarEvidenceIsUnknown ? 'legacy-record' : 'not-applicable',
+    dataVersion: trueSolarEvidenceIsUnknown ? BAZI_TRUE_SOLAR_TIME_UNKNOWN : baziSettings.trueSolarTimeVersion,
+    provenanceStatus: trueSolarEvidenceIsUnknown ? 'unknown' : 'not-applied',
+  };
   return {
     sourceCalendar: birth?.calendar ?? 'solar',
     normalizedCivilTime: civilTime,
-    effectiveCalculationTime: civilTime,
+    ...(trueSolarEvidenceIsUnknown ? {} : { effectiveCalculationTime: civilTime }),
     timezone: DEFAULT_CALCULATION_TIMEZONE,
     calendarConversion: {
       sourceCalendar: birth?.calendar ?? 'solar',
@@ -241,20 +259,7 @@ function legacyBaziEvidence(inputSnapshot: ChartInputSnapshot, settings: Calcula
       note: '历史记录未保存 P1-A 节气证据；当前版本不会重新解释原始结果。',
     },
     dayBoundaryRule: baziSettings.dayBoundary,
-    trueSolarCorrection: {
-      ...(trueSolarEvidenceIsUnknown ? {} : { applied: false }),
-      model: baziSettings.solarTimeModel,
-      algorithmVersion: baziSettings.trueSolarTimeVersion,
-      civilTime,
-      effectiveTime: civilTime,
-      rawCorrectionMinutes: 0,
-      correctionMinutes: 0,
-      appliedCorrectionMinutes: 0,
-      roundingRule: trueSolarEvidenceIsUnknown ? 'legacy-unknown' : 'not-applied',
-      dataSource: trueSolarEvidenceIsUnknown ? 'legacy-record' : 'not-applicable',
-      dataVersion: trueSolarEvidenceIsUnknown ? BAZI_TRUE_SOLAR_TIME_UNKNOWN : baziSettings.trueSolarTimeVersion,
-      provenanceStatus: trueSolarEvidenceIsUnknown ? 'unknown' : 'not-applied',
-    },
+    trueSolarCorrection,
     locationUsed: birth
       ? {
           name: birth.birthCity,
@@ -270,24 +275,53 @@ function legacyBaziEvidence(inputSnapshot: ChartInputSnapshot, settings: Calcula
   };
 }
 
-function migrateTrueSolarCorrection(value: unknown, settings: BaziCalculationSettings): RecordLike {
+function migrateTrueSolarCorrection(value: unknown, settings: BaziCalculationSettings, fallbackCivilTime?: string): RecordLike {
   const raw = isRecord(value) ? value : {};
   const hasAppliedFlag = typeof raw.applied === 'boolean';
   const applied = hasAppliedFlag ? raw.applied : undefined;
-  const evidenceIsUnknown = settings.trueSolarTime && !hasAppliedFlag
-    && !isBaziSolarTimeVersion(raw.algorithmVersion)
-    && raw.provenanceStatus === undefined;
-  const correctionMinutes = typeof raw.correctionMinutes === 'number' ? raw.correctionMinutes : 0;
+  const hasEffectiveTime = typeof raw.effectiveTime === 'string';
+  const hasCorrectionValue = typeof raw.rawCorrectionMinutes === 'number'
+    || typeof raw.correctionMinutes === 'number'
+    || typeof raw.appliedCorrectionMinutes === 'number';
+  const evidenceIsUnknown = settings.trueSolarTime && (
+    raw.provenanceStatus === 'unknown'
+    || raw.dataVersion === BAZI_TRUE_SOLAR_TIME_UNKNOWN
+    || raw.roundingRule === 'legacy-unknown'
+    || !hasEffectiveTime
+    || !hasCorrectionValue
+  );
+  if (evidenceIsUnknown) {
+    return {
+      ...raw,
+      ...(typeof raw.civilTime === 'string'
+        ? { civilTime: raw.civilTime }
+        : fallbackCivilTime
+          ? { civilTime: fallbackCivilTime }
+          : {}),
+      algorithmVersion: BAZI_TRUE_SOLAR_TIME_UNKNOWN,
+      ...(typeof raw.effectiveTime === 'string' ? { effectiveTime: raw.effectiveTime } : {}),
+      ...(typeof raw.rawCorrectionMinutes === 'number' ? { rawCorrectionMinutes: raw.rawCorrectionMinutes } : {}),
+      ...(typeof raw.correctionMinutes === 'number' ? { correctionMinutes: raw.correctionMinutes } : {}),
+      ...(typeof raw.appliedCorrectionMinutes === 'number' ? { appliedCorrectionMinutes: raw.appliedCorrectionMinutes } : {}),
+      roundingRule: 'legacy-unknown',
+      dataSource: 'legacy-record',
+      dataVersion: BAZI_TRUE_SOLAR_TIME_UNKNOWN,
+      provenanceStatus: 'unknown',
+    };
+  }
+  const correctionMinutes = typeof raw.correctionMinutes === 'number' ? raw.correctionMinutes : undefined;
   return {
     ...raw,
-    ...(evidenceIsUnknown ? {} : { applied: applied ?? false }),
+    applied: applied ?? false,
     algorithmVersion: isBaziSolarTimeVersion(raw.algorithmVersion)
       ? raw.algorithmVersion
       : settings.trueSolarTimeVersion,
-    rawCorrectionMinutes: typeof raw.rawCorrectionMinutes === 'number' ? raw.rawCorrectionMinutes : correctionMinutes,
+    ...(typeof raw.civilTime === 'string' ? { civilTime: raw.civilTime } : fallbackCivilTime ? { civilTime: fallbackCivilTime } : {}),
+    ...(typeof raw.effectiveTime === 'string' ? { effectiveTime: raw.effectiveTime } : fallbackCivilTime ? { effectiveTime: fallbackCivilTime } : {}),
+    rawCorrectionMinutes: typeof raw.rawCorrectionMinutes === 'number' ? raw.rawCorrectionMinutes : correctionMinutes ?? 0,
     appliedCorrectionMinutes: typeof raw.appliedCorrectionMinutes === 'number'
       ? raw.appliedCorrectionMinutes
-      : applied === true
+      : applied === true && correctionMinutes !== undefined
         ? Math.round(correctionMinutes)
         : 0,
     roundingRule: typeof raw.roundingRule === 'string'
@@ -335,7 +369,7 @@ function migrateBaziEvidence(value: unknown, inputSnapshot: ChartInputSnapshot, 
     calendarConversion: isRecord(value.calendarConversion)
       ? value.calendarConversion
       : fallback.calendarConversion,
-    trueSolarCorrection: migrateTrueSolarCorrection(value.trueSolarCorrection, settings),
+    trueSolarCorrection: migrateTrueSolarCorrection(value.trueSolarCorrection, settings, fallback.trueSolarCorrection.civilTime),
   } as unknown as BaziCalculationEvidence;
 }
 

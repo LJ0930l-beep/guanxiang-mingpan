@@ -195,6 +195,51 @@ test('P5-A3a 缺少旧真太阳时证据时标记 unknown，不伪装为未应�
   assert.match(migrated.payload.calculationEvidence.warnings.join(' '), /状态未知/);
 });
 
+test('P5-A3a 完全缺失真太阳时证据在普通/加密备份 roundtrip 中保持 unknown 空值', async () => {
+  const original = oldV1Reading();
+  const payload = { ...original.payload };
+  delete payload.calculationEvidence;
+  const legacyReading = { ...original, payload };
+  const oldData = {
+    user: { id: 'p5-a3a-unknown-user', displayName: 'P5-A3a unknown', provider: 'phone' },
+    profiles: [profile],
+    selectedProfileId: profile.id,
+    readings: [legacyReading],
+  };
+  const oldDocument = JSON.parse(createLocalBackupText(oldData, generatedAt));
+  oldDocument.storageSchemaVersion = 2;
+
+  const assertUnknown = (reading) => {
+    const evidence = reading.payload.calculationEvidence;
+    const correction = evidence.trueSolarCorrection;
+    assert.equal(evidence.effectiveCalculationTime, undefined);
+    assert.equal(correction.applied, undefined);
+    assert.equal(correction.effectiveTime, undefined);
+    assert.equal(correction.rawCorrectionMinutes, undefined);
+    assert.equal(correction.correctionMinutes, undefined);
+    assert.equal(correction.appliedCorrectionMinutes, undefined);
+    assert.equal(correction.civilTime, '2024-06-21T05:30:00');
+    assert.equal(correction.algorithmVersion, 'legacy-unknown');
+    assert.equal(correction.dataVersion, 'legacy-unknown');
+    assert.equal(correction.provenanceStatus, 'unknown');
+    assert.match(evidence.warnings.join(' '), /状态未知/);
+  };
+
+  const parsedOld = parseLocalBackupText(JSON.stringify(oldDocument));
+  assertUnknown(parsedOld.data.readings[0]);
+  const ordinaryRoundTrip = parseLocalBackupText(createLocalBackupText(parsedOld.data, generatedAt));
+  assert.deepEqual(coreResult(ordinaryRoundTrip.data.readings[0]), coreResult(parsedOld.data.readings[0]));
+  assertUnknown(ordinaryRoundTrip.data.readings[0]);
+
+  const encryptedOld = await encryptLegacySchema2Backup(oldDocument, 'P5-A3a unknown password');
+  const decryptedOld = await parseEncryptedLocalBackupText(encryptedOld, 'P5-A3a unknown password');
+  assertUnknown(decryptedOld.data.readings[0]);
+  const encryptedRoundTrip = await createEncryptedLocalBackupText(parsedOld.data, 'P5-A3a unknown password', generatedAt);
+  const decryptedRoundTrip = await parseEncryptedLocalBackupText(encryptedRoundTrip, 'P5-A3a unknown password');
+  assert.deepEqual(coreResult(decryptedRoundTrip.data.readings[0]), coreResult(parsedOld.data.readings[0]));
+  assertUnknown(decryptedRoundTrip.data.readings[0]);
+});
+
 test('P5-A3a 无可信八字设置时保留 legacy-unknown 标签', () => {
   const original = oldV1Reading();
   const payload = { ...original.payload, calculationSettings: { timezone: 'Asia/Shanghai' } };

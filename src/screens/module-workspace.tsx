@@ -285,7 +285,7 @@ function BaziEvidencePanel({ result }: { result: BaziChartView }) {
         <View style={styles.evidenceDetails}>
           {row('输入历法', evidence.sourceCalendar === 'lunar' ? '农历' : '公历')}
           {row('民用时刻', evidence.normalizedCivilTime)}
-          {row('有效时刻', evidence.effectiveCalculationTime)}
+          {row('有效时刻', evidence.effectiveCalculationTime ?? '历史记录未保存有效计算时刻')}
           {row('业务时区', evidence.timezone)}
           {row('日界规则', evidence.dayBoundaryRule === 'ziEarly' ? '子初换日（23:00）' : '午夜换日（00:00）')}
           {row('历法换算', conversion.note)}
@@ -462,7 +462,7 @@ function BaziResult({ result }: { result: BaziChartView }) {
       </View>
       <View style={styles.evidenceStrip}>
         <Text style={styles.evidenceLabel}>日界线</Text>
-        <Text style={styles.evidenceValue}>{result.calculationEvidence.dayBoundaryRule} · {result.calculationEvidence.effectiveCalculationTime}</Text>
+        <Text style={styles.evidenceValue}>{result.calculationEvidence.dayBoundaryRule} · {result.calculationEvidence.effectiveCalculationTime ?? '历史记录未保存有效计算时刻'}</Text>
       </View>
       <View style={styles.evidenceStrip}>
         <Text style={styles.evidenceLabel}>真太阳时</Text>

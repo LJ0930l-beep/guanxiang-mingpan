@@ -86,15 +86,19 @@ function hasCurrentBaziMetadata(reading: SavedReading): boolean {
     : null;
   if (!correction
     || !isBaziSolarTimeVersion(correction.algorithmVersion)
-    || typeof correction.rawCorrectionMinutes !== 'number'
-    || typeof correction.appliedCorrectionMinutes !== 'number'
+    || typeof correction.civilTime !== 'string'
     || typeof correction.roundingRule !== 'string'
     || typeof correction.dataSource !== 'string'
     || typeof correction.dataVersion !== 'string'
     || !['current', 'legacy', 'unknown', 'not-applied'].includes(String(correction.provenanceStatus))) {
     return false;
   }
-  return correction.provenanceStatus === 'unknown' || typeof correction.applied === 'boolean';
+  if (correction.provenanceStatus === 'unknown') return true;
+  return typeof correction.applied === 'boolean'
+    && typeof correction.effectiveTime === 'string'
+    && typeof correction.rawCorrectionMinutes === 'number'
+    && typeof correction.correctionMinutes === 'number'
+    && typeof correction.appliedCorrectionMinutes === 'number';
 }
 
 function requireString(value: unknown, label: string): string {

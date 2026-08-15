@@ -66,10 +66,12 @@ export interface TrueSolarCorrectionEvidence {
   model: BaziSolarTimeModel;
   algorithmVersion: BaziSolarTimeVersion;
   civilTime: string;
-  effectiveTime: string;
-  rawCorrectionMinutes: number;
-  correctionMinutes: number;
-  appliedCorrectionMinutes: number;
+  /** Unknown legacy records omit the effective time rather than guessing it. */
+  effectiveTime?: string;
+  /** Unknown legacy records omit correction values rather than filling zero. */
+  rawCorrectionMinutes?: number;
+  correctionMinutes?: number;
+  appliedCorrectionMinutes?: number;
   roundingRule: BaziTrueSolarRoundingRule;
   dataSource: string;
   dataVersion: string;
@@ -98,7 +100,8 @@ export interface BaziLocationEvidence {
 export interface BaziCalculationEvidence {
   sourceCalendar: 'solar' | 'lunar';
   normalizedCivilTime: string;
-  effectiveCalculationTime: string;
+  /** Unknown legacy true-solar evidence has no trustworthy effective time. */
+  effectiveCalculationTime?: string;
   timezone: CalculationTimezone;
   calendarConversion: BaziCalendarConversionEvidence;
   solarTermBoundary: SolarTermBoundaryEvidence;
