@@ -2,8 +2,8 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-0 项目总账本与 Phase 5 启动基线  
-> 本批状态：`completed`（2026-08-15；执行期间为 `in progress`）  
+> 批次：P5-A1 四术 Golden Case 统一合同、分类门禁与现状盘点
+> 本批状态：实现完成，等待 Sol High 独立验收（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -148,6 +148,17 @@ commit: docs: establish phase5 master ledger
 主管 review: Sol High 独立完成
 ```
 
+## 5.1 P5-A1 交付记录
+
+P5-A1 已按本批 handoff 完成实现，**不等于整个 P5-A 或 Phase 5 完成**。本批新增共享 Golden Case 合同、运行时/registry validator、四术现状 registry 和 8 项回归测试；只把现有 `lunar-javascript@1.7.7` 交叉校验的两条八字计算样例登记为独立技术验证，其余当前项明确为 regression-only。
+
+- 合同版本：`golden-case.v1`。
+- 当前 registry：10 条，2 条 `independent-validation`、8 条 `regression-only`、0 条 `pending-verification`；四模块均有清单。
+- Storage/schema：无变化；合同版本不是用户数据 schema 版本，不触发迁移。
+- 测试：`npm test` 82/82，新增测试已进入统一命令。
+- 文档：`docs/PHASE5_EXECUTION.md` 记录字段、门禁、清单、DoD、限制和未批准的 P5-A2 候选。
+- 主管门：Sol High 必须独立审阅来源边界、分类和 CI 后，才能批准下一批；本记录不预先批准 P5-A2。
+
 ## 6. 统一批次验收模板
 
 以后每个 P5 小批都必须在交接记录中填写以下字段，缺项不得宣称完成：
@@ -177,7 +188,7 @@ commit: docs: establish phase5 master ledger
 
 ## 8. 下一步授权边界
 
-主管在 P5-0 验收后只授权准备 **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**：
+主管在 P5-0 验收后已授权并完成实现 **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**；当前只等待独立验收，未授权 P5-A2：
 
 - 定义四术 Golden Case 的统一字段、分类策略、输入边界、预期证据、精度和版本合同，形成当前四术用例清单；覆盖至少节气边界、子初、闰月、跨日、未知时辰、未知城市、业务时区和六爻固定种子。
 - 对每条用例标注 `independent-validation`、`regression-only` 或待验证；未有独立来源/专业复核的用例只能作为 regression-only，不得伪造专业真值或“权威正确”结论。
@@ -185,4 +196,4 @@ commit: docs: establish phase5 master ledger
 - 只更新与 P5-A1 直接相关的白名单文件和测试；不得顺手接入全国数据、流派切换、账号、支付、AI 或重构计算层。
 - P5-A1 必须先给出 scope、DoD、测试和决策门，再由 Sol High 重新派发给 Luna Max。
 
-P5-A1 完成并经独立验收后，才能决定是否进入 P5-A2；任何 Level B 工作暂不进入实现。
+P5-A1 经 Sol High 独立验收后，才能决定是否进入 P5-A2；任何 Level B 工作暂不进入实现。
