@@ -8,6 +8,8 @@ import type { NormalizedZiweiChart } from '@/domains/ziwei/model/normalized-char
 import type { ZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 import type { NormalizedAstrologyChart } from '@/domains/astrology/model/normalized-chart';
 import type { AstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
+import type { NormalizedLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
+import type { LiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
 export const DEFAULT_CALCULATION_TIMEZONE = 'Asia/Shanghai' as const;
@@ -124,6 +126,8 @@ export interface LiuyaoChartView extends ChartMeta {
   ganZhiTime: string;
   kongWang: string;
   lines: LiuyaoLineView[];
+  normalizedChart: NormalizedLiuyaoChart;
+  evidenceGraph: LiuyaoEvidenceGraph;
   focus: string[];
 }
 

@@ -3,6 +3,8 @@ import { calculateLiuyao } from 'taibu-core/liuyao';
 import type { LiuyaoChartView } from '@/types/charts';
 import { calculationSettings, CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generatedAt, LIUYAO_SEED_SCOPE, normalizeLiuyaoDate, strengthLabels } from '@/services/chart-engine-shared';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
+import { normalizeLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
+import { buildLiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 
 export async function calculateLiuyaoView(
   question: string,
@@ -41,11 +43,26 @@ export async function calculateLiuyaoView(
     }));
   const moving = lines.filter((line) => line.isChanging);
   const time = result.ganZhiTime;
+  const generated = generatedAt(options);
+  const normalizedChart = normalizeLiuyaoChart({
+    question,
+    yongShenTarget: target,
+    seed,
+    date: calculationDate,
+    seedScope,
+    hexagramName: result.hexagramName,
+    changedHexagramName: result.changedHexagramName,
+    hexagramGong: `${result.hexagramGong}宫 · ${result.hexagramElement}行`,
+    ganZhiTime: `${time.year.gan}${time.year.zhi}年 ${time.month.gan}${time.month.zhi}月 ${time.day.gan}${time.day.zhi}日 ${time.hour.gan}${time.hour.zhi}时`,
+    kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongDizhi.join('、')}`,
+    lines,
+  }, { engineVersion: ENGINE_VERSIONS.liuyao, snapshotVersion: CHART_SNAPSHOT_VERSION });
+  const evidenceGraph = buildLiuyaoEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.liuyao });
 
   return {
     module: 'liuyao',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
-    generatedAt: generatedAt(options),
+    generatedAt: generated,
     engineVersion: ENGINE_VERSIONS.liuyao,
     calculationSettings: settings,
     inputSnapshot: { type: 'liuyao', timezone: settings.timezone, question, target, seed, date, seedScope },
@@ -61,6 +78,8 @@ export async function calculateLiuyaoView(
     ganZhiTime: `${time.year.gan}${time.year.zhi}年 ${time.month.gan}${time.month.zhi}月 ${time.day.gan}${time.day.zhi}日 ${time.hour.gan}${time.hour.zhi}时`,
     kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongDizhi.join('、')}`,
     lines,
+    normalizedChart,
+    evidenceGraph,
     focus: [
       `本卦「${result.hexagramName}」${result.changedHexagramName ? `变「${result.changedHexagramName}」` : '无变卦'}。`,
       moving.length ? `共有 ${moving.length} 个动爻：${moving.map((line) => `${line.position}爻`).join('、')}，复盘时应优先核对动变。` : '本次为静卦，后续复盘应侧重世应、月日与用神状态。',
