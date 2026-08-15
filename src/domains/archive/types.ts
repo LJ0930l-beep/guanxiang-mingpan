@@ -1,6 +1,7 @@
 import type { BaziHistorySnapshot } from '@/domains/bazi/interpretation/history';
 import type { ChartInputSnapshot, ChartPayload, ChartSnapshotMeta } from '@/types/charts';
 import type { BirthProfile, ReadingFeedback, SavedReading } from '@/types/domain';
+import type { ExplanationSnapshot } from '@/domains/explanation/types';
 
 export const ARCHIVE_SNAPSHOT_VERSION = 'archive-v1' as const;
 
@@ -16,6 +17,7 @@ export interface ArchiveSnapshot {
   reading: SavedReading;
   calculationSnapshot: ChartSnapshotMeta;
   deepSnapshot?: BaziHistorySnapshot;
+  explanationSnapshot?: ExplanationSnapshot;
 }
 
 export interface SnapshotViewerModel {
@@ -25,6 +27,8 @@ export interface SnapshotViewerModel {
   payload: ChartPayload;
   feedback: ReadingFeedback[];
   hasDeepSnapshot: boolean;
+  explanationSnapshot?: ExplanationSnapshot;
+  hasExplanationSnapshot: boolean;
 }
 
 export function createArchiveSnapshot(reading: SavedReading): ArchiveSnapshot {
@@ -44,6 +48,7 @@ export function createArchiveSnapshot(reading: SavedReading): ArchiveSnapshot {
           },
         }
       : {}),
+    ...(reading.explanationSnapshot ? { explanationSnapshot: reading.explanationSnapshot } : {}),
   };
 }
 
@@ -61,5 +66,7 @@ export function buildSnapshotViewerModel(reading: SavedReading): SnapshotViewerM
     payload: reading.payload,
     feedback: reading.feedback,
     hasDeepSnapshot: Boolean(archive.deepSnapshot),
+    ...(archive.explanationSnapshot ? { explanationSnapshot: archive.explanationSnapshot } : {}),
+    hasExplanationSnapshot: Boolean(archive.explanationSnapshot),
   };
 }

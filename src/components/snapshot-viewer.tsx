@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { ExplanationLayer } from '@/components/explanation-layer';
 import type { BaziInterpretationDiff } from '@/domains/bazi/interpretation/history';
+import { listGlossaryTerms } from '@/domains/explanation/glossary';
 import { buildSnapshotViewerModel } from '@/domains/archive/types';
 import { fontFamilies, palette, radii, spacing } from '@/constants/guanxiang';
 import type { SavedReading } from '@/types/domain';
@@ -120,6 +122,23 @@ export function SnapshotViewer({ reading, diff, onRunBaziDiff }: SnapshotViewerP
         {resultRows(model).map(([label, value]) => <Row key={label} label={label} value={value} />)}
         <View style={styles.subsection}><Text style={styles.subsectionLabel}>基础观察</Text></View>
         {focus.map((item, index) => <Text key={`${item}-${index}`} style={styles.observation}>{index + 1}. {item}</Text>)}
+      </Section>
+
+      <Section label="L4 · 保存时解释快照">
+        {model.explanationSnapshot ? (
+          <ExplanationLayer
+            snapshot={model.explanationSnapshot}
+            evidenceNodes={(() => {
+              const graph = model.payload.module === 'bazi' || model.payload.module === 'liuyao' || model.payload.module === 'ziwei' || model.payload.module === 'astrology'
+                ? (model.payload as typeof model.payload & { evidenceGraph?: { nodes?: { id: string; label: string; facts?: Record<string, unknown>; ruleVersion?: string; source?: string }[] } }).evidenceGraph
+                : undefined;
+              return graph?.nodes ?? [];
+            })()}
+            glossaryTerms={listGlossaryTerms(reading.module)}
+          />
+        ) : (
+          <Text style={styles.missing}>历史版本未保存解释快照；本次查看不会补造或静默重算。</Text>
+        )}
       </Section>
 
       {reading.module === 'bazi' && (

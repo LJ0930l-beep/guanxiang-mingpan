@@ -35,6 +35,16 @@
 - [x] Web 下载/选择与 iOS 文件 App 分享/选择的文件流实现
 - [ ] 实体 iPhone / TestFlight 文件流最终签字（见 [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md)）
 
+## M2.5 — 四术解释体验与三术深度化（Phase 4 代码基线已完成）
+
+- [x] 公共 `ExplanationSnapshot` / `ExplanationBlock` / Glossary 协议和历史 Diff。
+- [x] 八字 8 类解释块与 Golden。
+- [x] 紫微标准化十二宫/星曜/命身宫/四化模型、证据图与解释层。
+- [x] 占星精确/近似标准化模型、角点/宫位/相位证据与精度边界解释。
+- [x] 六爻问题/用神/旺衰/世应/动变/空亡证据与不承诺应期的解释层。
+- [x] 四模块解释快照备份 deepEqual、只读记录查看、Glossary 点击和内容安全 Golden。
+- [ ] 最后一批 GitHub Actions 绿色确认、iPhone/TestFlight 文件流签字和发布前合规材料。
+
 ## M3 — 中国大陆账户服务
 
 - 手机验证码作为主账号
