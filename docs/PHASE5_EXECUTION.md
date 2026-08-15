@@ -4,7 +4,7 @@
 批次状态：P5-A1、P5-A2、P5-A3a 已由 Sol High 独立验收 PASS；P5-A3b 已完成实现，等待 Sol High 独立验收；整个 P5-A 与 Phase 5 仍未完成
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3，以及 P5-A3b 历史证据展示与显式当前规则复核
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，不表示整个 P5-A3、P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现完成与待验收状态，不表示整个 P5-A3、P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -201,7 +201,7 @@ P5-A2 时登记的真太阳时来源标签风险已由负责人选择的方案 A
 
 Sol High 独立验收结论：**P5-A3a PASS**。
 
-本批明确不做：其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3 整体仍未完成；P5-A3b 已作为后续授权批完成实现，独立验收记录见下一节。整个 P5-A、P5-A3 和 Phase 5 仍未完成。
+本批明确不做：其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3 整体仍未完成；P5-A3b 已按主管授权完成实现，独立验收记录见下一节。整个 P5-A、P5-A3 和 Phase 5 仍未完成。
 
 ## 10. P5-A3b 历史真太阳时证据展示与显式当前规则复核（实现完成，等待 Sol High 独立验收）
 
@@ -215,7 +215,7 @@ Sol High 独立验收结论：**P5-A3a PASS**。
 
 ### 10.2 测试与质量门
 
-新增 `tests/bazi-current-replay.regression.mjs` 4 项回归并接入统一 `npm test`，覆盖四种展示状态、未知证据空值、设置/证据冲突、v1→v2 当前规则复核边界、legacy-unknown 复核、缺时辰/经度拒绝及 SavedReading deepEqual。
+新增 `tests/bazi-current-replay.regression.mjs` 5 项回归并接入统一 `npm test`，覆盖四种展示状态、未知证据空值、设置/证据冲突、v1→v2 当前规则复核边界、真太阳时与子初换日最终有效时刻、legacy-unknown 复核、缺时辰/经度拒绝及 SavedReading deepEqual。
 
 本地质量门：
 
@@ -223,8 +223,10 @@ Sol High 独立验收结论：**P5-A3a PASS**。
 git diff --check       PASS
 npm run typecheck      PASS
 npm run lint           PASS
-npm test               PASS（103/103）
+npm test               PASS（104/104）
 npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
+
+候选实现交付：本地 `30f2db2c164bd1cac709025a340e91f32a3fa147`；远端等价 `baea5f6e53bcc52564fd7b7e375cc4e70463398f`；[GitHub Actions run 31875157338](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31875157338) 为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。主管初审本地 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test` 104/104、`npm run build:web` 8 routes 均 PASS；最终独立验收仍待该文档修复提交复核。
 
 当前状态：实现提交后等待 Sol High 独立复验；在独立验收前不写 PASS，不标记整个 P5-A3、P5-A 或 Phase 5 完成。

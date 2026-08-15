@@ -230,6 +230,8 @@ npm test               PASS（104/104）
 npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
+候选实现交付：本地 `30f2db2c164bd1cac709025a340e91f32a3fa147`；远端等价 `baea5f6e53bcc52564fd7b7e375cc4e70463398f`；[GitHub Actions run 31875157338](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31875157338) 为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。主管初审本地 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test` 104/104、`npm run build:web` 8 routes 均 PASS；最终独立验收仍待该文档修复提交复核。
+
 当前不写 Sol High PASS；P5-A3b 交主管独立验收，整个 P5-A3/P5-A/Phase 5 仍未完成。
 
 ## 6. 统一批次验收模板
