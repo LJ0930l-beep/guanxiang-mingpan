@@ -4,6 +4,8 @@ import type { NormalizedBaziChart } from '@/domains/bazi/model/normalized-chart'
 import type { BaziEvidenceGraph, StrengthAssessment } from '@/domains/bazi/evidence/index';
 import type { BaziInterpretation } from '@/domains/bazi/interpretation/rules';
 import type { ExplanationSnapshot } from '@/domains/explanation/types';
+import type { NormalizedZiweiChart } from '@/domains/ziwei/model/normalized-chart';
+import type { ZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
 export const DEFAULT_CALCULATION_TIMEZONE = 'Asia/Shanghai' as const;
@@ -142,6 +144,8 @@ export interface ZiweiChartView extends ChartMeta {
   lifeMasterStar?: string;
   bodyMasterStar?: string;
   palaces: ZiweiPalaceView[];
+  normalizedChart: NormalizedZiweiChart;
+  evidenceGraph: ZiweiEvidenceGraph;
   mutagens: string[];
   focus: string[];
 }
