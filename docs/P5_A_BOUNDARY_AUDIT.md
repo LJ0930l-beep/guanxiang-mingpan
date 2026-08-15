@@ -1,6 +1,6 @@
 # P5-A4a · 四术边界与输入策略审计矩阵
 
-状态：实现完成，等待 Sol High 独立验收（2026-08-15）
+状态：Sol High 独立验收 PASS（2026-08-15）
 
 本文件只说明机器可检查审计合同的范围和当前事实，不把项目回归测试、第三方库返回或 CI 通过提升为四术专业真值，也不表示整个 P5-A 或 Phase 5 已完成。
 
@@ -58,6 +58,13 @@ runtime validator 会检查纯 JSON（拒绝函数、`Date`、循环引用、NaN
 
 `ownerDecisionRequired` 标记 5 个 contract cases，归并为上述 4 个 owner decisions（八字日期范围 1 项、紫微/占星日期范围 2 项、历史 DST 1 项、占星缺时辰近似 1 项）；城市完整覆盖不是本批决策，已 route 到 P5-B；失败文案与无障碍呈现 route 到 P5-C。
 
-## 6. 结论与边界
+## 6. 验收证据
 
-P5-A4a 已完成“盘点 + 合同 + 机器门禁 + 只读 probes”的实现，等待 Sol High 独立验收。P5-A 不能因此关闭：真实 gap 尚未修复，决策项尚未批准，P5-A4b/P5-B/P5-C 仍需单独 handoff。任何对外文案只能说当前输入边界和工程回归已被记录，不能说四术结论已经获得专业验证。
+- 实现 local `2cf82d402e2f840ebf7c29bf47ee3b167fab9688`，remote `c7055e8962b3b21dd8b78c8f5c64769e9528daf0`。
+- [GitHub Actions run 31879638540](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31879638540) 为 `completed/success`；Typecheck、Lint、Regression tests 与 Web Export 均实际执行并 Success。
+- 主管本地独立复跑 `git diff --check`、typecheck、lint、`npm test`（112/112）和 `build:web`（8 routes），全部 PASS。
+- 唯一非阻断 warning：runner 将 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 action runtime 强制为 Node 24。该项登记为后续 CI maintenance，本批不修改 workflow。
+
+## 7. 结论与边界
+
+P5-A4a 已完成“盘点 + 合同 + 机器门禁 + 只读 probes”的实现，并通过 Sol High 独立验收 **PASS**。该结论只覆盖审计合同、机器门禁和已登记的工程现状，不把项目回归、第三方库返回或 CI 通过提升为四术专业真值。P5-A 不能因此关闭：真实 gap 尚未修复，决策项尚未批准，P5-A4b/P5-B/P5-C 仍需单独 handoff；整个 P5-A 与 Phase 5 仍未完成。任何对外文案只能说当前输入边界和工程回归已被记录，不能说四术结论已经获得专业验证。

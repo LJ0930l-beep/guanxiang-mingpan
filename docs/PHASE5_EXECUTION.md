@@ -1,10 +1,10 @@
 # Phase 5 · P5-A1～P5-A4a 四术可信度与输入边界审计
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b 已由 Sol High 独立验收 PASS；P5-A4a 审计合同与机器门禁已实现，等待 Sol High 独立验收；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核，以及 P5-A4a 四术边界与输入策略机器可检查审计
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和待验收状态，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -235,7 +235,7 @@ Sol High 独立验收结论：**P5-A3b PASS**。P5-A3a 与 P5-A3b 均完成，P5
 
 当前状态：P5-A3b 已经 Sol High 独立复验 PASS；不标记整个 P5-A 或 Phase 5 完成。
 
-## 11. P5-A4a 四术边界与输入策略机器可检查审计（实现完成，等待 Sol High 独立验收）
+## 11. P5-A4a 四术边界与输入策略机器可检查审计（Sol High 独立验收 PASS）
 
 ### 11.1 Scope 与明确不做
 
@@ -276,6 +276,8 @@ npm test               PASS（112/112）
 npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
-本批提交与 GitHub Actions 证据将在推送后补写；当前不得写成 Sol High PASS。
+实现交付与独立验收证据：本地 commit `2cf82d402e2f840ebf7c29bf47ee3b167fab9688`；远端等价 commit `c7055e8962b3b21dd8b78c8f5c64769e9528daf0`；[GitHub Actions run 31879638540](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31879638540) 为 `completed/success`。该 run 的 Typecheck、Lint、Regression tests 与 Web Export 均实际执行并 Success；主管本地独立复跑 `git diff --check`、typecheck、lint、`npm test`（112/112）和 `build:web`（8 routes），全部 PASS。
 
-本批实现完成，等待 Sol High 独立验收。P5-A4a 不关闭整个 P5-A；P5-A4b、P5-B、P5-C 及负责人决策项仍需独立授权和验收。
+该 CI run 唯一非阻断 warning 为：`actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 action runtime 被 runner 强制为 Node 24。该项登记为后续 CI maintenance；本批不修改 workflow，不影响四项质量门结果。
+
+Sol High 独立验收结论：**P5-A4a PASS**。本结论只覆盖四术边界/输入审计合同、机器门禁和已登记的现状事实；P5-A4a 不关闭整个 P5-A，真实 gap、负责人决策项、P5-A4b、P5-B、P5-C 及 Phase 5 仍需独立授权和验收。
