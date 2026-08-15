@@ -6,6 +6,8 @@ import type { BaziInterpretation } from '@/domains/bazi/interpretation/rules';
 import type { ExplanationSnapshot } from '@/domains/explanation/types';
 import type { NormalizedZiweiChart } from '@/domains/ziwei/model/normalized-chart';
 import type { ZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
+import type { NormalizedAstrologyChart } from '@/domains/astrology/model/normalized-chart';
+import type { AstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
 export const DEFAULT_CALCULATION_TIMEZONE = 'Asia/Shanghai' as const;
@@ -176,6 +178,8 @@ export interface AstrologyChartView extends ChartMeta {
   midheaven?: string;
   factors: AstrologyFactorView[];
   aspects: AstrologyAspectView[];
+  normalizedChart: NormalizedAstrologyChart;
+  evidenceGraph: AstrologyEvidenceGraph;
   focus: string[];
 }
 

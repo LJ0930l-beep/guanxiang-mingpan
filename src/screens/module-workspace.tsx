@@ -671,6 +671,11 @@ function AstrologyResult({ result }: { result: AstrologyChartView }) {
           <Text style={[styles.modeTag, result.calculationMode === 'approximate' && styles.modeTagPartial]}>{result.calculationMode === 'exact' ? '完整盘' : '近似盘'}</Text>
         </View>
       </View>
+      <ExplanationLayer
+        snapshot={result.explanation}
+        evidenceNodes={result.evidenceGraph.nodes}
+        glossaryTerms={listGlossaryTerms('astrology')}
+      />
       <Text style={styles.resultSectionTitle}>行星落座</Text>
       <View style={styles.factorGrid}>{result.factors.filter((item) => !['ascendant', 'midheaven'].includes(item.key)).map((factor) => <View key={factor.key} style={styles.factorRow}><Text style={styles.factorName}>{factor.label}</Text><Text style={styles.factorValue}>{factor.sign} {factor.degree}{factor.house ? ` · 第${factor.house}宫` : ''}{factor.retrograde ? ' · 逆行' : ''}</Text></View>)}</View>
       <Text style={styles.resultSectionTitle}>主要相位</Text>

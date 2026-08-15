@@ -5,6 +5,9 @@ import type { AstrologyChartView } from '@/types/charts';
 import { calculationSettings, CHART_SNAPSHOT_VERSION, aspectLabels, bodyLabels, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, signLabels } from '@/services/chart-engine-shared';
 import type { BirthProfile } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
+import { normalizeAstrologyChart } from '@/domains/astrology/model/normalized-chart';
+import { buildAstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
+import { buildAstrologyExplanation } from '@/domains/astrology/explanation/index';
 
 export function calculateAstrologyView(profile: BirthProfile, options?: CalculationOptions): AstrologyChartView {
   requireExactBirth(profile);
@@ -65,10 +68,18 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
   const caveats = ['基础版只解释核心落座与主要相位，不输出确定性事件预测。'];
   if (!city) caveats.unshift('未识别出生城市坐标，当前为近似盘：不计算上升、天顶与十二宫位。');
 
+  const generated = generatedAt(options);
+  const normalizedChart = normalizeAstrologyChart({ calculationMode: city ? 'exact' : 'approximate', factors, aspects: aspects.slice(0, 12).map((aspect) => ({
+    label: aspectLabels[aspect.aspectKey] ?? aspect.label,
+    from: bodyLabels[aspect.point1Key] ?? aspect.point1Label,
+    to: bodyLabels[aspect.point2Key] ?? aspect.point2Label,
+    orb: `${Number(aspect.orb).toFixed(2)}°`,
+  })) }, { engineVersion: ENGINE_VERSIONS.astrology, snapshotVersion: CHART_SNAPSHOT_VERSION });
+  const evidenceGraph = buildAstrologyEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.astrology });
   return {
     module: 'astrology',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
-    generatedAt: generatedAt(options),
+    generatedAt: generated,
     engineVersion: ENGINE_VERSIONS.astrology,
     calculationSettings: settings,
     inputSnapshot: birthInputSnapshot(profile, undefined, settings),
@@ -86,6 +97,9 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
       to: bodyLabels[aspect.point2Key] ?? aspect.point2Label,
       orb: `${Number(aspect.orb).toFixed(2)}°`,
     })),
+    normalizedChart,
+    evidenceGraph,
+    explanation: buildAstrologyExplanation({ chart: normalizedChart, evidenceGraph, generatedAt: generated }),
     focus: [
       `太阳落在「${sunSign}」${moon ? `，月亮落在「${signOf(moon)}」` : ''}。`,
       ascendant ? `上升为「${signOf(ascendant)}」，天顶为「${signOf(midheaven)}」。` : '当前缺少可识别坐标，因此不显示上升、天顶与宫位。',
