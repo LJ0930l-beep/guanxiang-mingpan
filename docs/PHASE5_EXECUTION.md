@@ -1,10 +1,10 @@
 # Phase 5 · P5-A1 四术 Golden Case 合同与现状盘点
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2 已由 Sol High 独立验收 PASS；P5-A3a 最小兼容修复完成、等待 Sol High 独立复验；整个 P5-A 与 Phase 5 仍未完成
+批次状态：P5-A1、P5-A2、P5-A3a 已由 Sol High 独立验收 PASS；整个 P5-A 与 Phase 5 仍未完成
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden，以及本次 P5-A3a 真太阳时版本兼容与 Storage Schema 3 实现记录
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节为当前 P5-A3a handoff，仅表示最小兼容修复完成等待主管复验，不表示整个 P5-A3、P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，不表示整个 P5-A3、P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -179,7 +179,7 @@ Sol High 独立验收结论：**PASS**。本结论只覆盖 P5-A2 两条 HKO pub
 
 P5-A2 时登记的真太阳时来源标签风险已进入单独的 P5-A3a handoff。P5-A3a 只按主管已明确选择的方案 A 实现核心版本兼容；P5-A3b 的记录页显式复核和 UI 展示尚未获得本批通过后的单独实现授权。整个 P5-A3 仍未完成，不能把本批实现写成最终专业真值或发布结论。
 
-## 9. P5-A3a 真太阳时版本兼容与 Storage Schema 3（最小兼容修复完成，等待主管复验）
+## 9. P5-A3a 真太阳时版本兼容与 Storage Schema 3（Sol High 独立验收 PASS）
 
 ### 9.1 Scope 与实现摘要
 
@@ -193,4 +193,12 @@ P5-A2 时登记的真太阳时来源标签风险已进入单独的 P5-A3a handof
 
 新增/强化回归覆盖：UTC 与 `Asia/Shanghai` 环境 deepEqual、NOAA 数值与闰年 fixture、正负 0.5 对称舍入、北京 116.4074E 的 09:13/09:14/09:15 实际时柱边界、东经 121 度跨时辰/子初/午夜、schema 2 → 3 不重算与 snapshot-only settings、缺失证据 unknown 及普通/加密备份 roundtrip、merge/replace 和 payload/snapshot settings 一致性。统一 `npm test` 当前为 99 项。
 
-本批明确不做：P5-A3b 记录页显式复核、UI 证据展示、其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3b 不是新的 owner 决策门，而是本批通过后由主管另行授权的后续实现批；整个 P5-A、P5-A3 和 Phase 5 仍未完成，当前状态等待 Sol High 独立复验。
+### 9.3 交付与独立验收
+
+初始实现已由主管独立复验：本地 `51fcd3bd8b7938e54f6604785544574115e34733`、远端 `2da65c0928aa23af0ed1fabb36de3008a23ff5d5`、CI [run 31872612966](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31872612966)；修复后本地 `4ed5081354747cc4b4a342552436d0263780f0ff`、远端 `a3e7193d2a0b1c9c4de7b3d9e859a0eb61983459`、CI [run 31873458023](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31873458023)。最终 CI 均为 `completed/success`，Regression tests 与 Web export 均实际执行并成功。
+
+主管最终独立复验 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`（99/99）和 `npm run build:web`（8 routes），全部 PASS。方案 A 验收范围为：新计算使用 NOAA v2；旧 v1 仅用于明确的历史结果复现；`legacy-unknown` 不伪造证据，也不用于实际计算。
+
+Sol High 独立验收结论：**P5-A3a PASS**。
+
+本批明确不做：其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3 整体仍未完成；下一批 P5-A3b 由主管另行授权，范围为历史证据展示与显式“按当前规则复核”，不得在本批验收结论中预先标记完成。整个 P5-A、P5-A3 和 Phase 5 仍未完成。

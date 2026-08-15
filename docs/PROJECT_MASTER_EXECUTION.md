@@ -3,7 +3,7 @@
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
 > 批次：P5-A3a 真太阳时版本兼容、NOAA v2 与 Storage Schema 3
-> 本批状态：最小兼容修复完成，等待 Sol High 独立复验（2026-08-15）
+> 本批状态：Sol High 独立验收 PASS（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -195,9 +195,13 @@ P5-A1 已按本批 handoff 完成实现并经 Sol High 独立验收 **PASS**，*
 
 Storage Schema 2 → 3 与普通/加密备份导入均只做无计算元数据迁移：完整旧八字设置缺 version 标记 v1，设置或证据不可信标记 unknown；历史 pillars、normalized chart、evidence graph、interpretation/explanation、时间戳、engineVersion、input/profile snapshot、feedback/favorite 及既有 correction 时刻/数值均不重算、不覆盖。完全缺失真太阳时证据时以 `provenanceStatus=unknown` 表达，`applied`、修正数值和有效时刻保持缺省，不能合成 `false`、0 或民用时刻；原记录已有的数值/时刻仍原样保留。schema3 完整八字记录保持原样，旧形态仍进入同一迁移函数；future schema4 继续 blocked/write-protected。
 
-## 5.3 P5-A3a 真太阳时版本兼容与 Storage Schema 3（最小兼容修复完成，等待主管复验）
+## 5.3 P5-A3a 真太阳时版本兼容与 Storage Schema 3（Sol High 独立验收 PASS）
 
-回归覆盖 99 项统一测试：跨 `TZ=UTC`/`Asia/Shanghai` deepEqual、NOAA 数值/闰年、正负 0.5 舍入、北京 116.4074E 09:13/09:14/09:15 实际时柱、东经 121 度跨时辰/子初/午夜、schema2→3 no-recalc、snapshot-only settings、unknown evidence 及普通/加密备份 roundtrip、schema2 导入与 merge/replace、payload/snapshot settings 一致性。P5-A3b 复核与 UI 证据展示不在本批授权范围；P5-A3b 不是新的 owner 决策门，而是本批通过后由主管另行授权的后续实现批。本批当前状态为最小兼容修复完成、等待 Sol High 独立复验。整个 P5-A3、P5-A 和 Phase 5 仍未完成。
+回归覆盖 99 项统一测试：跨 `TZ=UTC`/`Asia/Shanghai` deepEqual、NOAA 数值/闰年、正负 0.5 舍入、北京 116.4074E 09:13/09:14/09:15 实际时柱、东经 121 度跨时辰/子初/午夜、schema2→3 no-recalc、snapshot-only settings、unknown evidence 及普通/加密备份 roundtrip、schema2 导入与 merge/replace、payload/snapshot settings 一致性。主管最终独立复验 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`（99/99）和 `npm run build:web`（8 routes）全部 PASS；最终 CI 为 Success，Regression tests 与 Web Export 均实际执行并 Success。
+
+初始实现：local `51fcd3bd8b7938e54f6604785544574115e34733` / remote `2da65c0928aa23af0ed1fabb36de3008a23ff5d5` / CI `31872612966`；修复交付：local `4ed5081354747cc4b4a342552436d0263780f0ff` / remote `a3e7193d2a0b1c9c4de7b3d9e859a0eb61983459` / CI `31873458023`。方案 A 的验收边界为新计算 NOAA v2、旧 v1 仅历史复现、unknown 不伪造证据。
+
+Sol High 独立验收结论：**P5-A3a PASS**。P5-A3b 不是新的 owner 决策门；下一批由主管另行授权，范围为历史证据展示与显式“按当前规则复核”。整个 P5-A3、P5-A 和 Phase 5 仍未完成。
 
 ## 6. 统一批次验收模板
 
@@ -227,7 +231,7 @@ Storage Schema 2 → 3 与普通/加密备份导入均只做无计算元数据�
 | Node 测试 loader/module warning | 当前测试使用 Node experimental strip-types/loader，可能产生 warning；不影响本基线结果，但升级 Node 或依赖时需复核。 | 维护统一 `npm test`，在兼容 Node 版本升级时消除或记录 warning。 |
 | 真太阳时来源标签（P5-A2 历史风险登记） | `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但当时公式并非 HKO 引用或 NOAA 229.18 系数公式，且常量未进入保存 evidence。 | 负责人已选择方案 A 并授权 P5-A3a：当前实现使用 NOAA v2、保留 v1 复现与历史兼容；P5-A3b 仅待本批通过后由主管另行授权，不构成新的 owner 决策门。 |
 
-> 上述真太阳时表格行是 P5-A2 历史登记；当前 P5-A3a 方案 A 已完成最小兼容修复并等待 Sol High 复验，P5-A3b 显式复核/UI 展示不是新的 owner 决策门，而是待主管另行授权的后续实现批。
+> 上述真太阳时表格行是 P5-A2 历史登记；当前 P5-A3a 方案 A 已经 Sol High 独立验收 PASS，P5-A3b 显式复核/UI 展示不是新的 owner 决策门，而是待主管另行授权的后续实现批。
 
 ## 8. 下一步授权边界
 
@@ -237,6 +241,6 @@ Storage Schema 2 → 3 与普通/加密备份导入均只做无计算元数据�
 - 对每条用例标注 `independent-validation`、`regression-only` 或待验证；未有独立来源/专业复核的用例只能作为 regression-only，不得伪造专业真值或“权威正确”结论。
 - P5-A1 仅做当前四术用例和门禁现状盘点；城市覆盖、来源/许可逐条补全属于 P5-B，不进入 P5-A。
 - P5-A2 仅增加 HKO 公开资料支持的两条 published-reference Golden 与离线测试，不改变任何 resolver/engine 输出；立春只比较分钟，农历只比较日期，且不验证四柱流派结论。
-- P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成最小兼容修复并等待独立复验。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，而是本批通过后待主管另行授权的后续实现批，不预先扩展本批范围。
+- P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成实现与最小兼容修复，并经 Sol High 独立验收 PASS。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，而是由主管另行授权的后续实现批，范围为历史证据展示与显式“按当前规则复核”。
 
-P5-A1、P5-A2 已经 Sol High 独立验收通过，P5-A3a 已完成方案 A 最小兼容修复并等待独立复验；P5-A3b 是待主管另行授权的后续实现批，不是新的 owner 决策门。整个 P5-A、P5-A3、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
+P5-A1、P5-A2、P5-A3a 已经 Sol High 独立验收通过；P5-A3b 是待主管另行授权的后续实现批，不是新的 owner 决策门，范围为历史证据展示与显式“按当前规则复核”。整个 P5-A、P5-A3、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
