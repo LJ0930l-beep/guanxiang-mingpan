@@ -5,6 +5,7 @@ import { calculationSettings, CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generated
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 import { buildLiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
+import { buildLiuyaoExplanation } from '@/domains/liuyao/explanation/index';
 
 export async function calculateLiuyaoView(
   question: string,
@@ -80,6 +81,7 @@ export async function calculateLiuyaoView(
     lines,
     normalizedChart,
     evidenceGraph,
+    explanation: buildLiuyaoExplanation({ chart: normalizedChart, evidenceGraph, generatedAt: generated }),
     focus: [
       `本卦「${result.hexagramName}」${result.changedHexagramName ? `变「${result.changedHexagramName}」` : '无变卦'}。`,
       moving.length ? `共有 ${moving.length} 个动爻：${moving.map((line) => `${line.position}爻`).join('、')}，复盘时应优先核对动变。` : '本次为静卦，后续复盘应侧重世应、月日与用神状态。',

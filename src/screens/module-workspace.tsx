@@ -550,6 +550,11 @@ function LiuyaoResult({ result }: { result: LiuyaoChartView }) {
         ))}
       </View>
       <View style={styles.timeEvidence}><Text style={styles.timeText}>{result.ganZhiTime}</Text><Text style={styles.timeText}>{result.kongWang}</Text></View>
+      <ExplanationLayer
+        snapshot={result.explanation}
+        evidenceNodes={result.evidenceGraph.nodes}
+        glossaryTerms={listGlossaryTerms('liuyao')}
+      />
       <FocusList items={result.focus} />
       <Caveats items={result.caveats} />
       <SavedNotice />
