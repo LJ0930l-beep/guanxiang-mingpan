@@ -48,11 +48,11 @@
 
 ## Phase 5 — 发布质量工程（P5-0 已完成，P5-A1 实现完成待独立验收）
 
-Phase 5 以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 为总执行账本，按一个小批一个小批推进，不把整阶段一次交给执行者。当前代码基线的真实事实仍以仓库、82/82 测试、Web 构建和 GitHub Actions 为准。
+Phase 5 以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 为总执行账本，按一个小批一个小批推进，不把整阶段一次交给执行者。当前代码基线的真实事实仍以仓库、83/83 测试、Web 构建和 GitHub Actions 为准。
 
 - [x] **P5-0 项目总账本与启动基线**：固化治理来源、Phase 0～4 真实基线、不可变产品边界、Level A/B、风险和批次验收模板。
 - [ ] **P5-A 专业质量补强（四术 Golden/边界/输入策略）**：P5-A1 已实现但待主管独立验收；整个 P5-A 未完成，P5-A2 未批准。不得伪造专业真值。
-  - [x] **P5-A1 四术 Golden Case 合同、分类门禁与现状盘点**：`golden-case.v1`、纯 JSON/runtime validator、四模块 registry、2 条八字技术性交叉验证、其余当前项 regression-only。
+  - [x] **P5-A1 四术 Golden Case 合同、分类门禁与现状盘点**：`golden-case.v1`、完整纯 JSON/runtime validator、从 `BAZI_GOLDEN_CASES` 映射的 2 条八字技术性交叉验证、其余当前项 regression-only。
 - [ ] **P5-B 城市数据完成**：完成中国大陆城市覆盖、来源/许可/别名/坐标审计和版本化离线数据；未知城市不猜测，历史 `locationId` 不静默替换。
 - [ ] **P5-C UX/可访问性**：完成键盘/读屏/字体缩放/减少动态效果/对比度/触控目标和四术动效验收。
 - [ ] **P5-D 性能与稳定性**：完成 Web/iPhone 冷启动、计算、记录、备份、异常恢复和长列表基线，建立性能预算和回滚证据。

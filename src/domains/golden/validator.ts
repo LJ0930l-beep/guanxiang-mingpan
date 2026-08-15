@@ -57,12 +57,13 @@ function collectJsonErrors(value: unknown, path: string, errors: string[], activ
 }
 
 function isJsonObject(value: unknown, path: string, errors: string[]): value is JsonObject {
+  const initialErrorCount = errors.length;
   collectJsonErrors(value, path, errors, new WeakSet<object>());
   if (!isRecord(value)) {
     errors.push(`${path} must be a JSON object`);
     return false;
   }
-  return errors.length === 0;
+  return errors.length === initialErrorCount;
 }
 
 function isNonEmptyString(value: unknown): value is string {
@@ -130,6 +131,11 @@ function validateGoldenCaseValue(value: unknown, path: string): string[] {
   if (!isRecord(value)) {
     return [`${path} must be an object`];
   }
+
+  // The contract is a pure JSON value in its entirety, not only in the
+  // currently-known semantic fields. This also guards future extension
+  // fields from silently accepting functions, Date instances, or cycles.
+  collectJsonErrors(value, path, errors, new WeakSet<object>());
 
   const requiredProperties = [
     'contractVersion',

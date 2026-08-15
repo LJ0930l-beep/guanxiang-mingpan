@@ -1,125 +1,84 @@
 import {
   GOLDEN_CASE_CONTRACT_VERSION,
   type GoldenCase,
+  type JsonObject,
 } from '@/domains/golden/types';
+import { BAZI_GOLDEN_CASES, type BaziGoldenCase } from '@/domains/bazi/golden-cases';
 import { validateGoldenCaseRegistry } from '@/domains/golden/validator';
 
 const REGRESSION_DISPUTE = '没有独立外部来源或专业复核；本条只用于防止回归，不代表专业真值。';
 
+function mapIndependentBaziGoldenCase(sourceCase: BaziGoldenCase): GoldenCase {
+  return {
+    contractVersion: GOLDEN_CASE_CONTRACT_VERSION,
+    id: `bazi-calculation-${sourceCase.id.replace(/^solar-/, '')}`,
+    module: 'bazi',
+    validationClass: 'independent-validation',
+    input: {
+      fixtureId: sourceCase.id,
+      birthDate: sourceCase.input.birthDate,
+      birthTime: sourceCase.input.birthTime,
+      birthCity: sourceCase.input.birthCity,
+      calendar: sourceCase.input.calendar,
+      ...(sourceCase.input.isLeapMonth === undefined ? {} : { isLeapMonth: sourceCase.input.isLeapMonth }),
+      gender: sourceCase.input.gender,
+      ...(sourceCase.input.latitude === undefined ? {} : { latitude: sourceCase.input.latitude }),
+      ...(sourceCase.input.longitude === undefined ? {} : { longitude: sourceCase.input.longitude }),
+    },
+    calculationSettings: sourceCase.calculationSettings as unknown as JsonObject,
+    sourceReferences: [
+      {
+        type: 'independent-library',
+        locator: sourceCase.source,
+        purpose: '独立计算交叉校验来源，不是 taibu-core 或本项目当前输出。',
+      },
+    ],
+    sourceType: 'independent-library',
+    independentVerification: {
+      status: 'verified',
+      method: '用独立来源计算四柱，并与应用适配层结果逐字段比较。',
+      scope: 'technical-cross-check',
+      notes: '只声明当前 fixture 的技术性交叉校验通过，不声明流派或专业权威性。',
+    },
+    expectedFacts: {
+      fixtureId: sourceCase.id,
+      source: sourceCase.source,
+      sourceType: sourceCase.sourceType,
+      expectedFourPillars: sourceCase.expectedFourPillars as unknown as JsonObject,
+      expectedBoundaryNotes: sourceCase.expectedBoundaryNotes,
+      rulePremise: sourceCase.rulePremise,
+    },
+    expectedEvidence: {
+      fixtureLocation: 'tests/bazi-golden.regression.mjs#P1-A independent Bazi golden cases',
+      assertions: ['independent-adapter-four-pillar-comparison', 'calculation-evidence-retained'],
+    },
+    expectedInterpretation: {
+      notProfessionalTruth: true,
+      scope: 'calculation-only',
+      assertion: 'no-interpretive-conclusion',
+    },
+    knownDisputes: [
+      '交叉校验只覆盖现有日期与输入规则，不能外推到节气边界、其他流派或所有日期。',
+      ...sourceCase.expectedBoundaryNotes,
+    ],
+    verifiedBy: sourceCase.verifiedBy,
+    verifiedAt: sourceCase.verifiedAt,
+  };
+}
+
+const INDEPENDENT_BAZI_GOLDEN_CASES = BAZI_GOLDEN_CASES
+  .filter((sourceCase) => sourceCase.sourceType === 'independent-library')
+  .map(mapIndependentBaziGoldenCase);
+
 /**
- * The registry records the current evidence boundary. It intentionally keeps
- * expected values as compact assertions and fixture pointers instead of
- * copying large application outputs into a second source of truth.
+ * The registry records the current evidence boundary. Existing independent
+ * Bazi cases are mapped from their source-of-truth records so their complete
+ * inputs and expected facts cannot silently drift. Other entries keep compact
+ * assertions and fixture pointers instead of copying large application
+ * outputs into a second source of truth.
  */
 export const GOLDEN_CASE_REGISTRY: readonly GoldenCase[] = [
-  {
-    contractVersion: GOLDEN_CASE_CONTRACT_VERSION,
-    id: 'bazi-calculation-1986-05-29-beijing',
-    module: 'bazi',
-    validationClass: 'independent-validation',
-    input: {
-      fixtureId: 'solar-1986-05-29-beijing',
-      calendar: 'solar',
-      birthDate: '1986-05-29',
-      birthTime: '12:00',
-      birthCity: '北京市',
-      gender: 'female',
-    },
-    calculationSettings: {
-      timezone: 'Asia/Shanghai',
-      dayBoundary: 'midnight',
-      trueSolarTime: false,
-      solarTimeModel: 'none',
-      locationDatasetVersion: 'china-cities-p1a-sparse-v1',
-      calendarResolverVersion: 'solar-terms-p1b-v1',
-    },
-    sourceReferences: [
-      {
-        type: 'independent-library',
-        locator: 'npm:lunar-javascript@1.7.7#EightChar',
-        purpose: '独立计算交叉校验来源，不是 taibu-core 或本项目当前输出。',
-      },
-    ],
-    sourceType: 'independent-library',
-    independentVerification: {
-      status: 'verified',
-      method: '用 lunar-javascript EightChar API 计算四柱，并与应用适配层结果逐字段比较。',
-      scope: 'technical-cross-check',
-      notes: '只声明当前 fixture 的技术性交叉校验通过，不声明流派或专业权威性。',
-    },
-    expectedFacts: {
-      fixtureId: 'solar-1986-05-29-beijing',
-      assertion: 'four-pillars-match-independent-adapter',
-    },
-    expectedEvidence: {
-      fixtureLocation: 'tests/bazi-golden.regression.mjs#P1-A independent Bazi golden cases',
-      assertions: ['timezone-is-Asia/Shanghai', 'day-boundary-is-midnight', 'solar-term-is-resolved'],
-    },
-    expectedInterpretation: {
-      notProfessionalTruth: true,
-      scope: 'calculation-only',
-      assertion: 'no-interpretive-conclusion',
-    },
-    knownDisputes: [
-      '交叉校验只覆盖现有日期与输入规则，不能外推到节气边界、其他流派或所有日期。',
-    ],
-    verifiedBy: 'lunar-javascript@1.7.7',
-    verifiedAt: '2026-08-14',
-  },
-  {
-    contractVersion: GOLDEN_CASE_CONTRACT_VERSION,
-    id: 'bazi-calculation-2024-02-10-shenzhen',
-    module: 'bazi',
-    validationClass: 'independent-validation',
-    input: {
-      fixtureId: 'solar-2024-02-10-shenzhen',
-      calendar: 'solar',
-      birthDate: '2024-02-10',
-      birthTime: '12:00',
-      birthCity: '广东省深圳市',
-      gender: 'male',
-    },
-    calculationSettings: {
-      timezone: 'Asia/Shanghai',
-      dayBoundary: 'midnight',
-      trueSolarTime: false,
-      solarTimeModel: 'none',
-      locationDatasetVersion: 'china-cities-p1a-sparse-v1',
-      calendarResolverVersion: 'solar-terms-p1b-v1',
-    },
-    sourceReferences: [
-      {
-        type: 'independent-library',
-        locator: 'npm:lunar-javascript@1.7.7#EightChar',
-        purpose: '独立计算交叉校验来源，不是 taibu-core 或本项目当前输出。',
-      },
-    ],
-    sourceType: 'independent-library',
-    independentVerification: {
-      status: 'verified',
-      method: '用 lunar-javascript EightChar API 计算四柱，并与应用适配层结果逐字段比较。',
-      scope: 'technical-cross-check',
-      notes: '只声明当前 fixture 的技术性交叉校验通过，不声明流派或专业权威性。',
-    },
-    expectedFacts: {
-      fixtureId: 'solar-2024-02-10-shenzhen',
-      assertion: 'four-pillars-match-independent-adapter',
-    },
-    expectedEvidence: {
-      fixtureLocation: 'tests/bazi-golden.regression.mjs#P1-A independent Bazi golden cases',
-      assertions: ['timezone-is-Asia/Shanghai', 'day-boundary-is-midnight', 'solar-term-is-resolved'],
-    },
-    expectedInterpretation: {
-      notProfessionalTruth: true,
-      scope: 'calculation-only',
-      assertion: 'no-interpretive-conclusion',
-    },
-    knownDisputes: [
-      '交叉校验只覆盖现有日期与输入规则，不能外推到节气边界、其他流派或所有日期。',
-    ],
-    verifiedBy: 'lunar-javascript@1.7.7',
-    verifiedAt: '2026-08-14',
-  },
+  ...INDEPENDENT_BAZI_GOLDEN_CASES,
   {
     contractVersion: GOLDEN_CASE_CONTRACT_VERSION,
     id: 'bazi-interpretation-fixtures',

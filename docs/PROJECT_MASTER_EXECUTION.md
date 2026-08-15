@@ -150,12 +150,12 @@ commit: docs: establish phase5 master ledger
 
 ## 5.1 P5-A1 交付记录
 
-P5-A1 已按本批 handoff 完成实现，**不等于整个 P5-A 或 Phase 5 完成**。本批新增共享 Golden Case 合同、运行时/registry validator、四术现状 registry 和 8 项回归测试；只把现有 `lunar-javascript@1.7.7` 交叉校验的两条八字计算样例登记为独立技术验证，其余当前项明确为 regression-only。
+P5-A1 已按本批 handoff 完成实现，**不等于整个 P5-A 或 Phase 5 完成**。本批新增共享 Golden Case 合同、运行时/registry validator、四术现状 registry 和 9 项回归测试；两条独立八字计算样例直接从现有 `BAZI_GOLDEN_CASES` 映射并保留完整输入/计算设置/四柱事实/来源/验证日期，其余当前项明确为 regression-only。
 
 - 合同版本：`golden-case.v1`。
 - 当前 registry：10 条，2 条 `independent-validation`、8 条 `regression-only`、0 条 `pending-verification`；四模块均有清单。
 - Storage/schema：无变化；合同版本不是用户数据 schema 版本，不触发迁移。
-- 测试：`npm test` 82/82，新增测试已进入统一命令。
+- 测试：`npm test` 83/83，新增测试已进入统一命令。
 - 文档：`docs/PHASE5_EXECUTION.md` 记录字段、门禁、清单、DoD、限制和未批准的 P5-A2 候选。
 - 主管门：Sol High 必须独立审阅来源边界、分类和 CI 后，才能批准下一批；本记录不预先批准 P5-A2。
 

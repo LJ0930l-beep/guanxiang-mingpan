@@ -6,6 +6,7 @@ import {
   validateGoldenCase,
   validateGoldenCaseRegistry,
 } from '../src/domains/golden/index.ts';
+import { BAZI_GOLDEN_CASES } from '../src/domains/bazi/golden-cases.ts';
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -26,6 +27,26 @@ test('P5-A1 合法独立八字条目通过 Golden Case 合同', () => {
   assert.equal(item.sourceReferences.length > 0, true);
   assert.equal(item.independentVerification.status, 'verified');
   assert.equal(item.expectedInterpretation.notProfessionalTruth, true);
+});
+
+test('P5-A1 独立八字 registry 从既有 BAZI_GOLDEN_CASES 完整映射且不会漂移', () => {
+  const sourceCases = BAZI_GOLDEN_CASES.filter((item) => item.sourceType === 'independent-library');
+  const registryCases = GOLDEN_CASE_REGISTRY.filter((item) => item.validationClass === 'independent-validation');
+
+  assert.equal(registryCases.length, sourceCases.length);
+  for (const sourceCase of sourceCases) {
+    const registryCase = registryCases.find((item) => item.input.fixtureId === sourceCase.id);
+    assert.ok(registryCase, sourceCase.id);
+    assert.deepEqual(registryCase.input, { fixtureId: sourceCase.id, ...sourceCase.input });
+    assert.deepEqual(registryCase.calculationSettings, sourceCase.calculationSettings);
+    assert.equal(registryCase.expectedFacts.source, sourceCase.source);
+    assert.equal(registryCase.expectedFacts.sourceType, sourceCase.sourceType);
+    assert.deepEqual(registryCase.expectedFacts.expectedFourPillars, sourceCase.expectedFourPillars);
+    assert.deepEqual(registryCase.expectedFacts.expectedBoundaryNotes, sourceCase.expectedBoundaryNotes);
+    assert.equal(registryCase.expectedFacts.rulePremise, sourceCase.rulePremise);
+    assert.equal(registryCase.verifiedBy, sourceCase.verifiedBy);
+    assert.equal(registryCase.verifiedAt, sourceCase.verifiedAt);
+  }
 });
 
 test('P5-A1 四模块现状清单齐全且 ID 全局唯一', () => {
@@ -73,6 +94,22 @@ test('P5-A1 非 JSON 值、非法日期和缺必填字段会被拒绝', () => {
   const nonJson = independentBaziCase();
   nonJson.input.unsupported = () => 'not-json';
   assert.throws(() => validateGoldenCase(nonJson), /not a JSON value/);
+
+  const extraFunction = independentBaziCase();
+  extraFunction.unexpected = () => 'not-json';
+  assert.throws(() => validateGoldenCase(extraFunction), /goldenCase\.unexpected is not a JSON value/);
+
+  const nestedFunction = independentBaziCase();
+  nestedFunction.independentVerification.unexpected = () => 'not-json';
+  assert.throws(() => validateGoldenCase(nestedFunction), /independentVerification\.unexpected is not a JSON value/);
+
+  const nestedDate = independentBaziCase();
+  nestedDate.independentVerification.checkedAt = new Date('2026-08-15T00:00:00.000Z');
+  assert.throws(() => validateGoldenCase(nestedDate), /independentVerification\.checkedAt must be a plain JSON object/);
+
+  const cycle = independentBaziCase();
+  cycle.expectedFacts.self = cycle;
+  assert.throws(() => validateGoldenCase(cycle), /expectedFacts\.self contains a cyclic reference/);
 
   const invalidDate = independentBaziCase();
   invalidDate.verifiedAt = '2026-02-30';

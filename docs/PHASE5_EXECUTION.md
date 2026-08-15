@@ -44,7 +44,7 @@
 | `knownDisputes[]` | 已知争议、输入近似或尚未独立复核的限制。 |
 | `verifiedBy` / `verifiedAt` | 独立验证的验证主体和可验证 ISO 日期；未验证条目必须为 `null`。 |
 
-`src/domains/golden/validator.ts` 同时验证顶层字段、枚举、日期、纯 JSON 结构、分类门禁和 registry ID 唯一性。`src/domains/golden/registry.ts` 在模块加载时执行 registry validator，防止无效清单进入测试或后续消费方。
+`src/domains/golden/validator.ts` 同时递归验证整条记录（包括未来扩展字段）的纯 JSON 结构，再验证顶层字段、枚举、日期、分类门禁和 registry ID 唯一性。`src/domains/golden/registry.ts` 从既有 `src/domains/bazi/golden-cases.ts` 映射两条独立八字记录，保留完整输入、计算设置、四柱事实、边界备注、来源和验证日期，并在模块加载时执行 registry validator，防止无效清单或来源漂移进入测试或后续消费方。
 
 ## 3. 分类门禁
 
@@ -92,13 +92,14 @@
 
 ## 6. DoD 与测试
 
-新增 `tests/golden-case-contract.regression.mjs` 8 项测试，覆盖：
+新增 `tests/golden-case-contract.regression.mjs` 9 项测试，覆盖：
 
 - 合法独立八字条目通过；
 - 四模块清单齐全、ID 唯一；
 - 紫微/占星/六爻不被标为独立验证；
 - 独立验证缺来源、regression-only 矛盾声明独立验证、重复 ID 被拒绝；
-- 非 JSON 值、非法日期和缺必填字段被拒绝；
+- 顶层/嵌套额外函数、`Date`、循环引用、非法日期和缺必填字段被拒绝；
+- 两条独立八字 registry 条目与 `BAZI_GOLDEN_CASES` 的完整输入、设置、四柱事实、来源和验证日期逐字段锁定；
 - registry 可以纯 JSON 往返，且新测试已接入统一 `npm test`。
 
 本批质量结果：
@@ -107,7 +108,7 @@
 git diff --check       PASS
 npm run typecheck      PASS
 npm run lint           PASS
-npm test               PASS（82/82，包含新增 8 项）
+npm test               PASS（83/83，包含新增 9 项）
 npm run build:web      PASS（8 条静态 routes，Web Export 实际执行）
 ```
 
