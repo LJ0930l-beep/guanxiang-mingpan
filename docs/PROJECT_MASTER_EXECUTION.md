@@ -2,8 +2,8 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-A3b 历史真太阳时证据展示与显式当前规则复核
-> 本批状态：Sol High 独立验收 PASS（2026-08-15）
+> 批次：P5-A4a 四术边界与输入策略机器可检查审计
+> 本批状态：实现完成，等待 Sol High 独立验收（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -75,7 +75,7 @@
 
 | 批次 | Level | 范围与 DoD | 依赖 | 重大决策门 |
 |---|---|---|---|---|
-| **P5-A 专业质量补强（四术 Golden/边界/输入策略）** | A | 建立四术统一 Golden Case 字段、分类门禁和现状盘点；覆盖边界输入、缺失数据、时区/日期和失败路径，明确独立验证与 regression-only。P5-A1、P5-A2、P5-A3 已完成独立验收，但 P5-A 仍未完成；不得伪造专业真值，后续新增专业样例必须有来源和验证级别。 | Phase 4 四术模型/证据/解释基线、当前引擎 facade | 哪些样例可称独立验证；输入策略、边界降级和专业结论的对外承诺。 |
+| **P5-A 专业质量补强（四术 Golden/边界/输入策略）** | A | 建立四术统一 Golden Case 字段、分类门禁和现状盘点；覆盖边界输入、缺失数据、时区/日期和失败路径，明确独立验证与 regression-only。P5-A1、P5-A2、P5-A3a、P5-A3b 已完成独立验收，P5-A4a 审计合同已实现等待验收，但 P5-A 仍未完成；不得伪造专业真值，后续新增专业样例必须有来源和验证级别。 | Phase 4 四术模型/证据/解释基线、当前引擎 facade | 哪些样例可称独立验证；输入策略、边界降级和专业结论的对外承诺。 |
 | **P5-B 城市数据完成** | A | 完成中国大陆地级市离线完整覆盖、逐条来源/许可/别名/坐标审计和版本化离线数据；未知城市继续精确未命中，历史 `locationId`、坐标和数据版本不静默替换。只有相关 dataset 发生兼容性变化时才评估并递增版本。 | P5-A 的统一 Golden/输入门禁、`DATASET_PROVENANCE.md` | 是否承诺全国地级市完整覆盖；城市中心近似坐标的公开精度边界。 |
 | **P5-C UX / 可访问性** | A | 四术工作台、记录、备份、错误和边界提示完成键盘/读屏/字体缩放/减少动态效果/对比度/触控目标验收；每个模块的动效不影响信息和复盘路径。 | Phase 4 解释 UI、P5-A 输入/边界清单 | 无障碍目标等级、低动态模式和视觉母题的最终取舍。 |
 | **P5-D 性能与稳定性** | A | Web/iPhone 冷启动、四术计算、记录加载、备份导入导出、异常恢复和长列表完成基线；建立可重复性能预算、错误日志边界和回滚证据，不把出生资料上传到分析服务。 | P5-A～P5-C | 性能预算、支持设备范围、是否允许本地诊断信息。 |
@@ -238,6 +238,32 @@ Sol High 独立验收结论：**P5-A3b PASS**。P5-A3a 与 P5-A3b 均完成，P5
 
 当前状态：P5-A3b 已经 Sol High 独立验收 PASS；整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
 
+## 5.5 P5-A4a 四术边界与输入策略机器可检查审计（实现完成，等待 Sol High 独立验收）
+
+### Scope 与白名单
+
+本批只盘点和建合同，不修算法或 UI。新增 `src/domains/golden/boundary-input-contract.ts` 及其 Golden index 导出，新增 `tests/p5-boundary-input-audit.regression.mjs` 并接入统一 `npm test`，同步维护四份账本和 [P5_A_BOUNDARY_AUDIT.md](P5_A_BOUNDARY_AUDIT.md)。未修改 chart engine/resolver、Storage/schema、备份、依赖、lockfile 或 CI。
+
+审计合同为纯 JSON、版本 `p5-a4a-boundary-input.v1`，41 项覆盖八字 10、紫微 9、占星 8、六爻 9、跨模块 5。runtime validator 强制必填字段、全局唯一 ID、模块/类别/状态/目标批次枚举、evidence reference 格式和状态/owner 决策一致性；拒绝函数、`Date`、循环引用和非有限 JSON 数字。
+
+### 当前矩阵与审计结论
+
+| 状态 | 数量 | 处理 |
+|---|---:|---|
+| `covered` | 18 | 已有工程回归或失败路径事实，仍属于 regression-only |
+| `gap` | 15 | 明确登记后续测试/错误合同/边界矩阵，不在本批修 |
+| `decision-required` | 5 | 日期范围、历史 DST、降级承诺等改变公开规则的事项，等待负责人决策 |
+| `not-applicable` | 2 | 当前没有对应用户输入路径，不虚构测试 |
+| `routed-p5-b` | 1 | 城市完整覆盖路由 P5-B |
+
+41 项全部为 `regression-only`，无 independent-validation。主管已提示并纳入矩阵的事实包括：占星未知城市坐标回退 `0,0` 会改变太阳/月亮位置；紫微会接受 `2024-02-30` 并返回无效 solarDate；占星同输入依赖第三方错误。普通非法公历日期是 P5-A4b 安全输入 gap，error taxonomy/contract 也先进入 P5-A4b，UI/读屏 copy 另行进入 P5-C；公开日期范围、历史 DST、缺时辰近似等 5 个 contract cases 归并为 4 个 owner decisions。P5-A4a 只记录这些风险，不将项目回归冒充专业真值。
+
+### DoD 与交接状态
+
+新增 8 项回归覆盖合同纯 JSON、重复 ID/枚举门禁、矩阵统计、占星未知坐标行为、紫微/占星非法日期、六爻输入失败、占星跨宿主 TZ deepEqual、八字合法/非法闰日。本地质量门全部通过：`git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`（112/112）和 `npm run build:web`（8 routes，Web Export 实际执行）。commit 和 CI 结果须在推送后补回；当前结论为“实现完成，等待 Sol High 独立验收”，不得预写 PASS。
+
+P5-A4a 不关闭整个 P5-A；P5-A4b、P5-B、P5-C 以及负责人决策项仍需独立授权。Expo v57 文档约束已核对，本批没有使用 Expo API。
+
 ## 6. 统一批次验收模板
 
 以后每个 P5 小批都必须在交接记录中填写以下字段，缺项不得宣称完成：
@@ -278,4 +304,4 @@ Sol High 独立验收结论：**P5-A3b PASS**。P5-A3a 与 P5-A3b 均完成，P5
 - P5-A2 仅增加 HKO 公开资料支持的两条 published-reference Golden 与离线测试，不改变任何 resolver/engine 输出；立春只比较分钟，农历只比较日期，且不验证四柱流派结论。
 - P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成实现与最小兼容修复，并经 Sol High 独立验收 PASS。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现并经 Sol High 独立验收 PASS，范围为历史证据展示与显式“按当前规则复核”。
 
-P5-A1、P5-A2、P5-A3a、P5-A3b 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成，不是新的 owner 决策门，范围为历史证据展示与显式“按当前规则复核”。边界日期、闰月、DST、未知时辰、未知城市及四术输入失败路径仍需后续审计，P5-B 尚未开始。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
+P5-A1、P5-A2、P5-A3a、P5-A3b 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4a 已实现四术边界/输入审计合同，当前等待 Sol High 独立验收；其 gap、decision-required 和 P5-B/P5-C 路由不代表算法已修复。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。

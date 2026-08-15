@@ -1,10 +1,10 @@
-# Phase 5 · P5-A1 四术 Golden Case 合同与现状盘点
+# Phase 5 · P5-A1～P5-A4a 四术可信度与输入边界审计
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3，以及 P5-A3b 历史证据展示与显式当前规则复核
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b 已由 Sol High 独立验收 PASS；P5-A4a 审计合同与机器门禁已实现，等待 Sol High 独立验收；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核，以及 P5-A4a 四术边界与输入策略机器可检查审计
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和待验收状态，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -234,3 +234,48 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 Sol High 独立验收结论：**P5-A3b PASS**。P5-A3a 与 P5-A3b 均完成，P5-A3 真太阳时版本兼容、证据展示和显式 current-rule replay 子里程碑整体完成；无算法、Storage Schema、依赖变化，历史结果不静默重算。P5-A 的边界日期、闰月、DST、未知时辰、未知城市及四术输入失败路径仍需后续审计；P5-B 尚未开始。
 
 当前状态：P5-A3b 已经 Sol High 独立复验 PASS；不标记整个 P5-A 或 Phase 5 完成。
+
+## 11. P5-A4a 四术边界与输入策略机器可检查审计（实现完成，等待 Sol High 独立验收）
+
+### 11.1 Scope 与明确不做
+
+本批把“边界日期、闰月、DST、未知时辰、未知城市、四术输入失败路径”从散落说明整理为纯 JSON 审计合同和运行时门禁。合同位于 `src/domains/golden/boundary-input-contract.ts`，离线审计说明见 [P5_A_BOUNDARY_AUDIT.md](P5_A_BOUNDARY_AUDIT.md)。
+
+- 覆盖八字、紫微、占星、六爻和跨模块共 41 项；每项固定 `id`、输入/fixture 摘要、真实 `currentBehavior`、`expectedPolicy`、风险、状态、验证级别、证据引用、目标批次和 owner 决策标记。
+- 运行时拒绝非纯 JSON、函数、`Date`、循环引用、非有限数字、未知枚举、坏 evidence reference、重复 ID，以及与状态不一致的 `targetBatch` / `ownerDecisionRequired`。
+- 当前 41 项全部诚实标记为 `regression-only`；项目自身测试不提升为 independent-validation，也不宣称四术专业真值。
+- 本批只盘点、建合同和增加审计门禁；不修四术算法、UI、Storage、备份、依赖、lockfile 或 CI，不扩充城市数据。
+
+### 11.2 当前矩阵统计与已确认事实
+
+| 维度 | 统计 |
+|---|---:|
+| 总项数 | 41 |
+| 模块 | 八字 10、紫微 9、占星 8、六爻 9、跨模块 5 |
+| 状态 | covered 18、gap 15、decision-required 5、not-applicable 2、routed-p5-b 1 |
+| validationClass | regression-only 41；independent-validation 0；pending-verification 0 |
+
+当前明确登记的 gap/决策包括：
+
+- 占星未知城市会把缺失坐标传为 `0,0`；虽标记为 approximate 并隐藏角点/宫位，但行星位置仍会变化，不能视为仅降低精度；因此跨模块“无猜测”整体仍是 gap。
+- 紫微对 `2024-02-30` 等无效公历日期当前可能返回 `solarDate=2024-2-30`；占星同输入依赖第三方错误，普通无效日期已拆成 P5-A4b 安全输入 gap；错误 taxonomy/contract 进入 P5-A4b，UI/读屏文案仍单独路由 P5-C，公开支持日期范围仍保留为 owner decision。
+- 八字东西经真太阳时跨日矩阵、六爻 seed/非法日期与四术统一错误分类仍为后续 gap；城市完整覆盖路由 P5-B，无障碍文案路由 P5-C。
+- 八字/紫微/占星的公开日期范围、历史夏令时处理、占星缺时辰近似模式等会改变公开规则或承诺，标记为 `decision-required`，等待负责人决策，不在本批擅自选择；普通无效公历日期拒绝则单独标为 P5-A4b 安全输入 gap，不升级为 owner 决策。
+
+### 11.3 DoD 与当前状态
+
+新增 `tests/p5-boundary-input-audit.regression.mjs` 8 项测试并接入统一 `npm test`，覆盖合同纯 JSON/重复 ID/枚举门禁、矩阵统计、占星 0,0 行为、紫微非法日期、六爻输入失败路径、占星跨宿主 TZ deepEqual、八字合法/非法闰日。
+
+本地质量门：
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS
+npm test               PASS（112/112）
+npm run build:web      PASS（8 routes，Web Export 实际执行）
+```
+
+本批提交与 GitHub Actions 证据将在推送后补写；当前不得写成 Sol High PASS。
+
+本批实现完成，等待 Sol High 独立验收。P5-A4a 不关闭整个 P5-A；P5-A4b、P5-B、P5-C 及负责人决策项仍需独立授权和验收。

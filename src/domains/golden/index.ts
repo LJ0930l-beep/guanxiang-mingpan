@@ -1,6 +1,22 @@
 export { GOLDEN_CASE_REGISTRY } from '@/domains/golden/registry';
 export { HKO_PUBLISHED_REFERENCE_GOLDEN_CASES } from '@/domains/golden/published-references';
 export {
+  BOUNDARY_INPUT_AUDIT_CONTRACT_VERSION,
+  BOUNDARY_AUDIT_CATEGORIES,
+  BOUNDARY_AUDIT_MODULES,
+  BOUNDARY_AUDIT_STATUSES,
+  BOUNDARY_AUDIT_TARGET_BATCHES,
+  P5_BOUNDARY_INPUT_AUDIT_CASES,
+  getBoundaryInputAuditValidationErrors,
+  validateBoundaryInputAuditCase,
+  validateBoundaryInputAuditRegistry,
+  type BoundaryAuditCategory,
+  type BoundaryAuditModule,
+  type BoundaryAuditStatus,
+  type BoundaryAuditTargetBatch,
+  type BoundaryInputAuditCase,
+} from '@/domains/golden/boundary-input-contract';
+export {
   getGoldenCaseValidationErrors,
   validateGoldenCase,
   validateGoldenCaseRegistry,
