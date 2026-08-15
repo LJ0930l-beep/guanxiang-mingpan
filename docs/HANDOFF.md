@@ -2,7 +2,7 @@
 
 > 文档状态：可作为后续产品、设计、研发和上线协作的单一交接入口  
 > 更新日期：2026-08-15  
-> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容均已通过 Sol High 独立验收；整个 P5-A/Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
+> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容均已通过 Sol High 独立验收；P5-A3b 历史真太阳时证据展示与显式当前规则复核已完成实现，等待 Sol High 独立验收；整个 P5-A/Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
 
 ## 1. 一页总览
 
@@ -142,6 +142,7 @@
 | P5-A1：四术 Golden Case 合同与现状盘点 | 独立验收 PASS | `golden-case.v1` 合同、完整纯 JSON/runtime validator、全局 ID 门禁、从 `BAZI_GOLDEN_CASES` 映射的 2 条八字技术性交叉验证、8 条 regression-only 清单和 9 项回归测试；两次远端 CI 均 Success 且 Web Export 实际执行。 | 节气/子初/闰月/跨日/未知输入等边界的外部来源或人工复核仍未完成；不代表专业真值。 |
 | P5-A2：HKO published-reference Golden | Sol High 独立验收 PASS | 新增 2 条 HKO 公开资料 fixture（立春 `2024-02-04 16:27` 分钟比较、农历正月初一对应 `2024-02-10` 日期比较）、4 项离线测试；registry 12 条，`npm test` 87/87。主管本地复跑 typecheck/lint/npm test/build:web 全部通过；本地 `a9efd1b05d4a2387a8375b7bd5cc913cc136d232`、远端等价 `3ffdda0caa8fd4b7c91aef45f65c63ad22f815bb`，CI run `31869188065` completed/success，Regression tests 与 Web Export 均实际执行并 success。 | HKO 资料不验证应用秒值或八字流派；真太阳时来源标签是 P5-A2 历史风险，已由负责人选择的 P5-A3a 方案 A handoff 处理；整个 P5-A/Phase 5 仍未完成。 |
 | P5-A3a：真太阳时版本兼容与 Storage Schema 3 | Sol High 独立验收 PASS | 方案 A：新计算 NOAA v2；旧 v1 仅用于历史复现；legacy-unknown 不伪造证据、不用于实际计算。证据保存 raw/display/applied 修正、舍入规则、来源/版本/NOAA URL；schema2→3、普通/加密旧备份和 schema3 malformed 深字段均只做无计算迁移；99 项统一回归覆盖跨 TZ、数值、边界、unknown、普通/加密 roundtrip、merge/replace 与 settings 一致性。初始 local `51fcd3bd8b7938e54f6604785544574115e34733` / remote `2da65c0928aa23af0ed1fabb36de3008a23ff5d5` / CI `31872612966`；修复 local `4ed5081354747cc4b4a342552436d0263780f0ff` / remote `a3e7193d2a0b1c9c4de7b3d9e859a0eb61983459` / CI `31873458023`。 | 下一批 P5-A3b 由主管另行授权，范围为历史证据展示与显式“按当前规则复核”；整个 P5-A、P5-A3 和 Phase 5 未完成。 |
+| P5-A3b：历史真太阳时证据展示与显式当前规则复核 | 实现完成，等待 Sol High 独立验收 | 记录页只读取已保存 payload/snapshotMeta/evidence/interpretation；状态区分 NOAA v2、v1（非 NOAA，仅历史复现）、unknown、未启用；实时依据展示 raw/display/applied、舍入、来源/URL、归一化民用时刻和最终有效计算时刻；显式点击才以内存生成强制 v2 的当前结果与 Diff，不保存、不覆盖历史；设置/证据冲突、缺时辰、缺经度和缺深度快照均有明确语义。新增 5 项回归，统一 `npm test` 104/104，Web Export 8 routes。 | 尚未由 Sol High 独立验收；不代表整个 P5-A3、P5-A 或 Phase 5 完成。 |
 | M3：中国大陆真实账号 | 5% | 三种登录入口的界面与本地流程。 | 短信、Apple、微信认证，手机号绑定，权益同步，账户安全与注销。 |
 | M4：商业化和 AI | 0% | 产品边界已确定。 | 支付、订阅、单次付费、服务端权益、AI 成本控制、内容安全。 |
 | 正式公开上线准备度 | 约 35% | 可演示、可进行小范围内部体验。 | 账号、隐私合规、数据保护、设备发布、质量基线和运营能力均未闭环。 |
@@ -152,8 +153,8 @@
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm test`（四模块固定样例、P1-A～P1-F、P2-A～P2-F、P3-A～P3-F、P4-A～P4-H 解释/证据/Golden/历史/备份回归、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、P5-A1/P5-A2 及 P5-A3a 兼容回归，共 99 项测试；P5-A3a 本地复跑 99/99 PASS）
-- `npm run build:web`（静态 Web 构建成功，8 条路由）
+- `npm test`（四模块固定样例、P1-A～P1-F、P2-A～P2-F、P3-A～P3-F、P4-A～P4-H 解释/证据/Golden/历史/备份回归、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、P5-A1/P5-A2/P5-A3a 兼容回归及 P5-A3b 复核展示回归，共 104 项测试；本地 104/104 PASS）
+- `npm run build:web`（静态 Web 构建成功，8 条路由；P5-A3b 本地 Web Export 实际执行）
 - P5-A3a 两次 GitHub Actions 均为 `completed/success`；最终 run `31873458023` 的 Regression tests 与 Web export 均实际执行并 success。
 - GitHub Actions CI：安装依赖后自动执行 typecheck、lint、npm test 和 Web 构建；Web Export 使用 `always()`，不会因测试失败被跳过。
 - 浏览器手工走查：首页、八字落柱、六爻起卦、紫微十二宫、星盘精确/近似分支、自动保存及记录展开；文件导出/选择与导入预览的具体签字项见 [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md)。
@@ -198,7 +199,7 @@
 
 1. **P5-0 项目总账本与 Phase 5 启动基线**已完成：以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 作为后续批次入口，保留当前 Phase 0～4 代码事实，不回退已完成能力。
 2. **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**、**P5-A2：HKO published-reference Golden** 均已实现并通过主管独立验收。城市覆盖属于 P5-B，不在本小批；HKO 两条 fixture 只比较公开精度，不提升流派真值等级。
-3. **P5-A3a 已经 Sol High 独立验收 PASS**：方案 A 为新计算 NOAA v2、旧 v1 仅历史复现、unknown 不伪造证据。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，而是由主管另行授权的后续实现批，范围为历史证据展示与显式“按当前规则复核”；不得把本批写成整个 P5-A3 或 P5-A 完成。城市数据在 P5-B；UX/可访问性、性能稳定性、Release Security、隐私合规、Web、iPhone/TestFlight 和 App Store 材料各自保留独立 DoD。只有相关 schema、dataset、rules、interpretation 或 explanation 发生兼容性变化时才评估并递增版本，不能无条件递增。
+3. **P5-A3a 已经 Sol High 独立验收 PASS**：方案 A 为新计算 NOAA v2、旧 v1 仅历史复现、unknown 不伪造证据。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现，当前等待 Sol High 独立验收；不得把本批写成整个 P5-A3 或 P5-A 完成。城市数据在 P5-B；UX/可访问性、性能稳定性、Release Security、隐私合规、Web、iPhone/TestFlight 和 App Store 材料各自保留独立 DoD。只有相关 schema、dataset、rules、interpretation 或 explanation 发生兼容性变化时才评估并递增版本，不能无条件递增。
 4. **完成 Phase 5 后进入 OWNER DECISION**：明确公开版本继续本地入口，还是首发前先完成真实账号；该决定不能由执行者默认推断。
 5. **若选择首发前真实账号，按独立 Phase 6 推进真实账号与可选权益；若选择公开版本地入口，则 Level A 发布门仍需先完成 Phase 5 证据。** Phase 7 的订阅、单次付费和付费 AI 只在后续条件满足后推进，基础版继续不依赖 AI、广告或支付。
 

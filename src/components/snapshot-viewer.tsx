@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ExplanationLayer } from '@/components/explanation-layer';
 import type { BaziInterpretationDiff } from '@/domains/bazi/interpretation/history';
+import { buildBaziTrueSolarEvidenceDisplay } from '@/domains/bazi/true-solar-presentation';
 import { listGlossaryTerms } from '@/domains/explanation/glossary';
 import { buildSnapshotViewerModel } from '@/domains/archive/types';
 import { fontFamilies, palette, radii, spacing } from '@/constants/guanxiang';
@@ -69,13 +70,17 @@ function inputRows(model: ReturnType<typeof buildSnapshotViewerModel>) {
 function calculationRows(model: ReturnType<typeof buildSnapshotViewerModel>) {
   if (model.payload.module !== 'bazi') return [['业务时区', model.calculationSnapshot.calculationSettings.timezone] as const];
   const settings = model.payload.calculationSettings;
-  return [
+  const display = buildBaziTrueSolarEvidenceDisplay(settings, model.payload.calculationEvidence);
+  const rows: (readonly [string, string])[] = [
     ['业务时区', settings.timezone],
     ['日界线', settings.dayBoundary === 'ziEarly' ? '子初换日' : '午夜换日'],
     ['真太阳时', settings.trueSolarTime ? `启用 · ${settings.solarTimeModel}` : '未启用'],
     ['城市数据', settings.locationDatasetVersion],
     ['历法解析', settings.calendarResolverVersion],
-  ] as const;
+    ...display.rows,
+  ];
+  if (display.conflictMessage) rows.push(['一致性提示', display.conflictMessage]);
+  return rows;
 }
 
 function resultRows(model: ReturnType<typeof buildSnapshotViewerModel>) {

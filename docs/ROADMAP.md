@@ -46,16 +46,16 @@
 - [x] 最后一批 GitHub Actions 绿色确认（含 Web Export）。
 - [ ] iPhone/TestFlight 文件流签字和发布前合规材料。
 
-## Phase 5 — 发布质量工程（P5-0 已完成，P5-A1/P5-A2/P5-A3a PASS）
+## Phase 5 — 发布质量工程（P5-0 已完成，P5-A1/P5-A2/P5-A3a PASS，P5-A3b 实现完成待验收）
 
-Phase 5 以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 为总执行账本，按一个小批一个小批推进，不把整阶段一次交给执行者。P5-A1 的已验收基线为 83/83；P5-A2 已由主管独立复跑 87/87、Web 8 routes，并取得 GitHub Actions completed/success；P5-A3a 已经主管最终独立复验并 PASS，统一回归为 99/99、Web Export 为 8 routes；整个 P5-A 与 Phase 5 仍未完成。
+Phase 5 以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 为总执行账本，按一个小批一个小批推进，不把整阶段一次交给执行者。P5-A1 的已验收基线为 83/83；P5-A2 已由主管独立复跑 87/87、Web 8 routes，并取得 GitHub Actions completed/success；P5-A3a 已经主管最终独立复验并 PASS，统一回归为 99/99；P5-A3b 已完成实现，本地质量门为 104/104 与 Web Export 8 routes，等待 Sol High 独立验收；整个 P5-A 与 Phase 5 仍未完成。
 
 - [x] **P5-0 项目总账本与启动基线**：固化治理来源、Phase 0～4 真实基线、不可变产品边界、Level A/B、风险和批次验收模板。
 - [ ] **P5-A 专业质量补强（四术 Golden/边界/输入策略）**：P5-A1、P5-A2 均已通过主管独立验收；整个 P5-A 未完成。不得伪造专业真值。
   - [x] **P5-A1 四术 Golden Case 合同、分类门禁与现状盘点**：`golden-case.v1`、完整纯 JSON/runtime validator、从 `BAZI_GOLDEN_CASES` 映射的 2 条八字技术性交叉验证、其余当前项 regression-only；本批独立验收 PASS。
   - [x] **P5-A2 香港天文台 published-reference Golden**：新增 2 条 HKO 公开资料 fixture 与 4 项离线测试；立春只按公开分钟比较，农历只按公开日期比较；主管独立复跑 typecheck/lint/npm test 87/87/build:web 8 routes 全部 PASS。本地 `a9efd1b05d4a2387a8375b7bd5cc913cc136d232`、远端等价 `3ffdda0caa8fd4b7c91aef45f65c63ad22f815bb`；CI run `31869188065` completed/success，Regression tests 与 Web Export 均实际执行并 success。
   - [x] **P5-A3a 真太阳时版本兼容与 Storage Schema 3**：方案 A 已经 Sol High 独立验收 PASS：新计算使用 NOAA v2，旧 v1 仅用于历史复现，`legacy-unknown` 不伪造证据且不用于实际计算；保存 raw/display/applied 修正、舍入规则、来源/版本/NOAA URL；schema2→3、普通/加密旧备份和 schema3 malformed 深字段只做无计算迁移；99/99 测试与 Web Export 8 routes 通过。初始 local `51fcd3bd8b7938e54f6604785544574115e34733` / remote `2da65c0928aa23af0ed1fabb36de3008a23ff5d5` / CI `31872612966`；修复 local `4ed5081354747cc4b4a342552436d0263780f0ff` / remote `a3e7193d2a0b1c9c4de7b3d9e859a0eb61983459` / CI `31873458023`。
-  - [ ] **P5-A3b 记录页显式复核与 UI 展示（待主管另行授权）**：不是新的 owner 决策门；授权后范围为历史证据展示与显式“按当前规则复核”，不得在授权前实现或宣称完成；整个 P5-A3 与 P5-A 仍未完成。
+  - [ ] **P5-A3b 记录页显式复核与 UI 展示（实现完成，等待 Sol High 独立验收）**：不是新的 owner 决策门；已按授权完成历史证据展示与显式“按当前规则复核”，覆盖 NOAA v2/v1/unknown/not-applied 映射、最终有效时刻和无静默重算的内存 Diff；整个 P5-A3 与 P5-A 仍未完成。
 - [ ] **P5-B 城市数据完成**：完成中国大陆城市覆盖、来源/许可/别名/坐标审计和版本化离线数据；未知城市不猜测，历史 `locationId` 不静默替换。
 - [ ] **P5-C UX/可访问性**：完成键盘/读屏/字体缩放/减少动态效果/对比度/触控目标和四术动效验收。
 - [ ] **P5-D 性能与稳定性**：完成 Web/iPhone 冷启动、计算、记录、备份、异常恢复和长列表基线，建立性能预算和回滚证据。

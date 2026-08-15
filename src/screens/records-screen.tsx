@@ -19,6 +19,7 @@ import {
   type ArchiveFilterState,
 } from '@/domains/archive/query';
 import { diffBaziInterpretations } from '@/domains/bazi/interpretation/history';
+import { buildBaziCurrentRuleReplay } from '@/domains/bazi/true-solar-presentation';
 import { useScrollToTopOnMount } from '@/hooks/use-scroll-to-top-on-mount';
 import { calculateBaziView } from '@/services/chart-engine';
 import { useApp } from '@/state/app-context';
@@ -137,35 +138,30 @@ export function RecordsScreen() {
 
   const runBaziDiff = (readingId: string) => {
     const reading = readings.find((item) => item.id === readingId);
-    if (!reading || reading.module !== 'bazi' || !reading.interpretationSnapshot || !reading.evidenceGraphSnapshot) return;
+    if (!reading || reading.module !== 'bazi') return;
+    if (reading.payload.module !== 'bazi') {
+      setDiffError('这条记录的八字载荷不完整，无法安全复核。');
+      return;
+    }
+    if (!reading.interpretationSnapshot || !reading.evidenceGraphSnapshot) {
+      setDiffError('这条历史记录缺少可复核的解释或证据快照；不会补造历史结果。');
+      return;
+    }
     const input = reading.inputSnapshot;
     if (input.type !== 'birth') {
       setDiffError('这条记录缺少可复核的出生输入快照。');
       return;
     }
-    const profile = profiles.find((item) => item.id === reading.profileId);
+    const profile = reading.profileSnapshot ?? profiles.find((item) => item.id === reading.profileId);
     if (!profile) {
-      setDiffError('找不到这条记录对应的命主资料，无法主动复核。');
+      setDiffError('这条记录缺少保存的命主快照，无法安全复核。');
       return;
     }
     try {
-      const replayProfile = {
-        ...profile,
-        birthDate: input.birthDate,
-        birthTime: input.birthTime,
-        timeKnown: input.timeKnown,
-        birthCity: input.birthCity,
-        calendar: input.calendar,
-        isLeapMonth: input.isLeapMonth,
-        gender: input.gender ?? profile.gender,
-        locationId: input.locationId ?? profile.locationId,
-        locationDatasetVersion: input.locationDatasetVersion ?? profile.locationDatasetVersion,
-        latitude: input.latitude ?? profile.latitude,
-        longitude: input.longitude ?? profile.longitude,
-      };
-      const current = calculateBaziView(replayProfile, input.gender, {
-        timezone: reading.snapshotMeta.calculationSettings.timezone,
-        bazi: reading.payload.module === 'bazi' ? reading.payload.calculationSettings : undefined,
+      const replay = buildBaziCurrentRuleReplay(profile, input, reading.payload.calculationSettings);
+      const current = calculateBaziView(replay.profile, replay.profile.gender, {
+        timezone: replay.settings.timezone,
+        bazi: replay.settings,
       });
       const oldStrength = reading.evidenceGraphSnapshot.strengthAssessment;
       const diff = diffBaziInterpretations(

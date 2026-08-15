@@ -1,8 +1,8 @@
 # Phase 5 · P5-A1 四术 Golden Case 合同与现状盘点
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a 已由 Sol High 独立验收 PASS；整个 P5-A 与 Phase 5 仍未完成
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden，以及本次 P5-A3a 真太阳时版本兼容与 Storage Schema 3 实现记录
+批次状态：P5-A1、P5-A2、P5-A3a 已由 Sol High 独立验收 PASS；P5-A3b 已完成实现，等待 Sol High 独立验收；整个 P5-A 与 Phase 5 仍未完成
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3，以及 P5-A3b 历史证据展示与显式当前规则复核
 
 说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，不表示整个 P5-A3、P5-A 或 Phase 5 完成。
 
@@ -127,7 +127,7 @@ Sol High 独立验收结论：**PASS**。主管发现的两项问题已在同一
 
 本批没有声称节气边界、子初、闰月、跨日、未知时辰、未知城市或所有流派已经获得独立专业金标准；这些仍属于后续输入/边界证据工作。城市覆盖和来源/许可审计仍属于 P5-B，不在本批范围。
 
-**P5-A2 已按独立 handoff 完成实现并经 Sol High 独立验收 PASS，见下节；这不等于整个 P5-A 或 Phase 5 完成。** P5-A3a 的方案 A 已由负责人选择并进入实现；P5-A3b 不是新的 owner 决策门，而是本批通过并经主管另行授权后再启动的后续实现批。
+**P5-A2 已按独立 handoff 完成实现并经 Sol High 独立验收 PASS，见下节；这不等于整个 P5-A 或 Phase 5 完成。** P5-A3a 的方案 A 已由负责人选择并经 Sol High 独立验收 PASS；P5-A3b 不是新的 owner 决策门，已按主管授权完成实现，当前等待 Sol High 独立验收。
 
 ## 8. P5-A2 香港天文台 published-reference Golden（Sol High 独立验收 PASS）
 
@@ -177,7 +177,7 @@ Sol High 独立验收结论：**PASS**。本结论只覆盖 P5-A2 两条 HKO pub
 
 ### 8.4 P5-A3 风险与授权边界
 
-P5-A2 时登记的真太阳时来源标签风险已进入单独的 P5-A3a handoff。P5-A3a 只按主管已明确选择的方案 A 实现核心版本兼容；P5-A3b 的记录页显式复核和 UI 展示尚未获得本批通过后的单独实现授权。整个 P5-A3 仍未完成，不能把本批实现写成最终专业真值或发布结论。
+P5-A2 时登记的真太阳时来源标签风险已由负责人选择的方案 A 处理，并经 P5-A3a 独立验收 PASS。P5-A3b 已获主管授权并完成记录页历史证据展示和显式当前规则复核实现，当前等待 Sol High 独立验收。整个 P5-A3 仍未完成，不能把本批实现写成最终专业真值或发布结论。
 
 ## 9. P5-A3a 真太阳时版本兼容与 Storage Schema 3（Sol High 独立验收 PASS）
 
@@ -201,4 +201,30 @@ P5-A2 时登记的真太阳时来源标签风险已进入单独的 P5-A3a handof
 
 Sol High 独立验收结论：**P5-A3a PASS**。
 
-本批明确不做：其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3 整体仍未完成；下一批 P5-A3b 由主管另行授权，范围为历史证据展示与显式“按当前规则复核”，不得在本批验收结论中预先标记完成。整个 P5-A、P5-A3 和 Phase 5 仍未完成。
+本批明确不做：其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3 整体仍未完成；P5-A3b 已作为后续授权批完成实现，独立验收记录见下一节。整个 P5-A、P5-A3 和 Phase 5 仍未完成。
+
+## 10. P5-A3b 历史真太阳时证据展示与显式当前规则复核（实现完成，等待 Sol High 独立验收）
+
+### 10.1 Scope 与实现摘要
+
+- 历史记录页面只从 `SavedReading` 已保存的 payload、snapshotMeta、evidence 和 interpretation 构造展示；真太阳时状态明确区分 NOAA v2（当前规则）、v1 近似公式（仅历史复现、非 NOAA）、历史版本未知和未启用。
+- 八字实时结果的“本次计算依据”和摘要展示证据版本、来源/URL、raw/display/applied 修正、舍入规则、民用时刻与有效计算时刻；历史缺失值统一显示“历史记录未保存/无法确认”，不合成 0 或民用时刻。
+- 新增纯函数复核构造器：只保留历史快照中的业务时区、日界线、真太阳时开关、模型和冻结出生输入/坐标，显式把实际复核版本强制为 `true-solar-time-v2-noaa`。缺时辰、缺已确认经度或缺深度快照时拒绝，并给出可理解提示。
+- “按当前规则复核”只在用户点击后于内存生成当前结果与 Interpretation Diff，不调用保存/更新操作；原 `SavedReading` 不被覆盖。设置与证据版本或启用状态冲突时，在历史页面显式提示。
+- 不修改任何算法、Storage Schema、备份合同、依赖、网络/AI/支付或其他术数行为；P5-A3b 不代表整个 P5-A3 或 Phase 5 完成。
+
+### 10.2 测试与质量门
+
+新增 `tests/bazi-current-replay.regression.mjs` 4 项回归并接入统一 `npm test`，覆盖四种展示状态、未知证据空值、设置/证据冲突、v1→v2 当前规则复核边界、legacy-unknown 复核、缺时辰/经度拒绝及 SavedReading deepEqual。
+
+本地质量门：
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS
+npm test               PASS（103/103）
+npm run build:web      PASS（8 routes，Web Export 实际执行）
+```
+
+当前状态：实现提交后等待 Sol High 独立复验；在独立验收前不写 PASS，不标记整个 P5-A3、P5-A 或 Phase 5 完成。

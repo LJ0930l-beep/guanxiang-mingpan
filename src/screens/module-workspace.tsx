@@ -20,6 +20,7 @@ import { ExplanationLayer } from '@/components/explanation-layer';
 import { ModuleSigil } from '@/components/module-sigil';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
 import { moduleBySlug, type ModuleDefinition } from '@/data/modules';
+import { buildBaziTrueSolarEvidenceDisplay } from '@/domains/bazi/true-solar-presentation';
 import {
   calculateAstrologyView,
   calculateBaziView,
@@ -261,6 +262,7 @@ function BaziEvidencePanel({ result }: { result: BaziChartView }) {
   const evidence = result.calculationEvidence;
   const conversion = evidence.calendarConversion;
   const location = evidence.locationUsed;
+  const trueSolarDisplay = buildBaziTrueSolarEvidenceDisplay(result.calculationSettings, evidence);
   const row = (label: string, value: string) => (
     <View key={label} style={styles.evidenceDetailRow}>
       <Text style={styles.evidenceDetailLabel}>{label}</Text>
@@ -284,19 +286,16 @@ function BaziEvidencePanel({ result }: { result: BaziChartView }) {
       {expanded && (
         <View style={styles.evidenceDetails}>
           {row('输入历法', evidence.sourceCalendar === 'lunar' ? '农历' : '公历')}
-          {row('民用时刻', evidence.normalizedCivilTime)}
-          {row('有效时刻', evidence.effectiveCalculationTime ?? '历史记录未保存有效计算时刻')}
+          {trueSolarDisplay.rows.map(([label, value]) => row(label, value))}
           {row('业务时区', evidence.timezone)}
           {row('日界规则', evidence.dayBoundaryRule === 'ziEarly' ? '子初换日（23:00）' : '午夜换日（00:00）')}
           {row('历法换算', conversion.note)}
           {row('换算数据', `${conversion.dataSource}@${conversion.dataVersion} · ${conversion.resolverVersion}`)}
           {row('节气依据', evidence.solarTermBoundary.currentMonthBasis ?? evidence.solarTermBoundary.note)}
-          {row('真太阳时', evidence.trueSolarCorrection.applied
-            ? `${evidence.trueSolarCorrection.model} · ${evidence.trueSolarCorrection.correctionMinutes} 分钟 · ${evidence.trueSolarCorrection.note ?? ''}`
-            : '未启用；有效时刻等于民用时刻')}
           {row('出生地', location
             ? `${location.name}${location.province ? ` · ${location.province}` : ''} · ${location.latitude}, ${location.longitude} · ${location.datasetVersion}`
             : '未命中离线城市表，未声明坐标精度')}
+          {trueSolarDisplay.conflictMessage && row('一致性提示', trueSolarDisplay.conflictMessage)}
           {evidence.warnings.length > 0 && row('提示', evidence.warnings.join('；'))}
         </View>
       )}
@@ -439,6 +438,7 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
 }
 
 function BaziResult({ result }: { result: BaziChartView }) {
+  const trueSolarDisplay = buildBaziTrueSolarEvidenceDisplay(result.calculationSettings, result.calculationEvidence);
   return (
     <View style={styles.resultArea}>
       <View style={styles.resultHeading}><View><Text style={styles.resultEyebrow}>四柱命盘</Text><Text style={styles.resultTitle}>{result.dayMaster}日主</Text></View><Text style={styles.engineTag}>{result.engineVersion}</Text></View>
@@ -466,7 +466,7 @@ function BaziResult({ result }: { result: BaziChartView }) {
       </View>
       <View style={styles.evidenceStrip}>
         <Text style={styles.evidenceLabel}>真太阳时</Text>
-        <Text style={styles.evidenceValue}>{result.calculationEvidence.trueSolarCorrection.applied ? `${result.calculationEvidence.trueSolarCorrection.model} · ${result.calculationEvidence.trueSolarCorrection.correctionMinutes} 分钟` : '未启用'}</Text>
+        <Text style={styles.evidenceValue}>{trueSolarDisplay.summary}</Text>
       </View>
       <ExplanationLayer evidenceNodes={result.evidenceGraph.nodes} glossaryTerms={listGlossaryTerms('bazi')} snapshot={result.explanation} />
       <BaziInterpretationExplorer result={result} />
