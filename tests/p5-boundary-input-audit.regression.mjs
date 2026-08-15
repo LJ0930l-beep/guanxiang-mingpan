@@ -8,8 +8,10 @@ import {
   BOUNDARY_AUDIT_CATEGORIES,
   BOUNDARY_AUDIT_MODULES,
   BOUNDARY_AUDIT_STATUSES,
+  P5_A4B_INPUT_RESOLUTION_CASES,
   P5_BOUNDARY_INPUT_AUDIT_CASES,
   getBoundaryInputAuditValidationErrors,
+  validateBoundaryInputResolutionRegistry,
   validateBoundaryInputAuditCase,
   validateBoundaryInputAuditRegistry,
 } from '../src/domains/golden/index.ts';
@@ -17,7 +19,6 @@ import {
   calculateAstrologyView,
   calculateBaziView,
   calculateLiuyaoView,
-  calculateZiweiView,
 } from '../src/services/chart-engine.ts';
 
 const projectRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -172,11 +173,24 @@ test('P5-A4a 占星未知城市保留近似标识，但当前 0,0 fallback 会�
   assert.notEqual(unknownMoon?.longitude, exactMoon?.longitude);
 });
 
-test('P5-A4a 紫微与占星对无效公历日期的当前行为已登记', () => {
-  const invalidDateProfile = { ...fixtureProfile, id: 'p5-a4a-invalid-date', birthDate: '2024-02-30' };
-  const ziwei = calculateZiweiView(invalidDateProfile, undefined, { generatedAt });
-  assert.equal(ziwei.solarDate, '2024-2-30');
-  assert.throws(() => calculateAstrologyView(invalidDateProfile, { generatedAt }));
+test('P5-A4a 审计 snapshot 不变，三项安全输入关闭由 A4b overlay 单独声明', () => {
+  const registry = validateBoundaryInputAuditRegistry(P5_BOUNDARY_INPUT_AUDIT_CASES);
+  const resolutions = validateBoundaryInputResolutionRegistry(P5_A4B_INPUT_RESOLUTION_CASES);
+  assert.equal(registry.length, 41);
+  assert.deepEqual(JSON.parse(JSON.stringify(registry)), registry);
+  assert.deepEqual(
+    resolutions.map((resolution) => resolution.auditCaseId).sort(),
+    [
+      'p5-a4a-astrology-invalid-coordinate',
+      'p5-a4a-astrology-invalid-gregorian-date',
+      'p5-a4a-ziwei-invalid-gregorian-date',
+    ],
+  );
+  for (const auditCaseId of resolutions.map((resolution) => resolution.auditCaseId)) {
+    const auditCase = registry.find((item) => item.id === auditCaseId);
+    assert.equal(auditCase?.status, 'gap');
+    assert.equal(auditCase?.targetBatch, 'P5-A4b');
+  }
 });
 
 test('P5-A4a 六爻输入失败路径与当前固定 scope 行为可复现', async () => {

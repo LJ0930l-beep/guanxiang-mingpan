@@ -1,10 +1,10 @@
-# Phase 5 · P5-A1～P5-A4a 四术可信度与输入边界审计
+# Phase 5 · P5-A1～P5-A4b1 四术可信度与输入边界审计
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核，以及 P5-A4a 四术边界与输入策略机器可检查审计
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a 已由 Sol High 独立验收 PASS；P5-A4b1 已完成实现并待 Sol High 独立预审；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和预审证据，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -281,3 +281,41 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 该 CI run 唯一非阻断 warning 为：`actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 action runtime 被 runner 强制为 Node 24。该项登记为后续 CI maintenance；本批不修改 workflow，不影响四项质量门结果。
 
 Sol High 独立验收结论：**P5-A4a PASS**。本结论只覆盖四术边界/输入审计合同、机器门禁和已登记的现状事实；P5-A4a 不关闭整个 P5-A，真实 gap、负责人决策项、P5-A4b、P5-B、P5-C 及 Phase 5 仍需独立授权和验收。
+
+## 12. P5-A4b1 安全输入校验、可识别错误与 resolution overlay（实现待 Sol High 独立验收）
+
+### 12.1 Scope 与明确不做
+
+本批只关闭三项已在 P5-A4a 登记、且不需要负责人选择公开规则的安全输入 gap：
+
+- `p5-a4a-ziwei-invalid-gregorian-date`：紫微 solar 路径拒绝格式错误或不存在的 Gregorian 日期；
+- `p5-a4a-astrology-invalid-gregorian-date`：占星 solar 路径拒绝格式错误或不存在的 Gregorian 日期；
+- `p5-a4a-astrology-invalid-coordinate`：占星显式坐标拒绝非成对、非有限或超出纬度/经度范围的输入。
+
+本批没有修改 UI、Storage/schema、备份、城市数据、依赖/lockfile、CI、八字或六爻引擎，也没有选择 unknown-coordinate `0,0`、缺时辰、公开支持年份范围、DST、占星 lunar 历法或其他 owner decision。占星两项坐标都缺失时仍保留既有 unknown-city/`0,0` gap。
+
+### 12.2 实现摘要与合同
+
+- `src/services/chart-errors.ts` 定义稳定 `ChartInputError` 实例合同：`category=input-validation`、`code`、`field`、稳定中文 `message`；当前 codes 为 `INVALID_GREGORIAN_DATE` 与 `INVALID_BIRTH_COORDINATES`。`isChartInputError` 只识别真实实例，`isChartInputErrorContract` 识别跨边界反序列化后的纯合同。
+- `src/services/chart-engine-shared.ts` 提供不读取宿主 TZ、只按字段和 Gregorian 闰年规则判断的严格 `YYYY-MM-DD` 校验，以及显式坐标 pair/finite/range 校验。仅紫微 solar 与占星 solar 调用日期校验；紫微 lunar 不调用，Astrology lunar 策略仍未决。
+- `src/domains/golden/boundary-input-resolution.ts` 新增纯 JSON `p5-a4b-input-resolution.v1` overlay，严格只包含上述三个 A4a gap；validator 检查 auditCaseId 存在、原条目为 `gap` 且 target 为 `P5-A4b`、resolution/audit ID 唯一、纯 JSON 和 `tests/` 引用，不预填 commit SHA。
+
+本批实际变更文件严格限于：`src/services/chart-errors.ts`、`src/services/chart-engine-shared.ts`、`src/services/engines/ziwei-engine.ts`、`src/services/engines/astrology-engine.ts`、`src/domains/golden/boundary-input-resolution.ts`、`src/services/chart-engine.ts`、`src/domains/golden/index.ts`、两份 P5 回归测试、`package.json` 测试脚本，以及 `docs/HANDOFF.md`、`docs/PHASE5_EXECUTION.md`、`docs/PROJECT_MASTER_EXECUTION.md`、`docs/ROADMAP.md`、`docs/P5_A_BOUNDARY_AUDIT.md` 五份账本；未产生其他文件改动。
+
+P5-A4a 原 registry 与历史统计 `41 / 18 / 15 / 5 / 2 / 1` 未改，原始条目事实仍作为 immutable audit snapshot；overlay 只声明三项增量关闭，不重写 A4a 数据。
+
+### 12.3 测试与质量门
+
+新增 `tests/p5-input-validation.regression.mjs` 并接入统一 `npm test`，覆盖 overlay 合同、错误实例/纯合同守卫、非法日期、合法闰日（含世纪闰年）、partial/NaN/Infinity/越界/边界坐标、合法坐标、城市 resolver 命中、Ziwei lunar 绕过 Gregorian validator、overlay validator 负向门禁，以及 UTC/`Asia/Shanghai` 结果与错误一致性。A4a 回归保留 immutable registry 与未知坐标 `0,0` probe，不再要求已修复的非法日期旧行为。
+
+当前工作树预审命令结果：
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS
+npm test               PASS（120/120，含本批新增 8 项）
+npm run build:web      PASS（8 routes，Web Export 实际执行）
+```
+
+上述结果不构成 Sol High 验收；实现仍待 Sol High 独立 review/acceptance。即使本批通过，cross error taxonomy、unknown-coordinate `0,0`、日期支持范围、DST、缺时辰及其余 A4a gap/decision-required 项仍未完成，P5-A 与 Phase 5 仍未完成。

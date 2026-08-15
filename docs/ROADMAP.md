@@ -46,9 +46,9 @@
 - [x] 最后一批 GitHub Actions 绿色确认（含 Web Export）。
 - [ ] iPhone/TestFlight 文件流签字和发布前合规材料。
 
-## Phase 5 — 发布质量工程（P5-0 已完成，P5-A1/P5-A2/P5-A3a/P5-A3b/P5-A4a PASS）
+## Phase 5 — 发布质量工程（P5-0 已完成，P5-A1/P5-A2/P5-A3a/P5-A3b/P5-A4a PASS；P5-A4b1 实现待独立验收）
 
-Phase 5 以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 为总执行账本，按一个小批一个小批推进，不把整阶段一次交给执行者。P5-A1 的已验收基线为 83/83；P5-A2 已由主管独立复跑 87/87、Web 8 routes，并取得 GitHub Actions completed/success；P5-A3a 已经主管最终独立复验并 PASS，统一回归为 99/99；P5-A3b 已经 Sol High 独立验收 PASS，本地质量门为 104/104 与 Web Export 8 routes，候选实现 local `30f2db2c164bd1cac709025a340e91f32a3fa147`、remote `baea5f6e53bcc52564fd7b7e375cc4e70463398f`、CI `31875157338 completed/success`，账本修复 local `1189f5e9d7ed6001ac8ce132e8ee69b79435c052`、remote `c5bc6f04a0b6ddc1f43233d88c061a7efeccebfb`、CI `31876037500 completed/success`；两次 CI 的 Regression tests 与 Web Export 均实际执行。P5-A3 子里程碑整体完成。P5-A4a 新增 41 项边界审计合同与 8 项回归，local `2cf82d402e2f840ebf7c29bf47ee3b167fab9688`、remote `c7055e8962b3b21dd8b78c8f5c64769e9528daf0`、CI `31879638540 completed/success`；该 run 的 Typecheck、Lint、Regression tests 与 Web Export 均实际执行，主管本地独立复跑 112/112 与 Web Export 8 routes PASS。唯一非阻断 warning 为 runner 将 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 action runtime 强制为 Node 24，登记为后续 CI maintenance，本批不改 workflow。整个 P5-A 与 Phase 5 仍未完成。
+Phase 5 以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 为总执行账本，按一个小批一个小批推进，不把整阶段一次交给执行者。P5-A1 的已验收基线为 83/83；P5-A2 已由主管独立复跑 87/87、Web 8 routes，并取得 GitHub Actions completed/success；P5-A3a 已经主管最终独立复验并 PASS，统一回归为 99/99；P5-A3b 已经 Sol High 独立验收 PASS，本地质量门为 104/104 与 Web Export 8 routes，候选实现 local `30f2db2c164bd1cac709025a340e91f32a3fa147`、remote `baea5f6e53bcc52564fd7b7e375cc4e70463398f`、CI `31875157338 completed/success`，账本修复 local `1189f5e9d7ed6001ac8ce132e8ee69b79435c052`、remote `c5bc6f04a0b6ddc1f43233d88c061a7efeccebfb`、CI `31876037500 completed/success`；两次 CI 的 Regression tests 与 Web Export 均实际执行。P5-A3 子里程碑整体完成。P5-A4a 新增 41 项边界审计合同与 8 项回归，local `2cf82d402e2f840ebf7c29bf47ee3b167fab9688`、remote `c7055e8962b3b21dd8b78c8f5c64769e9528daf0`、CI `31879638540 completed/success`；该 run 的 Typecheck、Lint、Regression tests 与 Web Export 均实际执行，主管本地独立复跑 112/112 与 Web Export 8 routes PASS。P5-A4b1 当前实现新增 8 项输入校验/overlay 回归，预审统一测试为 120/120，build:web 已通过并导出 8 routes；未改变 A4a snapshot 或三项之外的规则。唯一非阻断 warning 为 runner 将 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 action runtime 强制为 Node 24，登记为后续 CI maintenance，本批不改 workflow。整个 P5-A 与 Phase 5 仍未完成。
 
 - [x] **P5-0 项目总账本与启动基线**：固化治理来源、Phase 0～4 真实基线、不可变产品边界、Level A/B、风险和批次验收模板。
 - [ ] **P5-A 专业质量补强（四术 Golden/边界/输入策略）**：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a 已通过独立验收，P5-A3 子里程碑整体完成；真实 gap/决策门仍未关闭，整个 P5-A 未完成。不得伪造专业真值。
@@ -59,6 +59,7 @@ Phase 5 以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 为总执
 
 P5-A4a 已新增 41 项纯 JSON 四术边界/输入策略审计合同与 8 项门禁回归，并已通过 Sol High 独立验收；矩阵统计为 covered 18、gap 15、decision-required 5、not-applicable 2、routed-p5-b 1，全部 regression-only。占星未知坐标 0,0 行为、跨模块无猜测闭环、紫微/占星普通非法公历日期和错误 taxonomy/contract 等真实 gap 只登记不在本批修；error taxonomy/contract 进入 P5-A4b，UI/读屏 copy 进入 P5-C，日期范围/DST/降级承诺等公开规则决策不由执行者代选。详见 [P5_A_BOUNDARY_AUDIT.md](P5_A_BOUNDARY_AUDIT.md)。P5-B 城市数据批次尚未开始。以上不构成整个 P5-A 或 Phase 5 完成。
 - [x] **P5-A4a 四术边界与输入策略机器可检查审计（Sol High 独立验收 PASS）**：实现纯 JSON 合同、runtime validator、四术/跨模块 41 项矩阵和审计回归；不修算法/UI，不提升为专业真值。真实 gap、负责人决策项和后续 P5-A4b/P5-B/P5-C 仍未关闭。
+- [ ] **P5-A4b1 安全输入校验、可识别错误与 resolution overlay（实现待 Sol High 独立验收）**：仅关闭紫微/占星 solar 非法 Gregorian 日期与占星显式非法坐标三项 A4a gap；新增 `ChartInputError`、纯 JSON `p5-a4b-input-resolution.v1` overlay 和 8 项回归，A4a 的 41/18/15/5/2/1 snapshot 与 unknown-coordinate `0,0` probe 保持不变。cross error taxonomy、0,0、日期范围、DST、缺时辰和其他 gap/decision-required 仍未完成。
 - [ ] **P5-B 城市数据完成**：完成中国大陆城市覆盖、来源/许可/别名/坐标审计和版本化离线数据；未知城市不猜测，历史 `locationId` 不静默替换。
 - [ ] **P5-C UX/可访问性**：完成键盘/读屏/字体缩放/减少动态效果/对比度/触控目标和四术动效验收。
 - [ ] **P5-D 性能与稳定性**：完成 Web/iPhone 冷启动、计算、记录、备份、异常恢复和长列表基线，建立性能预算和回滚证据。

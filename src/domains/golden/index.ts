@@ -17,6 +17,18 @@ export {
   type BoundaryInputAuditCase,
 } from '@/domains/golden/boundary-input-contract';
 export {
+  BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS,
+  BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION,
+  BOUNDARY_INPUT_RESOLUTION_STATUS,
+  P5_A4B_INPUT_RESOLUTION_CASES,
+  getBoundaryInputResolutionRegistryValidationErrors,
+  getBoundaryInputResolutionValidationErrors,
+  validateBoundaryInputResolution,
+  validateBoundaryInputResolutionRegistry,
+  type BoundaryInputResolution,
+  type BoundaryInputResolutionAuditCaseId,
+} from '@/domains/golden/boundary-input-resolution';
+export {
   getGoldenCaseValidationErrors,
   validateGoldenCase,
   validateGoldenCaseRegistry,

@@ -8,6 +8,7 @@ import {
 } from '@/domains/bazi/types';
 import type { BaziCalculationSettings } from '@/domains/bazi/types';
 import type { BirthProfile, Gender } from '@/types/domain';
+import { ChartInputError } from '@/services/chart-errors';
 
 export const ENGINE_VERSIONS = {
   bazi: 'taibu-core@3.4.0/bazi',
@@ -44,6 +45,78 @@ interface BirthParts {
   day: number;
   hour: number;
   minute: number;
+}
+
+export interface ExplicitBirthCoordinates {
+  latitude: number;
+  longitude: number;
+}
+
+const GREGORIAN_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+function daysInGregorianMonth(year: number, month: number): number {
+  if (month === 2) {
+    const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0);
+    return leap ? 29 : 28;
+  }
+  return [4, 6, 9, 11].includes(month) ? 30 : 31;
+}
+
+/**
+ * Validates only the Gregorian date fields. It deliberately does not impose
+ * an application-supported year range or inspect the host timezone.
+ */
+export function assertGregorianDate(value: unknown, field = 'birthDate'): asserts value is string {
+  const match = typeof value === 'string' ? GREGORIAN_DATE_PATTERN.exec(value) : null;
+  if (!match) {
+    throw new ChartInputError({
+      code: 'INVALID_GREGORIAN_DATE',
+      field,
+    });
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12 || day < 1 || day > daysInGregorianMonth(year, month)) {
+    throw new ChartInputError({
+      code: 'INVALID_GREGORIAN_DATE',
+      field,
+    });
+  }
+}
+
+function hasCoordinate(value: unknown): boolean {
+  return value !== undefined && value !== null;
+}
+
+function invalidCoordinates(field: string): never {
+  throw new ChartInputError({
+    code: 'INVALID_BIRTH_COORDINATES',
+    field,
+  });
+}
+
+/**
+ * Returns an explicit coordinate pair when the profile supplied one. A pair
+ * that is absent remains absent so callers can preserve their existing
+ * unknown-city behavior; a partial or malformed pair is always rejected.
+ */
+export function explicitBirthCoordinates(profile: BirthProfile): ExplicitBirthCoordinates | undefined {
+  const hasLatitude = hasCoordinate(profile.latitude);
+  const hasLongitude = hasCoordinate(profile.longitude);
+  if (!hasLatitude && !hasLongitude) return undefined;
+  if (!hasLatitude || !hasLongitude) invalidCoordinates('birthCoordinates');
+
+  if (typeof profile.latitude !== 'number' || !Number.isFinite(profile.latitude)) {
+    invalidCoordinates('latitude');
+  }
+  if (typeof profile.longitude !== 'number' || !Number.isFinite(profile.longitude)) {
+    invalidCoordinates('longitude');
+  }
+  if (profile.latitude < -90 || profile.latitude > 90) invalidCoordinates('latitude');
+  if (profile.longitude < -180 || profile.longitude > 180) invalidCoordinates('longitude');
+
+  return { latitude: profile.latitude, longitude: profile.longitude };
 }
 
 export interface CalculationOptions {

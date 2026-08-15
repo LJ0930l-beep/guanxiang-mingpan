@@ -1,7 +1,7 @@
 import * as iztro from 'iztro/dist/iztro.min.js';
 
 import type { ZiweiChartView } from '@/types/charts';
-import { calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { assertGregorianDate, calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeZiweiChart } from '@/domains/ziwei/model/normalized-chart';
@@ -14,6 +14,7 @@ export function calculateZiweiView(
   options?: CalculationOptions,
 ): ZiweiChartView {
   requireExactBirth(profile);
+  if (profile.calendar === 'solar') assertGregorianDate(profile.birthDate);
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
   const settings = calculationSettings(options);

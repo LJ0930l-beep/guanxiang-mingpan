@@ -2,8 +2,8 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-A4a 四术边界与输入策略机器可检查审计
-> 本批状态：Sol High 独立验收 PASS（2026-08-15）
+> 批次：P5-A4b1 安全输入校验、可识别错误与 resolution overlay
+> 本批状态：实现完成，待 Sol High 独立预审；P5-A4a 仍为历史已验收批次（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -267,6 +267,27 @@ Sol High 独立验收结论：**P5-A3b PASS**。P5-A3a 与 P5-A3b 均完成，P5
 该 CI run 唯一非阻断 warning 为：`actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 action runtime 被 runner 强制为 Node 24。登记为后续 CI maintenance；本批不修改 workflow，不影响质量门。
 
 Sol High 独立验收结论：**P5-A4a PASS**。本批没有使用 Expo API，Expo v57 文档约束已核对。P5-A4a 不关闭整个 P5-A；P5-A4b、P5-B、P5-C 以及负责人决策项仍需独立授权，整个 P5-A 与 Phase 5 仍未完成。
+
+## 5.6 P5-A4b1 安全输入校验、可识别错误与 resolution overlay（实现待 Sol High 独立验收）
+
+### Scope 与允许范围
+
+本小批只处理三个 P5-A4a 安全输入 gap：紫微 solar 非法 Gregorian 日期、占星 solar 非法 Gregorian 日期、占星显式坐标非法。实现不改变 UI、Storage/schema、备份、城市数据、依赖/lockfile、CI、八字或六爻引擎，也不替负责人选择日期支持范围、DST、缺时辰、占星 lunar 或 unknown-coordinate `0,0` 策略。
+
+### 实施摘要
+
+- 新增 `ChartInputError` 稳定合同与导出：`category=input-validation`，codes 至少包含 `INVALID_GREGORIAN_DATE`、`INVALID_BIRTH_COORDINATES`，每个实例/合同都有 `code`、`field`、稳定中文 `message`。实例守卫 `isChartInputError` 只接受真实实例；`isChartInputErrorContract` 处理纯 JSON/跨边界合同。
+- 在共享服务中新增宿主 TZ 无关的严格 `YYYY-MM-DD` Gregorian 字段校验（不规定应用支持年份范围），仅由 Ziwei solar 和 Astrology solar 调用；Ziwei lunar 不被拦截，Astrology lunar 策略仍保留为决策项。
+- Astrology 显式坐标在 `Origin` 前强制成对、finite、纬度 `[-90,90]`、经度 `[-180,180]`；两项都缺失继续走既有 city resolver/unknown-city `0,0` 行为，resolver 命中仍为 exact。
+- 新增纯 JSON `p5-a4b-input-resolution.v1` overlay，validator 严格只允许三个目标 audit IDs，并检查原 registry 存在、原状态 `gap`、target `P5-A4b`、唯一 resolution/audit ID、纯 JSON 和测试引用；不写入 commit SHA。
+
+P5-A4a 的 immutable registry、条目事实和 `41 / 18 / 15 / 5 / 2 / 1` 统计保持不变；overlay 只是增量声明三项安全 gap 已实现，不重写 A4a snapshot。
+
+### 测试与限制
+
+`tests/p5-input-validation.regression.mjs` 新增并接入统一测试，覆盖 overlay、错误实例/合同字段、闰日、非法日期、partial/non-finite/out-of-range 坐标、合法坐标、Ziwei lunar、overlay validator 负向门禁与 UTC/`Asia/Shanghai` 一致性；A4a 测试仍保留未知坐标 `0,0` probe。当前预审已通过 `git diff --check`、typecheck、lint、`npm test`（120/120）和 `npm run build:web`（8 routes，Web Export 实际执行）。
+
+本小批不关闭 cross error taxonomy、unknown-coordinate `0,0`、公开日期范围、DST、缺时辰或其余 A4a gap/decision-required；P5-A 与 Phase 5 仍未完成。Sol High 仍需独立 review 和 acceptance。
 
 ## 6. 统一批次验收模板
 

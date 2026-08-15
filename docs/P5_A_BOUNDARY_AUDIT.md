@@ -68,3 +68,17 @@ runtime validator 会检查纯 JSON（拒绝函数、`Date`、循环引用、NaN
 ## 7. 结论与边界
 
 P5-A4a 已完成“盘点 + 合同 + 机器门禁 + 只读 probes”的实现，并通过 Sol High 独立验收 **PASS**。该结论只覆盖审计合同、机器门禁和已登记的工程现状，不把项目回归、第三方库返回或 CI 通过提升为四术专业真值。P5-A 不能因此关闭：真实 gap 尚未修复，决策项尚未批准，P5-A4b/P5-B/P5-C 仍需单独 handoff；整个 P5-A 与 Phase 5 仍未完成。任何对外文案只能说当前输入边界和工程回归已被记录，不能说四术结论已经获得专业验证。
+
+## 8. P5-A4b1 resolution overlay（实现待 Sol High 独立验收）
+
+P5-A4a 的审计 registry 是 immutable snapshot，本节不修改其 41 项条目或 `covered / gap / decision-required / not-applicable / routed-p5-b = 18 / 15 / 5 / 2 / 1` 统计。新增纯 JSON 合同 `p5-a4b-input-resolution.v1` 只关闭以下三个原始 `gap`，每项均保留原 `auditCaseId` 并指向 `P5-A4b`：
+
+| auditCaseId | 本批关闭事实 |
+|---|---|
+| `p5-a4a-ziwei-invalid-gregorian-date` | Ziwei solar 进入 iztro 前严格拒绝非法/非 `YYYY-MM-DD` Gregorian 日期。 |
+| `p5-a4a-astrology-invalid-gregorian-date` | Astrology solar 进入第三方 Horoscope 前严格拒绝非法/非 `YYYY-MM-DD` Gregorian 日期。 |
+| `p5-a4a-astrology-invalid-coordinate` | Astrology 显式坐标在 Origin 前要求成对、finite、纬度 `[-90,90]`、经度 `[-180,180]`。 |
+
+overlay validator 强制 `auditCaseId` 存在于本 registry、原状态为 `gap` 且 target 为 `P5-A4b`，并检查纯 JSON、唯一 resolution/audit ID 和 `tests/` 引用；不预填 commit SHA。A4a 的未知城市 `0,0` probe 仍保留为 gap：两坐标都缺失继续沿现有 resolver/`0,0` 行为，城市命中仍为 exact。
+
+本批不解决 cross error taxonomy、unknown-coordinate `0,0` 语义、公开日期支持范围、DST、缺时辰、Astrology lunar 策略或其余 gap/decision-required；P5-A 与 Phase 5 仍未完成。当前实现预审已通过 `git diff --check`、typecheck、lint、统一 `npm test`（120/120）和 `npm run build:web`（8 routes，Web Export 实际执行），Sol High 尚未独立验收。

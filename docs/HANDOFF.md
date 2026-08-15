@@ -2,7 +2,7 @@
 
 > 文档状态：可作为后续产品、设计、研发和上线协作的单一交接入口  
 > 更新日期：2026-08-15  
-> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容、P5-A3b 历史真太阳时证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计均已通过 Sol High 独立验收；P5-A3 子里程碑整体完成，但整个 P5-A/Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
+> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容、P5-A3b 历史真太阳时证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计均已通过 Sol High 独立验收；P5-A4b1 安全输入校验、错误合同与 resolution overlay 已完成实现，待 Sol High 独立预审；P5-A3 子里程碑整体完成，但整个 P5-A/Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
 
 ## 1. 一页总览
 
@@ -144,6 +144,7 @@
 | P5-A3a：真太阳时版本兼容与 Storage Schema 3 | Sol High 独立验收 PASS | 方案 A：新计算 NOAA v2；旧 v1 仅用于历史复现；legacy-unknown 不伪造证据、不用于实际计算。证据保存 raw/display/applied 修正、舍入规则、来源/版本/NOAA URL；schema2→3、普通/加密旧备份和 schema3 malformed 深字段均只做无计算迁移；99 项统一回归覆盖跨 TZ、数值、边界、unknown、普通/加密 roundtrip、merge/replace 与 settings 一致性。初始 local `51fcd3bd8b7938e54f6604785544574115e34733` / remote `2da65c0928aa23af0ed1fabb36de3008a23ff5d5` / CI `31872612966`；修复 local `4ed5081354747cc4b4a342552436d0263780f0ff` / remote `a3e7193d2a0b1c9c4de7b3d9e859a0eb61983459` / CI `31873458023`。 | P5-A3b 已按主管授权完成实现并验收，P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 未完成。 |
 | P5-A3b：历史真太阳时证据展示与显式当前规则复核 | Sol High 独立验收 PASS | 记录页只读取已保存 payload/snapshotMeta/evidence/interpretation；状态区分 NOAA v2、v1（非 NOAA，仅历史复现）、unknown、未启用；实时依据展示 raw/display/applied、舍入、来源/URL、归一化民用时刻和最终有效计算时刻；显式点击才以内存生成强制 v2 的当前结果与 Diff，不保存、不覆盖历史；设置/证据冲突、缺时辰、缺经度和缺深度快照均有明确语义。新增 5 项回归，统一 `npm test` 104/104，Web Export 8 routes。候选实现 local `30f2db2c164bd1cac709025a340e91f32a3fa147` / remote `baea5f6e53bcc52564fd7b7e375cc4e70463398f` / CI `31875157338`；账本修复 local `1189f5e9d7ed6001ac8ce132e8ee69b79435c052` / remote `c5bc6f04a0b6ddc1f43233d88c061a7efeccebfb` / CI `31876037500`，两次 CI 均 completed/success 且 Regression tests 与 Web Export 实际执行。主管独立审阅纯 helper、UI 接入、records replay 调用链、SavedReading 不变性、最终 `effectiveCalculationTime` 优先级、scope/白名单，并独立重跑 104/104 与 Web Export 8 routes，全部 PASS。 | P5-A3b 已验收；不代表整个 P5-A 或 Phase 5 完成。 |
 | P5-A4a：四术边界与输入策略机器可检查审计 | Sol High 独立验收 PASS | 新增纯 JSON `p5-a4a-boundary-input.v1` 合同与 runtime validator，覆盖八字 10、紫微 9、占星 8、六爻 9、跨模块 5，共 41 项；状态为 covered 18、gap 15、decision-required 5、not-applicable 2、routed-p5-b 1，全部 regression-only。新增 8 项回归并接入统一 `npm test`，只盘点/建门禁，不改算法、UI、Storage、备份、依赖或城市数据。已确认占星未知坐标 0,0 会改变行星位置、跨模块无猜测尚未闭环、紫微/占星普通非法公历日期是 P5-A4b gap；error taxonomy/contract 进入 P5-A4b，UI/读屏 copy 进入 P5-C；5 个 contract cases 归并为 4 个 owner decisions（八字日期范围、紫微/占星日期范围、历史 DST、占星缺时辰近似）。实现 local `2cf82d402e2f840ebf7c29bf47ee3b167fab9688` / remote `c7055e8962b3b21dd8b78c8f5c64769e9528daf0`；CI `31879638540` completed/success，Typecheck、Lint、Regression tests 与 Web Export 均实际执行；主管独立复跑 112/112 与 Web Export 8 routes PASS。 | 当前不关闭 P5-A；P5-A4b、P5-B、P5-C 和 owner 决策仍需后续授权。 |
+| P5-A4b1：安全输入校验、可识别错误与 resolution overlay | 实现完成，待 Sol High 独立预审 | 新增 `ChartInputError`（`input-validation`、`INVALID_GREGORIAN_DATE`、`INVALID_BIRTH_COORDINATES`）、严格宿主 TZ 无关 Gregorian validator、Astrology 显式坐标 pair/finite/range 校验，以及纯 JSON `p5-a4b-input-resolution.v1` 三项 overlay；Ziwei lunar 不被 Gregorian validator 拦截，两坐标缺失仍保留 A4a 的 unknown-city/`0,0` gap。新增 8 项回归接入统一 `npm test`，A4a registry/41 项统计不变。当前预审：`git diff --check`、typecheck、lint、`npm test` 120/120、`build:web` 8 routes 均 PASS。 | 只关闭三项安全 gap；cross error taxonomy、0,0、日期范围、DST、缺时辰及其余 gap/decision-required 未完成，P5-A/Phase 5 仍未完成。 |
 | M3：中国大陆真实账号 | 5% | 三种登录入口的界面与本地流程。 | 短信、Apple、微信认证，手机号绑定，权益同步，账户安全与注销。 |
 | M4：商业化和 AI | 0% | 产品边界已确定。 | 支付、订阅、单次付费、服务端权益、AI 成本控制、内容安全。 |
 | 正式公开上线准备度 | 约 35% | 可演示、可进行小范围内部体验。 | 账号、隐私合规、数据保护、设备发布、质量基线和运营能力均未闭环。 |
@@ -154,11 +155,12 @@
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm test`（四模块固定样例、P1-A～P1-F、P2-A～P2-F、P3-A～P3-F、P4-A～P4-H 解释/证据/Golden/历史/备份回归、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、P5-A1/P5-A2/P5-A3a 兼容回归、P5-A3b 复核展示及 P5-A4a 边界审计回归，共 112 项测试；112/112 PASS）
+- `npm test`（四模块固定样例、P1-A～P1-F、P2-A～P2-F、P3-A～P3-F、P4-A～P4-H 解释/证据/Golden/历史/备份回归、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、P5-A1/P5-A2/P5-A3a 兼容回归、P5-A3b 复核展示、P5-A4a 边界审计及 P5-A4b1 输入校验回归，共 120 项测试；当前预审 120/120 PASS）
 - `npm run build:web`（静态 Web 构建成功，8 条路由；本批 Web Export 实际执行并 PASS）
 - P5-A3a 两次 GitHub Actions 均为 `completed/success`；最终 run `31873458023` 的 Regression tests 与 Web export 均实际执行并 success。
 - P5-A3b 候选实现本地 `30f2db2c164bd1cac709025a340e91f32a3fa147`、远端等价 `baea5f6e53bcc52564fd7b7e375cc4e70463398f`；[CI run 31875157338](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31875157338) 为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。账本修复本地 `1189f5e9d7ed6001ac8ce132e8ee69b79435c052`、远端等价 `c5bc6f04a0b6ddc1f43233d88c061a7efeccebfb`；[CI run 31876037500](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31876037500) 同为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。主管初审及最终独立验收本地 diff check/typecheck/lint/104/104/build 8 routes 均 PASS。
 - P5-A4a 实现 local `2cf82d402e2f840ebf7c29bf47ee3b167fab9688`、remote `c7055e8962b3b21dd8b78c8f5c64769e9528daf0`；[CI run 31879638540](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31879638540) 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并 Success。主管独立复跑 `git diff --check`、typecheck、lint、`npm test`（112/112）和 `build:web`（8 routes），全部 PASS。唯一非阻断 warning 是 runner 将 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 action runtime 强制为 Node 24；登记为后续 CI maintenance，本批不修改 workflow。
+- P5-A4b1 当前尚未提交/推送；预审已执行 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`（120/120）和 `npm run build:web`（8 routes，Web Export 实际执行）。Expo SDK 57 exact docs 已核对，本批没有使用 Expo API。
 - GitHub Actions CI：安装依赖后自动执行 typecheck、lint、npm test 和 Web 构建；Web Export 使用 `always()`，不会因测试失败被跳过。
 - 浏览器手工走查：首页、八字落柱、六爻起卦、紫微十二宫、星盘精确/近似分支、自动保存及记录展开；文件导出/选择与导入预览的具体签字项见 [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md)。
 - 视觉与响应式基线已检查过 375px、手机横屏和 1440px；正式发布前仍必须在实际 iPhone 上做全量回归。
@@ -242,8 +244,8 @@ npm audit --omit=dev --json
 - [README.md](../README.md)：快速启动、当前能力和基础数据边界。
 - [ROADMAP.md](ROADMAP.md)：路线图与重大决策门槛。
 - [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md)：Phase 5 总账本、批次图、风险与验收模板。
-- [PHASE5_EXECUTION.md](PHASE5_EXECUTION.md)：P5-A1 Golden Case 合同、P5-A2 HKO published-reference、P5-A3 版本兼容/历史复核、P5-A4a 边界审计和测试证据。
-- [P5_A_BOUNDARY_AUDIT.md](P5_A_BOUNDARY_AUDIT.md)：P5-A4a 四术边界与输入策略审计矩阵、gap、决策门和后续路由。
+- [PHASE5_EXECUTION.md](PHASE5_EXECUTION.md)：P5-A1 Golden Case 合同、P5-A2 HKO published-reference、P5-A3 版本兼容/历史复核、P5-A4a 边界审计、P5-A4b1 输入校验和测试证据。
+- [P5_A_BOUNDARY_AUDIT.md](P5_A_BOUNDARY_AUDIT.md)：P5-A4a 四术边界与输入策略审计矩阵、P5-A4b1 overlay、gap、决策门和后续路由。
 - [SECURITY_NOTES.md](SECURITY_NOTES.md)：依赖审计基线。
 - [设计系统主规范](../design-system/guanxiang/MASTER.md)：色彩、字体、动效、无障碍和产品语气。
 - [开源方案清单](../../metaphysics-app-research/SOURCE_MANIFEST.md)：固定提交、许可证与采用边界。

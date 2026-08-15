@@ -2,7 +2,7 @@ import { Horoscope, Origin } from 'circular-natal-horoscope-js/dist/index.js';
 
 import { resolveCityCoordinates } from '@/data/china-cities';
 import type { AstrologyChartView } from '@/types/charts';
-import { calculationSettings, CHART_SNAPSHOT_VERSION, aspectLabels, bodyLabels, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, signLabels } from '@/services/chart-engine-shared';
+import { assertGregorianDate, calculationSettings, CHART_SNAPSHOT_VERSION, aspectLabels, bodyLabels, birthInputSnapshot, birthParts, ENGINE_VERSIONS, explicitBirthCoordinates, generatedAt, requireExactBirth, signLabels } from '@/services/chart-engine-shared';
 import type { BirthProfile } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeAstrologyChart } from '@/domains/astrology/model/normalized-chart';
@@ -11,11 +11,10 @@ import { buildAstrologyExplanation } from '@/domains/astrology/explanation/index
 
 export function calculateAstrologyView(profile: BirthProfile, options?: CalculationOptions): AstrologyChartView {
   requireExactBirth(profile);
+  if (profile.calendar === 'solar') assertGregorianDate(profile.birthDate);
   const parts = birthParts(profile);
   const settings = calculationSettings(options);
-  const city = profile.latitude != null && profile.longitude != null
-    ? { latitude: profile.latitude, longitude: profile.longitude }
-    : resolveCityCoordinates(profile.birthCity);
+  const city = explicitBirthCoordinates(profile) ?? resolveCityCoordinates(profile.birthCity);
   const origin = new Origin({
     year: parts.year,
     month: parts.month - 1,
