@@ -9,6 +9,7 @@ import type {
 import { DEFAULT_BAZI_CALCULATION_SETTINGS } from '@/domains/bazi/types';
 import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
 import type { BirthProfile, DivinationModule, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
+import { migrateExplanationSnapshot } from '@/domains/explanation/snapshot';
 
 export const STORAGE_SCHEMA_VERSION = 2 as const;
 
@@ -302,8 +303,12 @@ function migrateReading(value: unknown): SavedReading | null {
           }
         : rawPayload.calculationEvidence
     : undefined;
+  const explanationSnapshot = migrateExplanationSnapshot(value.explanationSnapshot ?? rawPayload.explanation);
+  const rawPayloadWithoutExplanation = Object.fromEntries(
+    Object.entries(rawPayload).filter(([key]) => key !== 'explanation'),
+  );
   const payload = {
-    ...rawPayload,
+    ...rawPayloadWithoutExplanation,
     module,
     snapshotVersion: rawPayload.snapshotVersion ?? CHART_SNAPSHOT_VERSION,
     generatedAt: rawPayload.generatedAt ?? generatedAt,
@@ -318,6 +323,7 @@ function migrateReading(value: unknown): SavedReading | null {
           seedScope: rawPayload.seedScope ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.seedScope : 'legacy'),
         }
       : {}),
+    ...(explanationSnapshot ? { explanation: explanationSnapshot } : {}),
   } as unknown as ChartPayload;
   const snapshotMeta = isRecord(value.snapshotMeta)
     ? {
@@ -376,6 +382,7 @@ function migrateReading(value: unknown): SavedReading | null {
         }
       : {}),
     ...baziSnapshots,
+    ...(explanationSnapshot ? { explanationSnapshot } : {}),
     payload,
   } as unknown as SavedReading;
 }

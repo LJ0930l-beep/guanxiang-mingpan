@@ -3,6 +3,7 @@ import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains
 import type { NormalizedBaziChart } from '@/domains/bazi/model/normalized-chart';
 import type { BaziEvidenceGraph, StrengthAssessment } from '@/domains/bazi/evidence/index';
 import type { BaziInterpretation } from '@/domains/bazi/interpretation/rules';
+import type { ExplanationSnapshot } from '@/domains/explanation/types';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
 export const DEFAULT_CALCULATION_TIMEZONE = 'Asia/Shanghai' as const;
@@ -64,6 +65,8 @@ export interface ChartMeta extends ChartSnapshotMeta {
   module: DivinationModule;
   completeness: 'complete' | 'partial';
   caveats: string[];
+  /** Optional until a module has completed its Phase 4 explanation builder. */
+  explanation?: ExplanationSnapshot;
 }
 
 export interface BaziPillarView {

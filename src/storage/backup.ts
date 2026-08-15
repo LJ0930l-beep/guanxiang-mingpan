@@ -1,5 +1,6 @@
 import { STORAGE_SCHEMA_VERSION } from '@/storage/schema';
 import type { BirthProfile, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
+import { validateExplanationSnapshot } from '@/domains/explanation/snapshot';
 
 export const LOCAL_BACKUP_FORMAT = 'guanxiang-local-backup' as const;
 export const LOCAL_BACKUP_VERSION = 1 as const;
@@ -129,10 +130,21 @@ function validateReadings(value: unknown): SavedReading[] {
     if (!['bazi', 'liuyao', 'ziwei', 'astrology'].includes(String(item.module))) {
       throw new BackupFormatError('备份文件中的排盘模块无效。');
     }
+    const explanationSnapshot = item.explanationSnapshot === undefined
+      ? undefined
+      : (() => {
+          try {
+            validateExplanationSnapshot(item.explanationSnapshot, '备份文件中的解释快照');
+          } catch {
+            throw new BackupFormatError('备份文件中的解释快照无效。');
+          }
+          return item.explanationSnapshot;
+        })();
     return {
       ...item,
       favorite: item.favorite === true,
       feedback: validateFeedback(item.feedback),
+      ...(explanationSnapshot ? { explanationSnapshot } : {}),
     } as unknown as SavedReading;
   });
 }
@@ -170,6 +182,13 @@ export function validateArchiveIntegrity(data: LocalBackupData): void {
       if (feedbackIds.has(feedback.id)) throw new BackupFormatError('同一记录中存在重复的反馈 ID。');
       feedbackIds.add(feedback.id);
       if (!/^\d{4}-\d{2}-\d{2}$/.test(feedback.observedAt)) throw new BackupFormatError('事实反馈必须使用日级日期。');
+    }
+    if (reading.explanationSnapshot) {
+      try {
+        validateExplanationSnapshot(reading.explanationSnapshot, '本地档案中的解释快照');
+      } catch {
+        throw new BackupFormatError('本地档案中的解释快照无效。');
+      }
     }
   }
 }

@@ -1,5 +1,6 @@
 import type { ChartInputSnapshot, ChartPayload, ChartSnapshotMeta } from '@/types/charts';
 import type { BaziHistorySnapshot } from '@/domains/bazi/interpretation/history';
+import type { ExplanationSnapshot } from '@/domains/explanation/types';
 
 export type DivinationModule = 'bazi' | 'liuyao' | 'ziwei' | 'astrology';
 
@@ -74,6 +75,8 @@ export interface SavedReading {
   normalizedChartSnapshot?: BaziHistorySnapshot['normalizedChart'];
   evidenceGraphSnapshot?: BaziHistorySnapshot['evidenceGraph'];
   interpretationSnapshot?: BaziHistorySnapshot['interpretation'];
+  /** Phase 4 user-facing explanation; absent on legacy records by design. */
+  explanationSnapshot?: ExplanationSnapshot;
   favorite: boolean;
   feedback: ReadingFeedback[];
   payload: ChartPayload;

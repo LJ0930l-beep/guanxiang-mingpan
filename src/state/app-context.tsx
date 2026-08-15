@@ -315,6 +315,7 @@ export function AppProvider({ children }: PropsWithChildren) {
             interpretationSnapshot: baziSnapshot.interpretation,
           }
         : {}),
+      ...(payload.explanation ? { explanationSnapshot: payload.explanation } : {}),
       payload,
     };
     const nextReadings = [reading, ...readingsRef.current].slice(0, 100);
