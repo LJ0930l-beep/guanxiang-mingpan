@@ -31,7 +31,9 @@ test('P5-A1 合法独立八字条目通过 Golden Case 合同', () => {
 
 test('P5-A1 独立八字 registry 从既有 BAZI_GOLDEN_CASES 完整映射且不会漂移', () => {
   const sourceCases = BAZI_GOLDEN_CASES.filter((item) => item.sourceType === 'independent-library');
-  const registryCases = GOLDEN_CASE_REGISTRY.filter((item) => item.validationClass === 'independent-validation');
+  const registryCases = GOLDEN_CASE_REGISTRY.filter(
+    (item) => item.sourceType === 'independent-library' && item.validationClass === 'independent-validation',
+  );
 
   assert.equal(registryCases.length, sourceCases.length);
   for (const sourceCase of sourceCases) {

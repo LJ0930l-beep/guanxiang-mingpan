@@ -1,8 +1,8 @@
 # Phase 5 · P5-A1 四术 Golden Case 合同与现状盘点
 
 更新日期：2026-08-15  
-批次状态：Sol High 独立验收 PASS
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单和回归测试
+批次状态：P5-A1 已经 Sol High 独立验收 PASS；P5-A2 实现完成，等待 Sol High 独立验收
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试，以及香港天文台 published-reference Golden
 
 ## 1. Scope 与明确不做
 
@@ -125,4 +125,41 @@ Sol High 独立验收结论：**PASS**。主管发现的两项问题已在同一
 
 本批没有声称节气边界、子初、闰月、跨日、未知时辰、未知城市或所有流派已经获得独立专业金标准；这些仍属于后续输入/边界证据工作。城市覆盖和来源/许可审计仍属于 P5-B，不在本批范围。
 
-**P5-A2 候选（仅供 Sol High 决策，未批准、未开始）：** 建立边界输入与失败路径的四术证据清单，先盘点节气/子初/闰月/跨日/未知时辰/未知城市/业务时区/六爻固定种子现有 fixture，再决定哪些需要外部来源或人工复核；不预先承诺任何专业结论，也不自动提升当前 registry 条目的验证级别。
+**P5-A2 已按独立 handoff 授权并完成实现，见下节；本批仍等待 Sol High 独立验收。** P5-A3 只保留候选风险与决策门，不预先批准任何算法或来源变更。
+
+## 8. P5-A2 香港天文台 published-reference Golden（实现完成，等待主管验收）
+
+### 8.1 Scope 与明确不做
+
+本小批只增加两条由香港天文台（HKO）公开资料支持的 `published-reference` Golden Case，验证公开的天文/历法事实，不改变任何计算输出：
+
+- 2024 年立春：HKO 公开时刻为香港时间 UTC+8 的 `2024-02-04 16:27`；测试以现有 `resolveSolarTermBoundary` 的 `2024-02-04T16:27:07` 离线 probe 断言应用在该分钟已进入立春。HKO 只发布到分钟，不能据此宣称官方验证了应用的 `16:27:07` 秒值。
+- 农历 2024 正月初一：HKO 2024 对照表公开对应公历 `2024-02-10`；测试以现有 `calculateBaziView` 复现 `2024-01-01 12:00` 到 `2024-02-10 12:00:00` 的日期转换，保留 `sourceCalendar` 与 calendar evidence，不验证八字年/月柱流派。
+
+本小批明确不做：
+
+- 不联网调用 HKO；URL、事实、来源精度和争议边界均固化在 registry fixture 与离线回归测试中。
+- 不修改八字 resolver、engine、真太阳时代码、数据依赖、lockfile、UI、Storage、schema 或 CI。
+- 不把 HKO 公历/农历事实扩展为八字立春换年、月柱、年柱或其他命理专业真值。
+
+### 8.2 实现与合同
+
+- 新增 `src/domains/golden/published-references.ts`，保存两条纯 JSON HKO fixture；两条均为 `validationClass=independent-validation`、`sourceType=published-reference`、`independentVerification.scope=published-comparison`。
+- `sourceReferences` 只指向 HKO 官方说明、2024 节气 XML、2024 对照表 PDF、对照入口及官方历法/立春换年说明；`verifiedBy` 明确为本项目 fixture review，`verifiedAt=2026-08-15`。
+- `expectedFacts` 保存 HKO 的公开精度：立春为分钟、农历换算为日期；`expectedInterpretation.notProfessionalTruth=true`；`knownDisputes` 明确秒值、流派和官方历法/立春换年边界。
+- `golden-case.v1` 不变；registry 从 10 条增加为 12 条。P5-A1 source-of-truth 测试只比较 `sourceType=independent-library` 的两条既有八字记录，避免把 published-reference 误要求映射自 `BAZI_GOLDEN_CASES`。
+
+### 8.3 测试与质量门
+
+新增 `tests/golden-published-reference.regression.mjs` 4 项测试，覆盖：
+
+- 两条 HKO fixture 通过 validator，引用非空且全部为 `published-reference`；
+- 立春公开分钟与 resolver 当前节令匹配，且不把应用秒值宣称为 HKO 精度；
+- 农历正月初一日期映射与 calendar evidence/source calendar 保留；
+- registry 分类统计更新，紫微/占星/六爻仍无 `independent-validation`。
+
+统一 `npm test` 由 83 项增加为 87 项；P5-A2 实现提交前必须完成 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run build:web`（8 routes）和白名单检查。远端 CI 必须为 Success 且实际执行 Web Export；本节最终证据由主管验收时回填。
+
+### 8.4 P5-A3 候选风险（仅登记，未批准）
+
+核实 `src/domains/bazi/true-solar-time.ts`：当前 `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但实现公式并非本批 HKO 引用或 NOAA 229.18 系数公式，且该常量当前未进入保存 evidence。P5-A3 需要 Sol High 决策：继续当前近似式并纠正来源标签，或切换 NOAA 公式并处理版本/历史兼容。本小批不修改真太阳时代码、版本名或快照。

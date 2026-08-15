@@ -4,6 +4,7 @@ import {
   type JsonObject,
 } from '@/domains/golden/types';
 import { BAZI_GOLDEN_CASES, type BaziGoldenCase } from '@/domains/bazi/golden-cases';
+import { HKO_PUBLISHED_REFERENCE_GOLDEN_CASES } from '@/domains/golden/published-references';
 import { validateGoldenCaseRegistry } from '@/domains/golden/validator';
 
 const REGRESSION_DISPUTE = '没有独立外部来源或专业复核；本条只用于防止回归，不代表专业真值。';
@@ -79,6 +80,7 @@ const INDEPENDENT_BAZI_GOLDEN_CASES = BAZI_GOLDEN_CASES
  */
 export const GOLDEN_CASE_REGISTRY: readonly GoldenCase[] = [
   ...INDEPENDENT_BAZI_GOLDEN_CASES,
+  ...HKO_PUBLISHED_REFERENCE_GOLDEN_CASES,
   {
     contractVersion: GOLDEN_CASE_CONTRACT_VERSION,
     id: 'bazi-interpretation-fixtures',

@@ -85,7 +85,7 @@
 | **P5-H iPhone/TestFlight** | A | 实体 iPhone/TestFlight 完成四术、登录入口、离线、深色模式、字体缩放、减少动态效果、普通/加密备份导出导入、冲突和失败回滚签字。 | P5-A～P5-F、P5-G 的跨端共用验收 | Bundle ID、签名主体、最低 iOS、TestFlight 分发范围。 |
 | **P5-I App Store 材料** | A | App Store 图标、截图、描述、年龄分级、隐私清单、许可证、支持/联系信息和审核说明准备齐全；与真实产品边界和 P5-F 文案一致。 | P5-E～P5-H | 商店主体、正式 Bundle ID、商标、公开版本和提交时机；最终入口形态由 OWNER DECISION 决定。 |
 
-Phase 5 不是一次性开发包。每个表格行必须拆成可验收的小批；P5-A1 已完成并通过独立验收，不能把 P5-A 到 P5-I 或整个 Phase 5 一次派给执行者。P5-A2 仍需主管根据证据单独授权，城市数据只在 P5-B 进入执行。
+Phase 5 不是一次性开发包。每个表格行必须拆成可验收的小批；P5-A1 已完成并通过独立验收，P5-A2 已按独立 handoff 完成实现但仍等待主管验收，不能把 P5-A 到 P5-I 或整个 Phase 5 一次派给执行者。城市数据只在 P5-B 进入执行。
 
 版本策略：每一批只在相关 `schema`、`dataset`、`rules`、`interpretation` 或 `explanation` 发生兼容性变化时评估并递增对应版本；没有相关变化不得无条件递增版本号。
 
@@ -156,9 +156,38 @@ P5-A1 已按本批 handoff 完成实现并经 Sol High 独立验收 **PASS**，*
 - 当前 registry：10 条，2 条 `independent-validation`、8 条 `regression-only`、0 条 `pending-verification`；四模块均有清单。
 - Storage/schema：无变化；合同版本不是用户数据 schema 版本，不触发迁移。
 - 测试：`npm test` 83/83，新增测试已进入统一命令。
-- 文档：`docs/PHASE5_EXECUTION.md` 记录字段、门禁、清单、DoD、限制和未批准的 P5-A2 候选。
-- 主管验收：Sol High 已独立审阅来源边界、分类、完整 JSON 门禁、source-of-truth 映射和 CI，结论为 **PASS**；P5-A2 仍未批准。
+- 文档：`docs/PHASE5_EXECUTION.md` 记录字段、门禁、清单、DoD、限制和 P5-A2 published-reference 实现记录。
+- 主管验收：Sol High 已独立审阅 P5-A1 的来源边界、分类、完整 JSON 门禁、source-of-truth 映射和 CI，结论为 **PASS**；P5-A2 仍等待本批独立验收。
 - 最终证据：初始实现本地/远端 `e318d48` / `5a2876c`，CI run `31867588722`；退回修复本地/远端 `86a62cd` / `2b9412ad`，CI run `31868036244`；两次 CI 均 Success 且 Web Export 实际执行。
+
+## 5.2 P5-A2 香港天文台 published-reference Golden（实现完成，等待主管验收）
+
+### Scope
+
+本批只增加两条由香港天文台公开资料支持的 `published-reference` Golden Case，验证公开的天文/历法事实，不改变任何计算输出：
+
+1. 2024 年立春：HKO 香港时间（UTC+8；与 `Asia/Shanghai` 同偏移）为 `2024-02-04 16:27`。离线测试调用现有 resolver 的 `2024-02-04T16:27:07` probe，断言应用在该分钟已经进入立春；官方只发布到分钟，不宣称官方验证 `16:27:07` 秒值。
+2. 农历 2024 正月初一对应公历 `2024-02-10`。离线测试调用现有 calendar calculation，复现 `2024-01-01 12:00` 到 `2024-02-10 12:00:00`，保留 `sourceCalendar` 与 evidence；只验证日期映射，不验证八字年/月柱流派。
+
+本批不联网、不改 resolver/engine/真太阳时/依赖/lockfile/UI/Storage/schema/CI，也不把公开历法事实扩展成命理专业真值。`golden-case.v1` 合同版本不变。
+
+### 实施摘要与白名单
+
+- 新增 `src/domains/golden/published-references.ts`，保存两条纯 JSON fixture；每条均为 `validationClass=independent-validation`、`sourceType=published-reference`、验证 scope=`published-comparison`。
+- `sourceReferences` 固化 HKO 节气说明、2024 XML、农历转换入口、2024 对照表 PDF 及官方历法/立春换年说明；`verifiedBy` 为本项目 fixture review 表述，`verifiedAt=2026-08-15`。
+- `src/domains/golden/registry.ts` / `index.ts` 最小接入 registry 与导出。
+- `tests/golden-published-reference.regression.mjs` 新增 4 项离线确定性测试；`tests/golden-case-contract.regression.mjs` 仅比较 `sourceType=independent-library` 的两条既有 BAZI source-of-truth 记录；`package.json` 接入统一 `npm test`。
+- `docs/PHASE5_EXECUTION.md`、本账本、`docs/HANDOFF.md`、`docs/ROADMAP.md` 记录范围、精度、证据和后续风险；不关闭整个 P5-A。
+
+### 结果与待验收证据
+
+实现后的 registry 为 12 条：4 条 `independent-validation`（其中 2 条 HKO published-reference、2 条既有独立库），8 条 `regression-only`，0 条 pending；紫微、占星、六爻仍无 `independent-validation`。统一测试预期由 83 项增加为 87 项。
+
+主管验收必须独立复跑并记录：`git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`（87 项）、`npm run build:web`（8 routes）、白名单检查、local/remote SHA、GitHub Actions run/status 及 Web Export 实际执行情况。本节在主管验收后补齐最终 CI 证据；在此之前 P5-A2 不标记 PASS，整个 P5-A 也不标完成。
+
+### P5-A3 决策风险登记（仅候选）
+
+`src/domains/bazi/true-solar-time.ts` 的 `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但当前公式并非本批 HKO 引用或 NOAA 229.18 系数公式，且常量当前未进入保存 evidence。P5-A3 需单独决策：继续当前近似式并纠正来源标签，或切换 NOAA 公式并处理版本/历史兼容。本批不修改真太阳时代码、版本或快照。
 
 ## 6. 统一批次验收模板
 
@@ -186,15 +215,16 @@ P5-A1 已按本批 handoff 完成实现并经 Sol High 独立验收 **PASS**，*
 | 真实登录 | 手机验证码、Apple、微信只是本地原型流程，无真实服务端认证。 | OWNER DECISION 明确是否作为首发阻断项；若选择首发前账号，再由 Phase 6 完成服务商、注销和审计。 |
 | 合规/发布材料 | 隐私政策、用户协议、注销、商店主体/截图/许可证和年龄分级未闭环。 | P5-E/P5-F/P5-I 逐项签字前不得对外提交。 |
 | Node 测试 loader/module warning | 当前测试使用 Node experimental strip-types/loader，可能产生 warning；不影响本基线结果，但升级 Node 或依赖时需复核。 | 维护统一 `npm test`，在兼容 Node 版本升级时消除或记录 warning。 |
+| 真太阳时来源标签（P5-A3 候选） | `TRUE_SOLAR_DATA_VERSION` 名称为 `equation-of-time-noaa-v1`，但当前公式并非本批 HKO 引用或 NOAA 229.18 系数公式，且常量当前未进入保存 evidence。 | 由 P5-A3 决定继续近似式并纠正来源标签，或切换 NOAA 公式并处理版本/历史兼容；本批不改代码。 |
 
 ## 8. 下一步授权边界
 
-主管在 P5-0 验收后已授权并完成实现、且已独立验收通过 **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**；P5-A2 仍未授权：
+主管在 P5-0 验收后已授权并完成实现、且已独立验收通过 **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**；**P5-A2 香港天文台 published-reference Golden 已按独立 handoff 完成实现，等待 Sol High 独立验收**：
 
 - 定义四术 Golden Case 的统一字段、分类策略、输入边界、预期证据、精度和版本合同，形成当前四术用例清单；覆盖至少节气边界、子初、闰月、跨日、未知时辰、未知城市、业务时区和六爻固定种子。
 - 对每条用例标注 `independent-validation`、`regression-only` 或待验证；未有独立来源/专业复核的用例只能作为 regression-only，不得伪造专业真值或“权威正确”结论。
-- 仅做当前四术用例和门禁现状盘点；城市覆盖、来源/许可逐条补全属于 P5-B，不进入 P5-A1。
-- 只更新与 P5-A1 直接相关的白名单文件和测试；不得顺手接入全国数据、流派切换、账号、支付、AI 或重构计算层。
-- P5-A1 已给出 scope、DoD、测试和决策门，并由 Sol High 完成独立验收；后续 P5-A2 若要执行，必须另行授权。
+- P5-A1 仅做当前四术用例和门禁现状盘点；城市覆盖、来源/许可逐条补全属于 P5-B，不进入 P5-A。
+- P5-A2 仅增加 HKO 公开资料支持的两条 published-reference Golden 与离线测试，不改变任何 resolver/engine 输出；立春只比较分钟，农历只比较日期，且不验证四柱流派结论。
+- P5-A2 已给出 scope、DoD、测试和风险记录；Sol High 必须独立复跑质量门并决定是否 PASS。P5-A3 只列真太阳时来源标签风险与决策门，不预先批准实现。
 
-P5-A1 已经 Sol High 独立验收通过；是否进入 P5-A2 仍需单独授权，任何 Level B 工作暂不进入实现。
+P5-A1 已经 Sol High 独立验收通过；P5-A2 尚未由主管验收，不得将整个 P5-A 或 Phase 5 标记完成；任何 Level B 工作暂不进入实现。

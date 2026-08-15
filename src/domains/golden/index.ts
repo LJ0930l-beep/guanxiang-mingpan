@@ -1,4 +1,5 @@
 export { GOLDEN_CASE_REGISTRY } from '@/domains/golden/registry';
+export { HKO_PUBLISHED_REFERENCE_GOLDEN_CASES } from '@/domains/golden/published-references';
 export {
   getGoldenCaseValidationErrors,
   validateGoldenCase,
