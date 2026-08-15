@@ -1,10 +1,10 @@
 # Phase 5 · P5-A1 四术 Golden Case 合同与现状盘点
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a 已由 Sol High 独立验收 PASS；P5-A3b 已完成实现，等待 Sol High 独立验收；整个 P5-A 与 Phase 5 仍未完成
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3，以及 P5-A3b 历史证据展示与显式当前规则复核
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现完成与待验收状态，不表示整个 P5-A3、P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -127,7 +127,7 @@ Sol High 独立验收结论：**PASS**。主管发现的两项问题已在同一
 
 本批没有声称节气边界、子初、闰月、跨日、未知时辰、未知城市或所有流派已经获得独立专业金标准；这些仍属于后续输入/边界证据工作。城市覆盖和来源/许可审计仍属于 P5-B，不在本批范围。
 
-**P5-A2 已按独立 handoff 完成实现并经 Sol High 独立验收 PASS，见下节；这不等于整个 P5-A 或 Phase 5 完成。** P5-A3a 的方案 A 已由负责人选择并经 Sol High 独立验收 PASS；P5-A3b 不是新的 owner 决策门，已按主管授权完成实现，当前等待 Sol High 独立验收。
+**P5-A2 已按独立 handoff 完成实现并经 Sol High 独立验收 PASS，见下节；这不等于整个 P5-A 或 Phase 5 完成。** P5-A3a 的方案 A 已由负责人选择并经 Sol High 独立验收 PASS；P5-A3b 不是新的 owner 决策门，已按主管授权完成实现并经 Sol High 独立验收 PASS；P5-A3 子里程碑至此完成。
 
 ## 8. P5-A2 香港天文台 published-reference Golden（Sol High 独立验收 PASS）
 
@@ -177,7 +177,7 @@ Sol High 独立验收结论：**PASS**。本结论只覆盖 P5-A2 两条 HKO pub
 
 ### 8.4 P5-A3 风险与授权边界
 
-P5-A2 时登记的真太阳时来源标签风险已由负责人选择的方案 A 处理，并经 P5-A3a 独立验收 PASS。P5-A3b 已获主管授权并完成记录页历史证据展示和显式当前规则复核实现，当前等待 Sol High 独立验收。整个 P5-A3 仍未完成，不能把本批实现写成最终专业真值或发布结论。
+P5-A2 时登记的真太阳时来源标签风险已由负责人选择的方案 A 处理，并经 P5-A3a 独立验收 PASS。P5-A3b 已获主管授权并完成记录页历史证据展示和显式当前规则复核实现，经 Sol High 独立验收 PASS。P5-A3 子里程碑已完成，但不能把本批实现写成最终专业真值或发布结论；整个 P5-A 与 Phase 5 仍未完成。
 
 ## 9. P5-A3a 真太阳时版本兼容与 Storage Schema 3（Sol High 独立验收 PASS）
 
@@ -201,9 +201,9 @@ P5-A2 时登记的真太阳时来源标签风险已由负责人选择的方案 A
 
 Sol High 独立验收结论：**P5-A3a PASS**。
 
-本批明确不做：其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3 整体仍未完成；P5-A3b 已按主管授权完成实现，独立验收记录见下一节。整个 P5-A、P5-A3 和 Phase 5 仍未完成。
+本批明确不做：其他术数算法、真太阳时历史重算、公式流派选择或最终专业真值声明。P5-A3a 与 P5-A3b 均已完成独立验收，P5-A3 子里程碑整体完成；边界日期、闰月、DST、未知时辰、未知城市及四术输入失败路径仍需后续审计。整个 P5-A 和 Phase 5 仍未完成。
 
-## 10. P5-A3b 历史真太阳时证据展示与显式当前规则复核（实现完成，等待 Sol High 独立验收）
+## 10. P5-A3b 历史真太阳时证据展示与显式当前规则复核（Sol High 独立验收 PASS）
 
 ### 10.1 Scope 与实现摘要
 
@@ -227,6 +227,10 @@ npm test               PASS（104/104）
 npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
-候选实现交付：本地 `30f2db2c164bd1cac709025a340e91f32a3fa147`；远端等价 `baea5f6e53bcc52564fd7b7e375cc4e70463398f`；[GitHub Actions run 31875157338](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31875157338) 为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。主管初审本地 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test` 104/104、`npm run build:web` 8 routes 均 PASS；最终独立验收仍待该文档修复提交复核。
+候选实现交付：本地 `30f2db2c164bd1cac709025a340e91f32a3fa147`；远端等价 `baea5f6e53bcc52564fd7b7e375cc4e70463398f`；[GitHub Actions run 31875157338](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31875157338) 为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。主管初审本地 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test` 104/104、`npm run build:web` 8 routes 均 PASS。
 
-当前状态：实现提交后等待 Sol High 独立复验；在独立验收前不写 PASS，不标记整个 P5-A3、P5-A 或 Phase 5 完成。
+验收收口交付：账本修复本地 `1189f5e9d7ed6001ac8ce132e8ee69b79435c052`；远端等价 `c5bc6f04a0b6ddc1f43233d88c061a7efeccebfb`；[GitHub Actions run 31876037500](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31876037500) 为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。Sol High 独立审阅纯 helper、UI 接入、records replay 调用链、SavedReading 不变性、最终 `effectiveCalculationTime` 优先级、scope/白名单，并独立重跑 `git diff --check`、typecheck、lint、`npm test` 104/104 与 Web Export 8 routes，全部 PASS。
+
+Sol High 独立验收结论：**P5-A3b PASS**。P5-A3a 与 P5-A3b 均完成，P5-A3 真太阳时版本兼容、证据展示和显式 current-rule replay 子里程碑整体完成；无算法、Storage Schema、依赖变化，历史结果不静默重算。P5-A 的边界日期、闰月、DST、未知时辰、未知城市及四术输入失败路径仍需后续审计；P5-B 尚未开始。
+
+当前状态：P5-A3b 已经 Sol High 独立复验 PASS；不标记整个 P5-A 或 Phase 5 完成。
