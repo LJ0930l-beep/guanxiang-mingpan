@@ -43,7 +43,8 @@
 - [x] 占星精确/近似标准化模型、角点/宫位/相位证据与精度边界解释。
 - [x] 六爻问题/用神/旺衰/世应/动变/空亡证据与不承诺应期的解释层。
 - [x] 四模块解释快照备份 deepEqual、只读记录查看、Glossary 点击和内容安全 Golden。
-- [ ] 最后一批 GitHub Actions 绿色确认、iPhone/TestFlight 文件流签字和发布前合规材料。
+- [x] 最后一批 GitHub Actions 绿色确认（含 Web Export）。
+- [ ] iPhone/TestFlight 文件流签字和发布前合规材料。
 
 ## M3 — 中国大陆账户服务
 

@@ -1,7 +1,7 @@
 # Phase 4 · 四术解释体验与三术深度化执行记录
 
 更新日期：2026-08-15  
-当前状态：P4-A～P4-H 代码基线已完成，等待最后一批 GitHub Actions 绿色 Success 后进入真实 iPhone/TestFlight 验收。
+当前状态：P4-A～P4-H 代码基线已完成，最终 GitHub Actions 已绿色 Success；下一步是进入真实 iPhone/TestFlight 验收。
 
 ## 目标与边界
 
