@@ -3,7 +3,7 @@
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
 > 批次：P5-A1 四术 Golden Case 统一合同、分类门禁与现状盘点
-> 本批状态：实现完成，等待 Sol High 独立验收（2026-08-15）
+> 本批状态：Sol High 独立验收 PASS（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -85,7 +85,7 @@
 | **P5-H iPhone/TestFlight** | A | 实体 iPhone/TestFlight 完成四术、登录入口、离线、深色模式、字体缩放、减少动态效果、普通/加密备份导出导入、冲突和失败回滚签字。 | P5-A～P5-F、P5-G 的跨端共用验收 | Bundle ID、签名主体、最低 iOS、TestFlight 分发范围。 |
 | **P5-I App Store 材料** | A | App Store 图标、截图、描述、年龄分级、隐私清单、许可证、支持/联系信息和审核说明准备齐全；与真实产品边界和 P5-F 文案一致。 | P5-E～P5-H | 商店主体、正式 Bundle ID、商标、公开版本和提交时机；最终入口形态由 OWNER DECISION 决定。 |
 
-Phase 5 不是一次性开发包。每个表格行必须拆成可验收的小批；**下一批只能是 P5-A 的第一个小批（P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点）**，不能把 P5-A 到 P5-I 或整个 Phase 5 一次派给执行者。P5-A1 完成后，由主管根据证据决定是否进入 P5-A2。城市数据只在 P5-B 进入执行。
+Phase 5 不是一次性开发包。每个表格行必须拆成可验收的小批；P5-A1 已完成并通过独立验收，不能把 P5-A 到 P5-I 或整个 Phase 5 一次派给执行者。P5-A2 仍需主管根据证据单独授权，城市数据只在 P5-B 进入执行。
 
 版本策略：每一批只在相关 `schema`、`dataset`、`rules`、`interpretation` 或 `explanation` 发生兼容性变化时评估并递增对应版本；没有相关变化不得无条件递增版本号。
 
@@ -150,14 +150,15 @@ commit: docs: establish phase5 master ledger
 
 ## 5.1 P5-A1 交付记录
 
-P5-A1 已按本批 handoff 完成实现，**不等于整个 P5-A 或 Phase 5 完成**。本批新增共享 Golden Case 合同、运行时/registry validator、四术现状 registry 和 9 项回归测试；两条独立八字计算样例直接从现有 `BAZI_GOLDEN_CASES` 映射并保留完整输入/计算设置/四柱事实/来源/验证日期，其余当前项明确为 regression-only。
+P5-A1 已按本批 handoff 完成实现并经 Sol High 独立验收 **PASS**，**不等于整个 P5-A 或 Phase 5 完成**。本批新增共享 Golden Case 合同、运行时/registry validator、四术现状 registry 和 9 项回归测试；两条独立八字计算样例直接从现有 `BAZI_GOLDEN_CASES` 映射并保留完整输入/计算设置/四柱事实/来源/验证日期，其余当前项明确为 regression-only。
 
 - 合同版本：`golden-case.v1`。
 - 当前 registry：10 条，2 条 `independent-validation`、8 条 `regression-only`、0 条 `pending-verification`；四模块均有清单。
 - Storage/schema：无变化；合同版本不是用户数据 schema 版本，不触发迁移。
 - 测试：`npm test` 83/83，新增测试已进入统一命令。
 - 文档：`docs/PHASE5_EXECUTION.md` 记录字段、门禁、清单、DoD、限制和未批准的 P5-A2 候选。
-- 主管门：Sol High 必须独立审阅来源边界、分类和 CI 后，才能批准下一批；本记录不预先批准 P5-A2。
+- 主管验收：Sol High 已独立审阅来源边界、分类、完整 JSON 门禁、source-of-truth 映射和 CI，结论为 **PASS**；P5-A2 仍未批准。
+- 最终证据：初始实现本地/远端 `e318d48` / `5a2876c`，CI run `31867588722`；退回修复本地/远端 `86a62cd` / `2b9412ad`，CI run `31868036244`；两次 CI 均 Success 且 Web Export 实际执行。
 
 ## 6. 统一批次验收模板
 
@@ -188,12 +189,12 @@ P5-A1 已按本批 handoff 完成实现，**不等于整个 P5-A 或 Phase 5 完
 
 ## 8. 下一步授权边界
 
-主管在 P5-0 验收后已授权并完成实现 **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**；当前只等待独立验收，未授权 P5-A2：
+主管在 P5-0 验收后已授权并完成实现、且已独立验收通过 **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**；P5-A2 仍未授权：
 
 - 定义四术 Golden Case 的统一字段、分类策略、输入边界、预期证据、精度和版本合同，形成当前四术用例清单；覆盖至少节气边界、子初、闰月、跨日、未知时辰、未知城市、业务时区和六爻固定种子。
 - 对每条用例标注 `independent-validation`、`regression-only` 或待验证；未有独立来源/专业复核的用例只能作为 regression-only，不得伪造专业真值或“权威正确”结论。
 - 仅做当前四术用例和门禁现状盘点；城市覆盖、来源/许可逐条补全属于 P5-B，不进入 P5-A1。
 - 只更新与 P5-A1 直接相关的白名单文件和测试；不得顺手接入全国数据、流派切换、账号、支付、AI 或重构计算层。
-- P5-A1 必须先给出 scope、DoD、测试和决策门，再由 Sol High 重新派发给 Luna Max。
+- P5-A1 已给出 scope、DoD、测试和决策门，并由 Sol High 完成独立验收；后续 P5-A2 若要执行，必须另行授权。
 
-P5-A1 经 Sol High 独立验收后，才能决定是否进入 P5-A2；任何 Level B 工作暂不进入实现。
+P5-A1 已经 Sol High 独立验收通过；是否进入 P5-A2 仍需单独授权，任何 Level B 工作暂不进入实现。

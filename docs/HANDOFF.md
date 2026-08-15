@@ -2,7 +2,7 @@
 
 > 文档状态：可作为后续产品、设计、研发和上线协作的单一交接入口  
 > 更新日期：2026-08-15  
-> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点已实现，等待主管独立验收；尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
+> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点已通过 Sol High 独立验收；尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
 
 ## 1. 一页总览
 
@@ -139,7 +139,7 @@
 | M2：本地档案与备份 | 97% | 命主与结果自动归档、记录展开查看、版本字段、快照元数据、Storage Schema Version 与首版迁移；命主/记录编辑删除与清空；带版本普通 JSON 与 scrypt + AES-256-GCM 加密备份导出/导入；收藏筛选、按日事实反馈、搜索/分组/对比、导入冲突预览和事务回滚已可持久化并回归。 | 实体 iPhone / TestFlight 文件流签字、上线前隐私与发布材料。 |
 | P2：八字深度结果与证据链 | 100% | P2-A～P2-F 已完成：NormalizedBaziChart、五行/月令/根气/透干证据、Relation Graph、四类强弱证据链、`bazi-rules-v2`、三层 Evidence Explorer、历史深度快照、主动 Diff 与 Interpretation Golden Cases。 | 后续流派/格局扩展必须沿同一分层架构增量开发，并递增解释版本。 |
 | P4：四术解释体验与三术深度化 | 100% 代码基线 | P4-A～P4-H 已完成：公共解释协议、四术解释快照、紫微/占星/六爻标准化模型与证据图、Glossary、统一解释 UI、历史快照 Diff、四模块 Golden 与备份 deepEqual；最终 GitHub Actions 已绿色 Success。 | 真实 iPhone/TestFlight 文件流、上线前合规与账号/商业化仍未完成。 |
-| P5-A1：四术 Golden Case 合同与现状盘点 | 实现完成，待独立验收 | `golden-case.v1` 合同、完整纯 JSON/runtime validator、全局 ID 门禁、从 `BAZI_GOLDEN_CASES` 映射的 2 条八字技术性交叉验证、8 条 regression-only 清单和 9 项回归测试。 | 节气/子初/闰月/跨日/未知输入等边界的外部来源或人工复核仍未完成；不代表专业真值。 |
+| P5-A1：四术 Golden Case 合同与现状盘点 | 独立验收 PASS | `golden-case.v1` 合同、完整纯 JSON/runtime validator、全局 ID 门禁、从 `BAZI_GOLDEN_CASES` 映射的 2 条八字技术性交叉验证、8 条 regression-only 清单和 9 项回归测试；两次远端 CI 均 Success 且 Web Export 实际执行。 | 节气/子初/闰月/跨日/未知输入等边界的外部来源或人工复核仍未完成；不代表专业真值。 |
 | M3：中国大陆真实账号 | 5% | 三种登录入口的界面与本地流程。 | 短信、Apple、微信认证，手机号绑定，权益同步，账户安全与注销。 |
 | M4：商业化和 AI | 0% | 产品边界已确定。 | 支付、订阅、单次付费、服务端权益、AI 成本控制、内容安全。 |
 | 正式公开上线准备度 | 约 35% | 可演示、可进行小范围内部体验。 | 账号、隐私合规、数据保护、设备发布、质量基线和运营能力均未闭环。 |
@@ -194,8 +194,8 @@
 ## 9. 建议的下一轮执行顺序
 
 1. **P5-0 项目总账本与 Phase 5 启动基线**已完成：以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 作为后续批次入口，保留当前 Phase 0～4 代码事实，不回退已完成能力。
-2. **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**已实现，等待主管独立验收：`golden-case.v1` registry 当前只有两条八字技术性交叉验证，其余固定样例明确为 regression-only；城市覆盖属于 P5-B，不在本小批。
-3. **经主管独立验收后再进入 P5-A 后续小批，再按母文档顺序进入 P5-B～P5-I**：城市数据在 P5-B；UX/可访问性、性能稳定性、Release Security、隐私合规、Web、iPhone/TestFlight 和 App Store 材料各自保留独立 DoD。只有相关 schema、dataset、rules、interpretation 或 explanation 发生兼容性变化时才评估并递增版本，不能无条件递增。
+2. **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**已实现并通过主管独立验收：`golden-case.v1` registry 当前只有两条八字技术性交叉验证，其余固定样例明确为 regression-only；城市覆盖属于 P5-B，不在本小批。
+3. **P5-A1 已通过主管独立验收；P5-A2 仍需单独授权后才能进入 P5-A 后续小批，再按母文档顺序进入 P5-B～P5-I**：城市数据在 P5-B；UX/可访问性、性能稳定性、Release Security、隐私合规、Web、iPhone/TestFlight 和 App Store 材料各自保留独立 DoD。只有相关 schema、dataset、rules、interpretation 或 explanation 发生兼容性变化时才评估并递增版本，不能无条件递增。
 4. **完成 Phase 5 后进入 OWNER DECISION**：明确公开版本继续本地入口，还是首发前先完成真实账号；该决定不能由执行者默认推断。
 5. **若选择首发前真实账号，按独立 Phase 6 推进真实账号与可选权益；若选择公开版本地入口，则 Level A 发布门仍需先完成 Phase 5 证据。** Phase 7 的订阅、单次付费和付费 AI 只在后续条件满足后推进，基础版继续不依赖 AI、广告或支付。
 

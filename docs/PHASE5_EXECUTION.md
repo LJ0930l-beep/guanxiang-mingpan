@@ -1,7 +1,7 @@
 # Phase 5 · P5-A1 四术 Golden Case 合同与现状盘点
 
 更新日期：2026-08-15  
-批次状态：实现完成，等待 Sol High 独立验收  
+批次状态：Sol High 独立验收 PASS
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单和回归测试
 
 ## 1. Scope 与明确不做
@@ -112,7 +112,14 @@ npm test               PASS（83/83，包含新增 9 项）
 npm run build:web      PASS（8 条静态 routes，Web Export 实际执行）
 ```
 
-提交和远端 CI 结果由最终交接补录；CI 必须包含实际 Web Export Success。
+提交与远端 CI 证据：
+
+| 交付 | 本地 commit | 远端等价 commit | GitHub Actions |
+|---|---|---|---|
+| 初始 P5-A1 实现 | `e318d48fdf9bcc673fcf8102ca438ecd51305c02` | `5a2876c1b131037f5bef73d4c625ab242e264504` | [run 31867588722](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31867588722) · Success；Regression tests 与 Web export 均 Success |
+| 主管退回修复 | `86a62cdd01639e70a76bb1c95048853cb2119cdf` | `2b9412adf78e480f4acd1c6b9682dd372bffd756` | [run 31868036244](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31868036244) · Success；Regression tests 与 Web export 均实际执行并 Success |
+
+Sol High 独立验收结论：**PASS**。主管发现的两项问题已在同一批修复：完整 GoldenCase 纯 JSON 递归门禁，以及从 `BAZI_GOLDEN_CASES` 映射独立八字条目的完整输入/事实防漂移；未改变引擎、排盘输出或持久化 schema。
 
 ## 7. 限制与下一候选（未批准）
 
