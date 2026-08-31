@@ -1,6 +1,6 @@
 # P5-A4a · 四术边界与输入策略审计矩阵
 
-状态：P5-A4a、P5-A4b1、P5-A4b2 与 P5-A4b3 已由 Sol High 独立验收 PASS（2026-08-15）
+状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3 与 P5-A4b4 已由 Sol High 独立验收 PASS（2026-08-15）
 
 本文件只说明机器可检查审计合同的范围和当前事实，不把项目回归测试、第三方库返回或 CI 通过提升为四术专业真值，也不表示整个 P5-A 或 Phase 5 已完成。
 
@@ -106,3 +106,20 @@ P5-A4a 的 41 项 registry 与 `covered / gap / decision-required / not-applicab
 本地质量命令结果：`git diff --check` PASS、`npm run typecheck` PASS、`npm run lint` PASS（0 warning）、`npm test` PASS（132/132）、`npm run build:web` PASS（8 routes，Web Export 实际执行）。实现 local `53a3c46a1145a10f78f7f193df9b6e01dc12bbeb` / remote `c2daaf5691980da3faa839df4847680331d90b53`；GitHub Actions [run 33352537186](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33352537186) 为 `completed/success`，validate job `99368535197` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功。
 
 Sol High 独立验收结论：**P5-A4b3 PASS**。紫微 lunar/闰月、六爻 engine/cross taxonomy、unknown-coordinate `0,0`、公开日期范围、1986–1991 DST、缺时辰、owner decisions 及其余 gap/P5-B/P5-C 路由仍未完成；整个 P5-A 与 Phase 5 仍未完成。
+
+## 11. P5-A4b4 紫微农历/闰月输入 resolution overlay（Sol High 独立验收 PASS）
+
+本节只追加 P5-A4b4 的验收记录；第 1～7 节的 P5-A4a immutable 审计本体、41 项 registry、`covered / gap / decision-required / not-applicable / routed-p5-b = 18 / 15 / 5 / 2 / 1` 统计与 Astrology `0,0` probe 均不变。
+
+本小批只关闭以下两个原始 `gap`：
+
+| auditCaseId | 本批关闭事实 |
+|---|---|
+| `p5-a4a-ziwei-lunar-input` | 紫微农历路径在进入既有 iztro 引擎前，按固定 `lunar-javascript@1.7.7` 数据校验日期格式、月份和当月实际日数；普通农历有效输入可继续排盘，农历路径不套用 Gregorian 校验。 |
+| `p5-a4a-ziwei-leap-month` | 紫微农历闰月路径在进入既有 iztro 引擎前按年历核对闰月存在性；有效闰月可继续排盘，不存在的闰月组合 fail-fast 拒绝。 |
+
+新增纯 JSON `p5-a4b-input-resolution.v4`，累计 v1=3/v2=5/v3=6/v4=8；保留 v1/v2/v3 exports、顺序前缀与 validator，并新增 v4 validator。该日历能力只形成工程输入契约，不自创历法结论、不宣称独立专业或紫微真值；本批未修改算法/公式、UI、Storage/schema、依赖或 CI，也未处理日期范围、DST、未知时辰、engine/cross taxonomy 或 owner decisions。
+
+新增回归覆盖普通农历、有效闰月、无效闰月组合、无效农历日期，以及 `TZ=UTC` 与 `TZ=Asia/Shanghai` deepEqual，且不依赖 OS/process TZ。实现 local `62697525875a6214b19b447c1d08753bfdb18d75` / remote `306fdcdc89090f2c3c018ab8a25c5938b1e74195`，remote parent `e41513d3343c7d081bd17d06521c9410139286ab`；GitHub Actions [run 33357809089](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33357809089) 与 validate job `99383188584` 均 `completed/success`，Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；本地 `git diff --check`、typecheck、lint（0 warning）、`npm test` 139/139、`build:web` 8 routes 均 PASS。`npm audit --omit=dev` 生产基线为 0 critical、8 high、13 moderate、0 low，未升级依赖。
+
+Sol High 独立验收结论：**P5-A4b4 PASS**。下一微批为 **P5-A4b5 四模块 engine errors 与跨模块失败契约**；负责人决策项继续 pending，整个 P5-A 与 Phase 5 仍未完成。

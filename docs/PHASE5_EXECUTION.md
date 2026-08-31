@@ -1,10 +1,10 @@
-# Phase 5 · P5-A1～P5-A4b3 四术可信度与输入边界审计
+# Phase 5 · P5-A1～P5-A4b4 四术可信度与输入边界审计
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay、P5-A4b4 紫微农历/闰月输入校验与 cumulative resolution overlay
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现及 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现及 Sol High 独立验收 PASS，第 15 节记录 P5-A4b4 紫微农历/闰月输入校验与 v4 overlay 实现及 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -385,3 +385,37 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 实现 local `53a3c46a1145a10f78f7f193df9b6e01dc12bbeb` / remote `c2daaf5691980da3faa839df4847680331d90b53`；GitHub Actions [run 33352537186](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33352537186) 为 `completed/success`，validate job `99368535197` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功。Luna Max 本地独立门禁为 `npm test` 132/132、Web Export 8 routes；`git diff --check`、typecheck、lint 均通过（Lint 0 warning）。
 
 Sol High 独立验收结论：**P5-A4b3 PASS**。本批只关闭 `p5-a4a-bazi-true-solar-cross-day`；紫微 lunar/闰月、六爻 engine/cross taxonomy、unknown-coordinate `0,0`、公开日期范围、1986–1991 DST、缺时辰、owner decisions 及其余 A4a gap/P5-B/P5-C 路由仍未完成。整个 P5-A 与 Phase 5 仍未完成。
+
+## 15. P5-A4b4 紫微农历/闰月输入校验与 cumulative resolution overlay
+
+**状态：Sol High 独立验收 PASS**
+
+### 15.1 Scope 与明确不做
+
+本小批只关闭原始审计 gap `p5-a4a-ziwei-lunar-input` 与 `p5-a4a-ziwei-leap-month`。在既有输入解析/边界层建立可复现 fail-fast 契约：有效普通农历与有效闰月接受，不存在的闰月组合和无效农历日期拒绝；农历路径不套用公历 Gregorian 校验。只使用仓库固定成熟库 `lunar-javascript@1.7.7` 的日历数据能力，不自创历法结论、不宣称独立专业真值。
+
+本批不修改紫微核心算法/公式、UI、Storage/schema、依赖、lockfile 或 CI；不处理日期范围、DST、未知时辰、Astrology `0,0`、engine/cross error taxonomy 或负责人决策项。
+
+### 15.2 实施摘要与合同
+
+- 新增纯 JSON `p5-a4b-input-resolution.v4`，累计 v1=3/v2=5/v3=6/v4=8；保留 v1/v2/v3 exports、顺序前缀与 validator，并新增 v4 validator。
+- 两项 v4 resolution 分别关闭 `p5-a4a-ziwei-lunar-input`（日期格式、月份和当月实际日数）与 `p5-a4a-ziwei-leap-month`（按年历核对闰月存在性并拒绝不存在的组合）；闰月事实传递给既有 iztro 路径，不改变排盘算法。
+- P5-A4a immutable 审计 registry 与 `41 / 18 / 15 / 5 / 2 / 1` 统计、Astrology `0,0` probe 保持不变。
+
+### 15.3 回归、质量与远端证据
+
+新增回归覆盖普通农历、有效闰月、无效闰月组合、无效农历日期，以及 `TZ=UTC` 与 `TZ=Asia/Shanghai` 整体 deepEqual；不依赖 OS/process TZ。
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS（0 warning）
+npm test               PASS（139/139）
+npm run build:web      PASS（8 routes，Web Export 实际执行）
+```
+
+实现 local `62697525875a6214b19b447c1d08753bfdb18d75` / remote `306fdcdc89090f2c3c018ab8a25c5938b1e74195`，remote parent `e41513d3343c7d081bd17d06521c9410139286ab`；GitHub Actions [run 33357809089](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33357809089) 与 validate job `99383188584` 均 `completed/success`，Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功。`npm audit --omit=dev` 生产基线为 0 critical、8 high、13 moderate、0 low；未升级依赖。
+
+### 15.4 验收结论与下一批
+
+Sol High 独立验收结论：**P5-A4b4 PASS**。本批只关闭上述两个紫微农历/闰月输入 gap；下一微批为 **P5-A4b5 四模块 engine errors 与跨模块失败契约**，owner decision items 继续 pending。整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
