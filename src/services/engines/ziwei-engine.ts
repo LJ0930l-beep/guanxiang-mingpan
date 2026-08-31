@@ -7,6 +7,7 @@ import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeZiweiChart } from '@/domains/ziwei/model/normalized-chart';
 import { buildZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 import { buildZiweiExplanation } from '@/domains/ziwei/explanation/index';
+import { assertZiweiLunarDate } from '@/domains/ziwei/lunar-input';
 
 export function calculateZiweiView(
   profile: BirthProfile,
@@ -15,6 +16,7 @@ export function calculateZiweiView(
 ): ZiweiChartView {
   requireExactBirth(profile);
   if (profile.calendar === 'solar') assertGregorianDate(profile.birthDate);
+  if (profile.calendar === 'lunar') assertZiweiLunarDate(profile.birthDate, profile.isLeapMonth);
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
   const settings = calculationSettings(options);

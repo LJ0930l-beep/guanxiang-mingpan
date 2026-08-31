@@ -8,6 +8,7 @@ export { calculateBaziView } from '@/services/engines/bazi-engine';
 export { calculateLiuyaoView } from '@/services/engines/liuyao-engine';
 export { calculateZiweiView } from '@/services/engines/ziwei-engine';
 export { calculateAstrologyView } from '@/services/engines/astrology-engine';
+export { assertZiweiLunarDate } from '@/domains/ziwei/lunar-input';
 export {
   ENGINE_VERSIONS,
   LIUYAO_SEED_MAX_LENGTH,

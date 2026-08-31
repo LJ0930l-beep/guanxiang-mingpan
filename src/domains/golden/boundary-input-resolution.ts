@@ -8,6 +8,7 @@ export const BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION = 'p5-a4b-input-resoluti
 export const BOUNDARY_INPUT_RESOLUTION_V1_CONTRACT_VERSION = BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION;
 export const BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION = 'p5-a4b-input-resolution.v2' as const;
 export const BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION = 'p5-a4b-input-resolution.v3' as const;
+export const BOUNDARY_INPUT_RESOLUTION_V4_CONTRACT_VERSION = 'p5-a4b-input-resolution.v4' as const;
 export const BOUNDARY_INPUT_RESOLUTION_STATUS = 'resolved' as const;
 
 export const BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS = [
@@ -27,11 +28,18 @@ export const BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS = [
   'p5-a4a-bazi-true-solar-cross-day',
 ] as const;
 
+export const BOUNDARY_INPUT_RESOLUTION_V4_AUDIT_CASE_IDS = [
+  ...BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS,
+  'p5-a4a-ziwei-lunar-input',
+  'p5-a4a-ziwei-leap-month',
+] as const;
+
 export const BOUNDARY_INPUT_RESOLUTION_V1_AUDIT_CASE_IDS = BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS;
 
 export type BoundaryInputResolutionAuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS)[number];
 export type BoundaryInputResolutionV2AuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS)[number];
 export type BoundaryInputResolutionV3AuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS)[number];
+export type BoundaryInputResolutionV4AuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_V4_AUDIT_CASE_IDS)[number];
 
 export interface BoundaryInputResolution {
   contractVersion: typeof BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION;
@@ -66,8 +74,19 @@ export interface BoundaryInputResolutionV3 {
   notes: string;
 }
 
+export interface BoundaryInputResolutionV4 {
+  contractVersion: typeof BOUNDARY_INPUT_RESOLUTION_V4_CONTRACT_VERSION;
+  resolutionId: string;
+  auditCaseId: BoundaryInputResolutionV4AuditCaseId;
+  status: typeof BOUNDARY_INPUT_RESOLUTION_STATUS;
+  targetBatch: 'P5-A4b';
+  summary: string;
+  testRefs: readonly string[];
+  notes: string;
+}
+
 export type BoundaryInputResolutionV1 = BoundaryInputResolution;
-export type BoundaryInputResolutionVersioned = BoundaryInputResolution | BoundaryInputResolutionV2 | BoundaryInputResolutionV3;
+export type BoundaryInputResolutionVersioned = BoundaryInputResolution | BoundaryInputResolutionV2 | BoundaryInputResolutionV3 | BoundaryInputResolutionV4;
 
 const RESOLUTION_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const TEST_REF_PATTERN = /^tests\/[^\s#]+(?:#[^\s]+)?$/;
@@ -124,6 +143,11 @@ function isResolutionV3AuditCaseId(value: unknown): value is BoundaryInputResolu
     && BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS.includes(value as BoundaryInputResolutionV3AuditCaseId);
 }
 
+function isResolutionV4AuditCaseId(value: unknown): value is BoundaryInputResolutionV4AuditCaseId {
+  return typeof value === 'string'
+    && BOUNDARY_INPUT_RESOLUTION_V4_AUDIT_CASE_IDS.includes(value as BoundaryInputResolutionV4AuditCaseId);
+}
+
 interface ResolutionContractSpec {
   contractVersion: string;
   auditCaseIds: readonly string[];
@@ -142,6 +166,11 @@ const V2_RESOLUTION_SPEC: ResolutionContractSpec = {
 const V3_RESOLUTION_SPEC: ResolutionContractSpec = {
   contractVersion: BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION,
   auditCaseIds: BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS,
+};
+
+const V4_RESOLUTION_SPEC: ResolutionContractSpec = {
+  contractVersion: BOUNDARY_INPUT_RESOLUTION_V4_CONTRACT_VERSION,
+  auditCaseIds: BOUNDARY_INPUT_RESOLUTION_V4_AUDIT_CASE_IDS,
 };
 
 function isResolutionAuditCaseIdForSpec(value: unknown, spec: ResolutionContractSpec): boolean {
@@ -244,6 +273,29 @@ export function validateBoundaryInputResolutionV3(value: unknown): BoundaryInput
   const errors = getBoundaryInputResolutionV3ValidationErrors(value);
   if (errors.length > 0) throw new Error(`Invalid P5-A4b v3 boundary input resolution:\n${errors.join('\n')}`);
   return value as BoundaryInputResolutionV3;
+}
+
+export function getBoundaryInputResolutionV4ValidationErrors(
+  value: unknown,
+  path = 'boundaryInputResolution',
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  const errors = validateResolutionValue(value, path, V4_RESOLUTION_SPEC);
+  if (errors.length > 0 || !isRecord(value) || !isResolutionV4AuditCaseId(value.auditCaseId)) return errors;
+  const auditCase = auditCaseById(auditRegistry).get(value.auditCaseId);
+  if (!auditCase) {
+    errors.push(`${path}.auditCaseId must exist in the P5-A4a audit registry`);
+  } else {
+    if (auditCase.status !== 'gap') errors.push(`${path}.auditCaseId must map from an original gap case`);
+    if (auditCase.targetBatch !== 'P5-A4b') errors.push(`${path}.auditCaseId must map from targetBatch P5-A4b`);
+  }
+  return errors;
+}
+
+export function validateBoundaryInputResolutionV4(value: unknown): BoundaryInputResolutionV4 {
+  const errors = getBoundaryInputResolutionV4ValidationErrors(value);
+  if (errors.length > 0) throw new Error(`Invalid P5-A4b v4 boundary input resolution:\n${errors.join('\n')}`);
+  return value as BoundaryInputResolutionV4;
 }
 
 function getBoundaryInputResolutionRegistryValidationErrorsForSpec(
@@ -380,12 +432,36 @@ export function validateBoundaryInputResolutionV3Registry(
   return value as readonly BoundaryInputResolutionV3[];
 }
 
+export function getBoundaryInputResolutionV4RegistryValidationErrors(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  return getBoundaryInputResolutionRegistryValidationErrorsForSpec(
+    value,
+    auditRegistry,
+    V4_RESOLUTION_SPEC,
+    getBoundaryInputResolutionV4ValidationErrors,
+  );
+}
+
+export function validateBoundaryInputResolutionV4Registry(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly BoundaryInputResolutionV4[] {
+  const errors = getBoundaryInputResolutionV4RegistryValidationErrors(value, auditRegistry);
+  if (errors.length > 0) throw new Error(`Invalid P5-A4b v4 boundary input resolution registry:\n${errors.join('\n')}`);
+  return value as readonly BoundaryInputResolutionV4[];
+}
+
 /** Version-aware entry points for consumers that receive a serialized overlay. */
 export function getBoundaryInputResolutionVersionedValidationErrors(
   value: unknown,
   path = 'boundaryInputResolution',
   auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
 ): readonly string[] {
+  if (isRecord(value) && value.contractVersion === BOUNDARY_INPUT_RESOLUTION_V4_CONTRACT_VERSION) {
+    return getBoundaryInputResolutionV4ValidationErrors(value, path, auditRegistry);
+  }
   if (isRecord(value) && value.contractVersion === BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION) {
     return getBoundaryInputResolutionV3ValidationErrors(value, path, auditRegistry);
   }
@@ -410,6 +486,9 @@ export function getBoundaryInputResolutionVersionedRegistryValidationErrors(
   }
   const versions = new Set(value.map((item) => (isRecord(item) ? item.contractVersion : undefined)));
   if (versions.size !== 1) return ['boundaryInputResolutions must contain exactly one contract version'];
+  if (versions.has(BOUNDARY_INPUT_RESOLUTION_V4_CONTRACT_VERSION)) {
+    return getBoundaryInputResolutionV4RegistryValidationErrors(value, auditRegistry);
+  }
   if (versions.has(BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION)) {
     return getBoundaryInputResolutionV3RegistryValidationErrors(value, auditRegistry);
   }
@@ -505,6 +584,34 @@ export const P5_A4B_INPUT_RESOLUTION_V3_CASES: readonly BoundaryInputResolutionV
   },
 ] as const;
 
+export const P5_A4B_INPUT_RESOLUTION_V4_CASES: readonly BoundaryInputResolutionV4[] = [
+  ...P5_A4B_INPUT_RESOLUTION_V3_CASES.map((resolution): BoundaryInputResolutionV4 => ({
+    ...resolution,
+    contractVersion: BOUNDARY_INPUT_RESOLUTION_V4_CONTRACT_VERSION,
+  })),
+  {
+    contractVersion: BOUNDARY_INPUT_RESOLUTION_V4_CONTRACT_VERSION,
+    resolutionId: 'p5-a4b-resolve-ziwei-lunar-input',
+    auditCaseId: 'p5-a4a-ziwei-lunar-input',
+    status: 'resolved',
+    targetBatch: 'P5-A4b',
+    summary: '紫微农历路径在进入 iztro 前按固定 lunar-javascript 日历数据校验日期格式、月份和当月实际日数。',
+    testRefs: ['tests/p5-ziwei-lunar-input.regression.mjs#ziwei-lunar-input'],
+    notes: '只关闭紫微农历日期输入合法性 gap；日历库边界是工程输入契约，不宣称独立历法或紫微专业真值。',
+  },
+  {
+    contractVersion: BOUNDARY_INPUT_RESOLUTION_V4_CONTRACT_VERSION,
+    resolutionId: 'p5-a4b-resolve-ziwei-leap-month',
+    auditCaseId: 'p5-a4a-ziwei-leap-month',
+    status: 'resolved',
+    targetBatch: 'P5-A4b',
+    summary: '紫微农历闰月路径在进入 iztro 前按 lunar-javascript 年历核对闰月存在性，并拒绝不存在的闰月组合。',
+    testRefs: ['tests/p5-ziwei-lunar-input.regression.mjs#ziwei-leap-month'],
+    notes: '闰月只作为输入事实传递给既有 iztro 排盘；不复用未声明的四柱流派规则，也不改变排盘算法。',
+  },
+] as const;
+
 validateBoundaryInputResolutionRegistry(P5_A4B_INPUT_RESOLUTION_CASES);
 validateBoundaryInputResolutionV2Registry(P5_A4B_INPUT_RESOLUTION_V2_CASES);
 validateBoundaryInputResolutionV3Registry(P5_A4B_INPUT_RESOLUTION_V3_CASES);
+validateBoundaryInputResolutionV4Registry(P5_A4B_INPUT_RESOLUTION_V4_CASES);
