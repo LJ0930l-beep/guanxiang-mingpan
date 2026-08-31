@@ -6,6 +6,7 @@ declare module 'circular-natal-horoscope-js/dist/index.js' {
       date: number;
       hour: number;
       minute: number;
+      second?: number;
       latitude: number;
       longitude: number;
     });

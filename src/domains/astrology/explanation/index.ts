@@ -2,6 +2,7 @@ import { createExplanationSnapshot } from '@/domains/explanation/snapshot';
 import { GLOSSARY_VERSION, type ExplanationBlock, type ExplanationConfidence, type ExplanationSnapshot } from '@/domains/explanation/types';
 import type { AstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
 import type { NormalizedAstrologyChart } from '@/domains/astrology/model/normalized-chart';
+import type { AstrologyCalculationPolicy } from '@/domains/astrology/policy';
 
 export const ASTROLOGY_EXPLANATION_VERSION = 'astrology-explanation-v1' as const;
 
@@ -54,10 +55,22 @@ function makeBlock(
   };
 }
 
-export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }: { chart: NormalizedAstrologyChart; evidenceGraph: AstrologyEvidenceGraph; generatedAt: string }): ExplanationSnapshot {
+export function buildAstrologyExplanation({
+  chart,
+  evidenceGraph,
+  generatedAt,
+  astrologyPolicy,
+}: {
+  chart: NormalizedAstrologyChart;
+  evidenceGraph: AstrologyEvidenceGraph;
+  generatedAt: string;
+  astrologyPolicy?: AstrologyCalculationPolicy;
+}): ExplanationSnapshot {
   const sun = point(chart, 'sun');
   const moon = point(chart, 'moon');
   const mode = chart.calculationMode;
+  const dateLevelApproximate = astrologyPolicy?.precision === 'date-level-approximate';
+  const moonDescription = moon?.sign ?? (dateLevelApproximate ? '日期内可能跨星座，未显示' : '未返回');
   const precision = nodes(evidenceGraph, 'precision.caveat');
   const bodyPlacements = nodes(evidenceGraph, 'point.placement');
   const anglePositions = nodes(evidenceGraph, 'angle.position');
@@ -68,7 +81,7 @@ export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }:
     makeBlock(
       'overview',
       '先看三层坐标',
-      `本盘为${mode === 'exact' ? '精确' : '近似'}模式，先看太阳${sun?.sign ?? '未返回'}与月亮${moon?.sign ?? '未返回'}。`,
+      `本盘为${mode === 'exact' ? '精确' : '近似'}模式，先看太阳${sun?.sign ?? '未返回'}与月亮${moonDescription}。`,
       [
         `标准化模型保存了${chart.points.length}个天体/角点与${chart.aspects.length}组主要相位。`,
         '这意味着什么：先区分落座、角点和相位三类证据，再决定是否展开宫位字段。',
@@ -80,10 +93,16 @@ export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }:
     makeBlock(
       'core-triad',
       '太阳与月亮',
-      `太阳落${sun?.sign ?? '未返回'}，月亮落${moon?.sign ?? '未返回'}，只先描述两条落座事实。`,
+      dateLevelApproximate
+        ? `太阳落${sun?.sign ?? '日期内跨星座，未显示'}，月亮${moonDescription}，只描述经过全天稳定性检查的日期级事实。`
+        : `太阳落${sun?.sign ?? '未返回'}，月亮${moon?.sign ?? '未返回'}，只先描述两条落座事实。`,
       [
-        '太阳与月亮是本命盘中的核心天体字段，解释层直接引用落座和经度节点。',
-        '这意味着什么：它们可以帮助你理解盘面的两条观察坐标，但不替代完整相位与宫位核对。',
+        dateLevelApproximate
+          ? '太阳与月亮的日期级字段只在当天首尾星座一致时保留，锚点度数仍是近似值。'
+          : '太阳与月亮是本命盘中的核心天体字段，解释层直接引用落座和经度节点。',
+        dateLevelApproximate
+          ? '这意味着什么：未显示的快速天体不能按全天稳定落座解读，也不能替代完整时刻星盘。'
+          : '这意味着什么：它们可以帮助你理解盘面的两条观察坐标，但不替代完整相位与宫位核对。',
       ],
       refsFor(evidenceGraph, bodyPlacements.filter((id) => id.includes(':sun') || id.includes(':moon'))),
       ['glossary:astrology:sun', 'glossary:astrology:moon'],
@@ -91,10 +110,14 @@ export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }:
     makeBlock(
       'angles',
       mode === 'exact' ? '角点位置' : '角点数据边界',
-      mode === 'exact' ? `上升与天顶已作为角点保存，可展开查看落座和经度。` : '未匹配城市坐标，不计算上升、天顶与宫位。',
+      mode === 'exact' ? `上升与天顶已作为角点保存，可展开查看落座和经度。` : dateLevelApproximate
+        ? '出生时辰未知，采用 Asia/Shanghai 当地正午 12:00:00 锚点，但不计算上升、天顶与宫位。'
+        : '未匹配城市坐标，不计算上升、天顶与宫位。',
       mode === 'exact'
         ? ['上升和天顶属于角点证据，和行星落座分开保存。', '这意味着什么：角点可以作为盘面入口，但仍需和其他结构一起复盘。']
-        : ['当前只保留不依赖坐标的天体落座字段。', '这意味着什么：补充可识别城市后才能重新计算角点与宫位。'],
+        : [dateLevelApproximate ? '当前只保留经过全天星座稳定性检查的日期级天体落座字段。' : '当前只保留不依赖坐标的天体落座字段。', dateLevelApproximate
+          ? '这意味着什么：补充准确出生时辰后才能重新计算角点与宫位。'
+          : '这意味着什么：补充可识别城市后才能重新计算角点与宫位。'],
       refsFor(evidenceGraph, [...anglePositions, ...precision]),
       ['glossary:astrology:ascendant', 'glossary:astrology:precision'],
       mode === 'exact' ? 'medium' : 'low',
@@ -106,7 +129,9 @@ export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }:
       mode === 'exact' ? `已记录${housePlacements.length}条宫位落点，可逐条回看和核对。` : '近似盘没有宫位字段，不进行宫位解释。',
       mode === 'exact'
         ? ['宫位节点保留天体与宫号的关系，和落座节点分开。', '这意味着什么：宫位解释必须以已记录的宫号为准，不用页面猜测补齐。']
-        : ['未知坐标时不会把天体随意分配到十二宫。', '这意味着什么：当前结果可用于落座复盘，不能替代完整星盘。'],
+        : [dateLevelApproximate ? '出生时辰未知时不会把天体随意分配到十二宫。' : '未知坐标时不会把天体随意分配到十二宫。', dateLevelApproximate
+          ? '这意味着什么：当前结果可用于日期级落座复盘，不能替代完整时刻星盘。'
+          : '这意味着什么：当前结果可用于落座复盘，不能替代完整星盘。'],
       refsFor(evidenceGraph, [...housePlacements, ...precision]),
       ['glossary:astrology:house', 'glossary:astrology:precision'],
       mode === 'exact' ? 'medium' : 'low',
@@ -115,10 +140,10 @@ export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }:
     makeBlock(
       'aspects',
       '主要相位',
-      `当前记录${aspects.length}组主要相位，优先显示容许度较小的结构。`,
+      dateLevelApproximate ? '日级近似不保留时间敏感的主要相位。' : `当前记录${aspects.length}组主要相位，优先显示容许度较小的结构。`,
       [
-        '相位节点保存参与天体、相位类型和容许度，便于从结构回到原始盘面。',
-        '这意味着什么：容许度只是结构的接近程度，不是现实事件强度或发生保证。',
+        dateLevelApproximate ? '未知出生时辰时，无法诚实地把锚点相位当作全天稳定结构。' : '相位节点保存参与天体、相位类型和容许度，便于从结构回到原始盘面。',
+        dateLevelApproximate ? '这意味着什么：补充准确时辰后才能重新计算相位结构。' : '这意味着什么：容许度只是结构的接近程度，不是现实事件强度或发生保证。',
       ],
       refsFor(evidenceGraph, aspects),
       ['glossary:astrology:aspect', 'glossary:astrology:orb'],
@@ -129,7 +154,9 @@ export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }:
       retrogrades.length ? `盘面记录了${retrogrades.length}个逆行字段，可回到对应天体核对。` : '当前盘面没有标记逆行字段。',
       [
         retrogrades.length ? '逆行节点只表示引擎返回的布尔字段，不扩写成性格或事件结论。' : '没有逆行节点时，解释层不会根据星体名称推测逆行。',
-        '这意味着什么：逆行字段需要和落座、宫位及相位一起阅读。',
+        dateLevelApproximate
+          ? '这意味着什么：日级近似只保留已通过全天稳定性检查的字段，不能替代完整时刻星盘。'
+          : '这意味着什么：逆行字段需要和落座、宫位及相位一起阅读。',
       ],
       refsFor(evidenceGraph, [...retrogrades, ...bodyPlacements]),
       ['glossary:astrology:retrograde', 'glossary:astrology:precision'],
@@ -138,10 +165,16 @@ export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }:
     makeBlock(
       'precision',
       '精度与边界',
-      mode === 'exact' ? '城市坐标已匹配，本盘可展开角点与宫位字段。' : '城市坐标未匹配，本盘明确标记为近似模式。',
+      mode === 'exact' ? '城市坐标已匹配，本盘可展开角点与宫位字段。' : dateLevelApproximate
+        ? '出生时辰未知，本盘明确标记为日级近似模式。'
+        : '城市坐标未匹配，本盘明确标记为近似模式。',
       [
-        mode === 'exact' ? '精确模式保留城市坐标来源和完整角点/宫位证据。' : '近似模式保留天体落座和相位，但不猜测角点、天顶或宫位。',
-        '这意味着什么：补充或修正城市后，应重新生成并保存一份新的解释快照。',
+        mode === 'exact' ? '精确模式保留城市坐标来源和完整角点/宫位证据。' : dateLevelApproximate
+          ? '日级近似采用固定正午锚点，并以日首/日末星座比较来筛除不稳定天体。'
+          : '近似模式保留天体落座和相位，但不猜测角点、天顶或宫位。',
+        dateLevelApproximate
+          ? '这意味着什么：补充准确时辰后，应重新生成并保存一份新的解释快照。'
+          : '这意味着什么：补充或修正城市后，应重新生成并保存一份新的解释快照。',
       ],
       refsFor(evidenceGraph, precision),
       ['glossary:astrology:precision'],
@@ -151,7 +184,7 @@ export function buildAstrologyExplanation({ chart, evidenceGraph, generatedAt }:
     makeBlock(
       'summary',
       '本盘小结',
-      `先核对太阳、月亮与精度模式，再按相位和${mode === 'exact' ? '宫位' : '落座'}继续复盘。`,
+      `先核对太阳、月亮与精度模式，再按${dateLevelApproximate ? '日期级落座' : `相位和${mode === 'exact' ? '宫位' : '落座'}`}继续复盘。`,
       [
         '解释层只汇总当前版本明确返回的事实，不代替用户对现实情况的判断。',
         '这意味着什么：保存后可对比未来解释版本、证据节点和精度边界是否变化。',

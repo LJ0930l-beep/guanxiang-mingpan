@@ -17,6 +17,7 @@ import { TRUE_SOLAR_DATA_URL } from '@/domains/bazi/true-solar-time';
 import type { BirthProfile, DivinationModule, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import { migrateExplanationSnapshot } from '@/domains/explanation/snapshot';
 import { isPublicBirthDateRangePolicy } from '@/domains/policy/public-birth-date-range';
+import { isAstrologyCalculationPolicy } from '@/domains/astrology/policy';
 
 export const STORAGE_SCHEMA_VERSION = 3 as const;
 
@@ -216,14 +217,21 @@ function migrateCalculationSettings(value: unknown, module?: DivinationModule): 
     ...(isPublicBirthDateRangePolicy(raw.birthDateRangePolicy)
       ? { birthDateRangePolicy: raw.birthDateRangePolicy }
       : {}),
+    // Do not invent an Astrology policy for old records; preserve it only
+    // when the serialized snapshot explicitly contains a valid contract.
+    ...(module === 'astrology' && isAstrologyCalculationPolicy(raw.astrologyPolicy)
+      ? { astrologyPolicy: raw.astrologyPolicy }
+      : {}),
   };
 }
 
 function migrateInputSnapshot(value: unknown): ChartInputSnapshot | null {
   if (!isInputSnapshot(value)) return null;
+  const { astrologyPolicy, ...snapshot } = value as ChartInputSnapshot & { astrologyPolicy?: unknown };
   return {
-    ...value,
+    ...snapshot,
     timezone: DEFAULT_CALCULATION_TIMEZONE,
+    ...(isAstrologyCalculationPolicy(astrologyPolicy) ? { astrologyPolicy } : {}),
   } as unknown as ChartInputSnapshot;
 }
 

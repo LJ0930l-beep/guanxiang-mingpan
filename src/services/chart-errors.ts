@@ -26,6 +26,7 @@ export const CHART_INPUT_ERROR_CODES = [
   'INVALID_LUNAR_DATE',
   'INVALID_LUNAR_LEAP_MONTH',
   'INVALID_BIRTH_COORDINATES',
+  'MISSING_BIRTH_COORDINATES',
   'INVALID_LIUYAO_DATE',
   'INVALID_LIUYAO_SEED',
 ] as const;
@@ -38,6 +39,7 @@ export const CHART_INPUT_ERROR_MESSAGES: Record<ChartInputErrorCode, string> = {
   INVALID_LUNAR_DATE: '农历日期无效，请使用 YYYY-MM-DD 格式并填写该月真实日期。',
   INVALID_LUNAR_LEAP_MONTH: '农历闰月无效，该年份不存在所选月份的闰月。',
   INVALID_BIRTH_COORDINATES: '出生坐标无效，请提供成对且在有效范围内的纬度和经度。',
+  MISSING_BIRTH_COORDINATES: '无法识别出生城市，请补充城市或成对的纬度和经度。',
   INVALID_LIUYAO_DATE: '六爻日期无效，请使用有效的本地时间或带时区 ISO 时间。',
   INVALID_LIUYAO_SEED: '六爻 seed 无效，请提供 1 至 256 个字符的非空字符串。',
 };

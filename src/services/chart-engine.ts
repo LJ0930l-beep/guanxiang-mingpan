@@ -25,6 +25,23 @@ export {
   normalizeLiuyaoSeed,
 } from '@/services/chart-engine-shared';
 export {
+  ASTROLOGY_CALCULATION_POLICY_VERSION,
+  ASTROLOGY_DATE_LEVEL_APPROXIMATION_ANCHOR,
+  ASTROLOGY_DATE_LEVEL_APPROXIMATION_POLICY,
+  ASTROLOGY_DATE_LEVEL_APPROXIMATION_POLICY_VERSION,
+  ASTROLOGY_DATE_LEVEL_APPROXIMATION_RULE_VERSION,
+  ASTROLOGY_LOCATION_POLICY_VERSION,
+  ASTROLOGY_PRECISION_POLICY_VERSION,
+  createAstrologyCalculationPolicy,
+  isAstrologyCalculationPolicy,
+} from '@/domains/astrology/policy';
+export type {
+  AstrologyCalculationPolicy,
+  AstrologyDateLevelApproximationPolicy,
+  AstrologyLocationSource,
+  AstrologyPrecision,
+} from '@/domains/astrology/policy';
+export {
   CHART_INPUT_ERROR_CATEGORY,
   CHART_INPUT_ERROR_CODES,
   CHART_INPUT_ERROR_MESSAGES,

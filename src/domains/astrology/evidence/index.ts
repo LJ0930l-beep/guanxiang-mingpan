@@ -1,12 +1,14 @@
 import type { NormalizedAstrologyChart } from '@/domains/astrology/model/normalized-chart';
 import { ASTROLOGY_EVIDENCE_RULE_VERSION, type AstrologyEvidenceGraph, type AstrologyEvidenceNode } from '@/domains/astrology/evidence/evidence-types';
+import type { AstrologyCalculationPolicy } from '@/domains/astrology/policy';
 
 export type { AstrologyEvidenceGraph, AstrologyEvidenceNode } from '@/domains/astrology/evidence/evidence-types';
 
 export function buildAstrologyEvidenceGraph(
   chart: NormalizedAstrologyChart,
-  source: { engineVersion: string },
+  source: { engineVersion: string; astrologyPolicy?: AstrologyCalculationPolicy },
 ): AstrologyEvidenceGraph {
+  const astrologyPolicy = source.astrologyPolicy;
   const pointNodes: AstrologyEvidenceNode[] = chart.points.map((point) => ({
     id: `${point.id}:placement`,
     type: point.kind === 'angle' ? 'angle.position' : 'point.placement',
@@ -61,8 +63,16 @@ export function buildAstrologyEvidenceGraph(
     id: 'astrology:precision:mode',
     type: 'precision.caveat',
     subjectRefs: [],
-    label: chart.calculationMode === 'exact' ? '出生城市坐标已匹配' : '出生城市坐标未匹配，当前为近似盘',
-    facts: { calculationMode: chart.calculationMode, housesAvailable: chart.calculationMode === 'exact', anglesAvailable: chart.calculationMode === 'exact' },
+    label: chart.calculationMode === 'exact' ? '出生城市坐标已匹配' : astrologyPolicy?.precision === 'date-level-approximate'
+      ? '出生时辰未知，当前为日级近似盘'
+      : '出生城市坐标未匹配，当前为近似盘',
+    facts: {
+      calculationMode: chart.calculationMode,
+      precision: astrologyPolicy?.precision ?? (chart.calculationMode === 'exact' ? 'exact' : 'approximate'),
+      housesAvailable: chart.calculationMode === 'exact',
+      anglesAvailable: chart.calculationMode === 'exact',
+      ...(astrologyPolicy ? { astrologyPolicy } : {}),
+    },
     weight: 'major',
     ruleVersion: ASTROLOGY_EVIDENCE_RULE_VERSION,
     source: 'derived-rule',

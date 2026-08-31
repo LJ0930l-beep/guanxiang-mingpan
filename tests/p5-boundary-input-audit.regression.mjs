@@ -19,6 +19,7 @@ import {
   calculateAstrologyView,
   calculateBaziView,
   calculateLiuyaoView,
+  getChartInputErrorContract,
 } from '../src/services/chart-engine.ts';
 
 const projectRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -151,26 +152,25 @@ test('P5-A4a 审计矩阵统计锁定真实现状，不把项目回归冒充独�
   assert.equal(P5_BOUNDARY_INPUT_AUDIT_CASES.some((item) => item.id === 'p5-a4a-ziwei-solar-input' && item.status === 'covered'), true);
 });
 
-test('P5-A4a 占星未知城市保留近似标识，但当前 0,0 fallback 会改变行星位置', () => {
+test('P5-A4a 占星未知城市保留原始 0,0 probe 证据，但新安全层 fail-fast', () => {
   const exact = calculateAstrologyView(fixtureProfile, { generatedAt });
-  const unknown = calculateAstrologyView({
+  assert.equal(exact.calculationMode, 'exact');
+  assert.throws(() => calculateAstrologyView({
     ...fixtureProfile,
     id: 'p5-a4a-unknown-city',
     birthCity: '福建省泉州市',
     latitude: undefined,
     longitude: undefined,
-  }, { generatedAt });
-  const exactSun = exact.factors.find((factor) => factor.key === 'sun');
-  const unknownSun = unknown.factors.find((factor) => factor.key === 'sun');
-  const exactMoon = exact.factors.find((factor) => factor.key === 'moon');
-  const unknownMoon = unknown.factors.find((factor) => factor.key === 'moon');
-  assert.equal(exact.calculationMode, 'exact');
-  assert.equal(unknown.calculationMode, 'approximate');
-  assert.equal(unknown.ascendant, undefined);
-  assert.equal(unknown.midheaven, undefined);
-  assert.equal(unknown.factors.some((factor) => factor.house !== undefined), false);
-  assert.notEqual(unknownSun?.longitude, exactSun?.longitude);
-  assert.notEqual(unknownMoon?.longitude, exactMoon?.longitude);
+  }, { generatedAt }), (error) => {
+    assert.deepEqual(getChartInputErrorContract(error), {
+      name: 'ChartInputError',
+      category: 'input-validation',
+      code: 'MISSING_BIRTH_COORDINATES',
+      field: 'birthCity',
+      message: '无法识别出生城市，请补充城市或成对的纬度和经度。',
+    });
+    return true;
+  });
 });
 
 test('P5-A4a 审计 snapshot 不变，三项安全输入关闭由 A4b overlay 单独声明', () => {

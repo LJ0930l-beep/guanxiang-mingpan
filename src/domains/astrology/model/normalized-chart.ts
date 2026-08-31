@@ -79,8 +79,12 @@ export function normalizeAstrologyChart(
     kind: factor.key === 'ascendant' || factor.key === 'midheaven' ? 'angle' as const : 'body' as const,
     sign: factor.sign,
     longitude: factor.longitude,
-    house: factor.house,
-    retrograde: factor.retrograde,
+    ...(input.calculationMode === 'exact'
+      ? { house: factor.house, retrograde: factor.retrograde }
+      : {
+          ...(factor.house !== undefined ? { house: factor.house } : {}),
+          ...(factor.retrograde !== undefined ? { retrograde: factor.retrograde } : {}),
+        }),
   }));
   const aspects = input.aspects.map((aspect, sourceIndex) => {
     const fromRefId = resolvePointId(points, aspect.from);

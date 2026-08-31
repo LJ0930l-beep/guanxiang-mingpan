@@ -21,7 +21,12 @@ const exact = {
   updatedAt: '2026-08-15T00:00:00.000Z',
 };
 
-const approximate = { ...exact, id: 'p4-e-approx', birthCity: '未知城市', latitude: undefined, longitude: undefined };
+const approximate = {
+  ...exact,
+  id: 'p4-e-approx',
+  birthTime: undefined,
+  timeKnown: false,
+};
 
 test('P4-E 精确星盘生成标准化点位、证据和解释', () => {
   const result = calculateAstrologyView(exact, { generatedAt: '2026-08-15T00:00:00.000Z' });
@@ -47,6 +52,8 @@ test('P4-E 精确星盘生成标准化点位、证据和解释', () => {
 test('P4-E 近似星盘明确隐藏角点与宫位解释', () => {
   const result = calculateAstrologyView(approximate, { generatedAt: '2026-08-15T00:00:00.000Z' });
   assert.equal(result.calculationMode, 'approximate');
+  assert.equal(result.precision, 'date-level-approximate');
+  assert.equal(result.completeness, 'partial');
   assert.equal(result.ascendant, undefined);
   assert.equal(result.midheaven, undefined);
   assert.equal(result.normalizedChart.points.some((point) => point.kind === 'angle'), false);

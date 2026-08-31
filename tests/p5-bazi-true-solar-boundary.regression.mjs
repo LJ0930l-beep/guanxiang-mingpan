@@ -18,7 +18,7 @@ import {
   validateBoundaryInputResolutionVersioned,
   validateBoundaryInputResolutionVersionedRegistry,
 } from '../src/domains/golden/index.ts';
-import { calculateAstrologyView } from '../src/services/chart-engine.ts';
+import { calculateAstrologyView, getChartInputErrorContract } from '../src/services/chart-engine.ts';
 
 const projectRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 const generatedAt = '2026-08-15T00:00:00.000Z';
@@ -291,7 +291,7 @@ test('P5-A4b3 锁定 A4a 统计与 astrology unknown-city 0,0 probe 不变', () 
     latitude: 22.5431,
     longitude: 114.0579,
   }, { generatedAt });
-  const unknown = calculateAstrologyView({
+  assert.throws(() => calculateAstrologyView({
     ...baseProfile,
     id: 'p5-a4b3-unknown-city',
     birthCity: '福建省泉州市',
@@ -299,16 +299,15 @@ test('P5-A4b3 锁定 A4a 统计与 astrology unknown-city 0,0 probe 不变', () 
     birthTime: '20:30',
     latitude: undefined,
     longitude: undefined,
-  }, { generatedAt });
-  const exactSun = exact.factors.find((factor) => factor.key === 'sun');
-  const unknownSun = unknown.factors.find((factor) => factor.key === 'sun');
-  const exactMoon = exact.factors.find((factor) => factor.key === 'moon');
-  const unknownMoon = unknown.factors.find((factor) => factor.key === 'moon');
+  }, { generatedAt }), (error) => {
+    assert.deepEqual(getChartInputErrorContract(error), {
+      name: 'ChartInputError',
+      category: 'input-validation',
+      code: 'MISSING_BIRTH_COORDINATES',
+      field: 'birthCity',
+      message: '无法识别出生城市，请补充城市或成对的纬度和经度。',
+    });
+    return true;
+  });
   assert.equal(exact.calculationMode, 'exact');
-  assert.equal(unknown.calculationMode, 'approximate');
-  assert.equal(unknown.ascendant, undefined);
-  assert.equal(unknown.midheaven, undefined);
-  assert.equal(unknown.factors.some((factor) => factor.house !== undefined), false);
-  assert.notEqual(unknownSun?.longitude, exactSun?.longitude);
-  assert.notEqual(unknownMoon?.longitude, exactMoon?.longitude);
 });

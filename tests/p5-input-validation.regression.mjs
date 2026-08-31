@@ -56,7 +56,9 @@ function expectChartInputError(run, code, field) {
     field,
     message: code === 'INVALID_GREGORIAN_DATE'
       ? '公历日期无效，请使用 YYYY-MM-DD 格式并填写真实日期。'
-      : '出生坐标无效，请提供成对且在有效范围内的纬度和经度。',
+      : code === 'MISSING_BIRTH_COORDINATES'
+        ? '无法识别出生城市，请补充城市或成对的纬度和经度。'
+        : '出生坐标无效，请提供成对且在有效范围内的纬度和经度。',
   });
   return contract;
 }
@@ -202,7 +204,7 @@ test('P5-A4b 显式坐标在 Origin 前拒绝缺失、非有限、越界和非�
   }
 });
 
-test('P5-A4b 合法显式坐标和既有 resolver 命中不回归，两项坐标缺失仍保留 A4a 0,0 gap', () => {
+test('P5-A4b 合法显式坐标和既有 resolver 命中不回归，未知地点 fail-fast', () => {
   const exact = calculateAstrologyView(fixtureProfile, options);
   assert.equal(exact.calculationMode, 'exact');
   for (const latitude of [-90, 90]) {
@@ -210,11 +212,13 @@ test('P5-A4b 合法显式坐标和既有 resolver 命中不回归，两项坐标
       assert.doesNotThrow(() => calculateAstrologyView({ ...fixtureProfile, latitude, longitude }, options));
     }
   }
-  assert.doesNotThrow(() => calculateAstrologyView({
+  const resolvedFromCity = calculateAstrologyView({
     ...fixtureProfile,
     latitude: undefined,
     longitude: undefined,
-  }, options));
+  }, options);
+  assert.equal(resolvedFromCity.calculationMode, 'exact');
+  assert.equal(resolvedFromCity.calculationSettings.astrologyPolicy.locationSource, 'city-dataset');
   const knownCity = calculateAstrologyView({
     ...fixtureProfile,
     latitude: undefined,
@@ -222,15 +226,17 @@ test('P5-A4b 合法显式坐标和既有 resolver 命中不回归，两项坐标
     birthCity: '广东省深圳市',
   }, options);
   assert.equal(knownCity.calculationMode, 'exact');
-  const unknownCity = calculateAstrologyView({
+  const unknownCity = {
     ...fixtureProfile,
     latitude: undefined,
     longitude: undefined,
     birthCity: '福建省泉州市',
-  }, options);
-  assert.equal(unknownCity.calculationMode, 'approximate');
-  assert.equal(unknownCity.ascendant, undefined);
-  assert.equal(unknownCity.midheaven, undefined);
+  };
+  expectChartInputError(
+    () => calculateAstrologyView(unknownCity, options),
+    'MISSING_BIRTH_COORDINATES',
+    'birthCity',
+  );
 });
 
 test('P5-A4b Ziwei lunar 路径不被 Gregorian validator 误拦', () => {

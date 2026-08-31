@@ -197,6 +197,7 @@ export function birthInputSnapshot(
   if (profile.latitude !== undefined) snapshot.latitude = profile.latitude;
   if (profile.longitude !== undefined) snapshot.longitude = profile.longitude;
   if (settings.birthDateRangePolicy) snapshot.birthDateRangePolicy = settings.birthDateRangePolicy;
+  if (settings.astrologyPolicy) snapshot.astrologyPolicy = settings.astrologyPolicy;
   return snapshot;
 }
 

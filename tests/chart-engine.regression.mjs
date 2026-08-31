@@ -9,6 +9,7 @@ import {
   calculateBaziView,
   calculateLiuyaoView,
   calculateZiweiView,
+  getChartInputErrorContract,
   PUBLIC_BIRTH_DATE_RANGE_POLICY,
 } from '../src/services/chart-engine.ts';
 import { resolveCityCoordinates } from '../src/data/china-cities.ts';
@@ -127,6 +128,13 @@ test('西方星盘固定样例保持精确模式、角点和标准十星', () =>
   assert.deepEqual(result.calculationSettings, {
     timezone: 'Asia/Shanghai',
     birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
+    astrologyPolicy: {
+      version: 'astrology-calculation-policy.v1',
+      precision: 'exact',
+      precisionPolicyVersion: 'astrology-precision-policy.v1',
+      locationSource: 'explicit-coordinates',
+      locationPolicyVersion: 'astrology-location-policy.v1',
+    },
   });
   assert.equal(result.calculationMode, 'exact');
   assert.equal(result.sunSign, '处女座');
@@ -233,15 +241,24 @@ test('输入边界不会把缺失时辰或未知城市伪装成精确结果', ()
   const missingTime = { ...fixtureProfile, birthTime: undefined, timeKnown: false };
   assert.throws(() => calculateBaziView(missingTime), /需要准确出生时辰/);
   assert.throws(() => calculateZiweiView(missingTime), /需要准确出生时辰/);
-  assert.throws(() => calculateAstrologyView(missingTime), /需要准确出生时辰/);
+  const approximate = calculateAstrologyView(missingTime, fixedCalculation);
+  assert.equal(approximate.calculationMode, 'approximate');
+  assert.equal(approximate.precision, 'date-level-approximate');
+  assert.equal(approximate.completeness, 'partial');
+  assert.equal(approximate.ascendant, undefined);
+  assert.equal(approximate.midheaven, undefined);
 
   const unknownCity = { ...fixtureProfile, birthCity: '福建省泉州市', latitude: undefined, longitude: undefined };
-  const result = calculateAstrologyView(unknownCity, fixedCalculation);
-  assert.equal(result.calculationMode, 'approximate');
-  assert.equal(result.ascendant, undefined);
-  assert.equal(result.midheaven, undefined);
-  assert.equal(result.factors.some((factor) => factor.key === 'ascendant' || factor.key === 'midheaven'), false);
-  assert.equal(result.factors.some((factor) => factor.house !== undefined), false);
+  assert.throws(() => calculateAstrologyView(unknownCity, fixedCalculation), (error) => {
+    assert.deepEqual(getChartInputErrorContract(error), {
+      name: 'ChartInputError',
+      category: 'input-validation',
+      code: 'MISSING_BIRTH_COORDINATES',
+      field: 'birthCity',
+      message: '无法识别出生城市，请补充城市或成对的纬度和经度。',
+    });
+    return true;
+  });
 });
 
 test('城市坐标只接受版本化表内精确匹配，不按包含关系猜测', () => {

@@ -8,6 +8,7 @@ import type { NormalizedZiweiChart } from '@/domains/ziwei/model/normalized-char
 import type { ZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 import type { NormalizedAstrologyChart } from '@/domains/astrology/model/normalized-chart';
 import type { AstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
+import type { AstrologyCalculationPolicy, AstrologyPrecision } from '@/domains/astrology/policy';
 import type { NormalizedLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 import type { PublicBirthDateRangePolicy } from '@/domains/policy/public-birth-date-range';
 import type { LiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
@@ -25,6 +26,8 @@ export interface CalculationSettings {
    * legacy/Liuyao snapshots without a birth date policy remain readable.
    */
   birthDateRangePolicy?: PublicBirthDateRangePolicy;
+  /** Versioned Astrology precision and location policy; absent on legacy records. */
+  astrologyPolicy?: AstrologyCalculationPolicy;
 }
 
 export interface BirthInputSnapshot {
@@ -44,6 +47,8 @@ export interface BirthInputSnapshot {
   longitude?: number;
   /** The same policy is copied into the input snapshot for replay/export. */
   birthDateRangePolicy?: PublicBirthDateRangePolicy;
+  /** Versioned Astrology precision and location policy; absent on legacy records. */
+  astrologyPolicy?: AstrologyCalculationPolicy;
 }
 
 export interface LiuyaoInputSnapshot {
@@ -184,6 +189,8 @@ export interface AstrologyAspectView {
 export interface AstrologyChartView extends ChartMeta {
   module: 'astrology';
   calculationMode: 'exact' | 'approximate';
+  /** Additive precision label; legacy snapshots may not contain it. */
+  precision?: AstrologyPrecision;
   sunSign: string;
   moonSign?: string;
   ascendant?: string;
