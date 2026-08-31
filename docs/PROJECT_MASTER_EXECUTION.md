@@ -2,8 +2,8 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-A5a 统一公开出生日期政策
-> 本批状态：P5-A5a 已由 Sol High 独立验收 PASS；P5-A4b5/P5-A4b4/P5-A4b3/P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次
+> 批次：P5-A5b Astrology 日级近似与缺坐标 fail-closed
+> 本批状态：P5-A5b 已由 Sol High 独立验收 PASS；P5-A5a/P5-A4b5/P5-A4b4/P5-A4b3/P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -35,7 +35,7 @@
 
 | 检查 | 基线结果 |
 |---|---|
-| `npm test` | 155/155 通过；P5-A5a 专项回归 9/9 通过 |
+| `npm test` | 162/162 通过；P5-A5b 专项回归 7/7 通过 |
 | `npm run typecheck` | 通过 |
 | `npm run lint` | 通过（0 warning） |
 | `npm run build:web` | 通过；8 条 Web routes，Web Export 实际执行 |
@@ -44,12 +44,14 @@
 | P5-A5a cleanup 远端 commit | `5350baa9a857b86e2a02c0c42036d72dfe06a0c4`（parent `61805e8998ab4ca701e4960d6129e3b7cb381b17`） |
 | GitHub Actions（cleanup 后最终验证） | `Success`；run `33376590722`，job `99439354459`；Typecheck/Lint/Regression/Web Export 均实际执行 |
 | 生产依赖审计基线 | `npm audit --omit=dev`：0 critical / 8 high / 13 moderate / 0 low；未升级依赖 |
+| P5-A5b 实现本地/远端 commit | local `7f0caef63a0656ff21a571c7edb9cb7db1828d49`；remote `6d00ad4834f012e61a99431d24d2301f766d7d40`（remote parent `44488581f0853a1be7a8366881f42b6a6f65f581`） |
+| GitHub Actions（P5-A5b 最终验证） | `Success`；run `33385531379`，job `99467178839`；Typecheck/Lint/Regression/Web Export 全部实际执行 |
 
 本地和远端 SHA 不同是现有 GitHub 提交帮助脚本映射造成的等价提交，不得用 force push 改写历史。后续发布任何 commit 时必须记录本地 SHA、远端 SHA、CI run 和状态。
 
 ### 2.3 不能从基线推导的结论
 
-- “155/155 通过”不等于实体 iPhone/TestFlight 已签字。
+- “162/162 通过”不等于实体 iPhone/TestFlight 已签字。
 - 本地登录入口不等于真实短信、Apple 或微信账号服务。
 - 加密备份能力不等于 AsyncStorage 本身是加密保险箱。
 - 有 Web 构建不等于已经通过 App Store 发布审查。
@@ -77,7 +79,7 @@
 
 | 批次 | Level | 范围与 DoD | 依赖 | 重大决策门 |
 |---|---|---|---|---|
-| **P5-A 专业质量补强（四术 Golden/边界/输入策略）** | A | 建立四术统一 Golden Case 字段、分类门禁和现状盘点；覆盖边界输入、缺失数据、时区/日期和失败路径，明确独立验证与 regression-only。P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a 已完成独立验收，但 P5-A 仍未完成；不得伪造专业真值，后续新增专业样例必须有来源和验证级别。 | Phase 4 四术模型/证据/解释基线、当前引擎 facade | 哪些样例可称独立验证；输入策略、边界降级和专业结论的对外承诺。 |
+| **P5-A 专业质量补强（四术 Golden/边界/输入策略）** | A | 建立四术统一 Golden Case 字段、分类门禁和现状盘点；覆盖边界输入、缺失数据、时区/日期和失败路径，明确独立验证与 regression-only。P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b 已完成独立验收，但 P5-A 仍未完成；不得伪造专业真值，后续新增专业样例必须有来源和验证级别。 | Phase 4 四术模型/证据/解释基线、当前引擎 facade | 哪些样例可称独立验证；输入策略、边界降级和专业结论的对外承诺。 |
 | **P5-B 城市数据完成** | A | 完成中国大陆地级市离线完整覆盖、逐条来源/许可/别名/坐标审计和版本化离线数据；未知城市继续精确未命中，历史 `locationId`、坐标和数据版本不静默替换。只有相关 dataset 发生兼容性变化时才评估并递增版本。 | P5-A 的统一 Golden/输入门禁、`DATASET_PROVENANCE.md` | 是否承诺全国地级市完整覆盖；城市中心近似坐标的公开精度边界。 |
 | **P5-C UX / 可访问性** | A | 四术工作台、记录、备份、错误和边界提示完成键盘/读屏/字体缩放/减少动态效果/对比度/触控目标验收；每个模块的动效不影响信息和复盘路径。 | Phase 4 解释 UI、P5-A 输入/边界清单 | 无障碍目标等级、低动态模式和视觉母题的最终取舍。 |
 | **P5-D 性能与稳定性** | A | Web/iPhone 冷启动、四术计算、记录加载、备份导入导出、异常恢复和长列表完成基线；建立可重复性能预算、错误日志边界和回滚证据，不把出生资料上传到分析服务。 | P5-A～P5-C | 性能预算、支持设备范围、是否允许本地诊断信息。 |
@@ -426,7 +428,7 @@ npm audit --omit=dev   0 critical / 8 high / 13 moderate / 0 low（21 total；�
 
 GitHub Actions [run 33363580174](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33363580174) 的 validate job `99399593743` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。实现基线 local `f6dad29fc72b1c49e296b5300ae19c5a2cd6a5b3`；remote `98a336b8381016d781abc2b5584cc0777cb8bbd5`；remote parent `c7801ddc28522a7fdcfe0b38931443ba559868c2`。
 
-P5-A4a immutable audit 本体、`41 / 18 / 15 / 5 / 2 / 1` 统计与 Astrology `0,0` probe 原样不动；npm audit 生产基线为 `0 critical / 8 high / 13 moderate / 0 low`。Sol High 已独立验收 **P5-A4b5 PASS**。P5-A5a 已通过独立验收并以单独 owner-decision overlay 关闭三项公开日期范围决策；下一步为 **P5-A5b Astrology 日级近似 + 缺坐标 fail-closed**。历史 DST、未知时辰、Astrology `0,0`/no-guessing 及其他 gap 仍 pending，整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
+P5-A4a immutable audit 本体、`41 / 18 / 15 / 5 / 2 / 1` 统计与 Astrology `0,0` probe 原样不动；npm audit 生产基线为 `0 critical / 8 high / 13 moderate / 0 low`。Sol High 已独立验收 **P5-A4b5 PASS**。P5-A5a 已通过独立验收并以单独 owner-decision overlay 关闭三项公开日期范围决策；以上为 P5-A4b5 当时的历史下一步记录，P5-A5b 已在第 5.12 节收口。历史 DST、城市数据完整覆盖及其他发布门仍 pending，整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
 
 ## 5.11 P5-A5a 统一公开出生日期政策（Sol High 独立验收 PASS）
 
@@ -451,6 +453,33 @@ A4a immutable registry、原始条目与 `41 / 18 / 15 / 5 / 2 / 1` 统计保持
 本地与 CI 质量证据：统一 `npm test` **155/155**，P5-A5a 专项 **9/9**；`npm run typecheck` PASS；`npm run lint` PASS（0 warning）；`npm run build:web` PASS（8 routes，Web Export 实际执行）；`npm audit --omit=dev` 生产基线为 **0 critical / 8 high / 13 moderate / 0 low**，未升级依赖。实现远端 commit `61805e8998ab4ca701e4960d6129e3b7cb381b17`（parent `496902c875072769439c90cf52f130331fa473d3`），CI run `33375970276` / job `99437414040`；该实现提交曾错误新增根目录 `STATUS.md`。随后 cleanup 远端 commit `5350baa9a857b86e2a02c0c42036d72dfe06a0c4`（parent `61805e8998ab4ca701e4960d6129e3b7cb381b17`）只删除该文件；当前仓库无 `STATUS.md`。cleanup 后最终 CI run `33376590722` / job `99439354459` 为 Success，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。
 
 Sol High 独立验收结论：**P5-A5a PASS**。本批只关闭三项公开出生日期 decision-required；P5-A/Phase 5 未完成。下一批为 **P5-A5b Astrology 日级近似 + 缺坐标 fail-closed**；DST 仍 pending，`0,0`/no-guessing、UI/a11y、P5-B/P5-C 及其他发布门不在本批。
+
+## 5.12 P5-A5b Astrology 日级近似与缺坐标 fail-closed（Sol High 独立验收 PASS）
+
+**状态：P5-A5b PASS；P5-A 与 Phase 5 仍未完成。**本批只处理负责人已确认的 Astrology 缺时辰日级近似、地点解析安全边界及对应的历史快照/备份复现语义；不处理 DST、城市数据完整覆盖、Bazi/Ziwei/Liuyao 算法、支付/AI 或 UI redesign。
+
+### 决策、精度与地点政策
+
+- Owner decision overlay 从 P5-A5a `p5-a5a-owner-decision.v1` 累计升级为 `p5-a5a-owner-decision.v2`，保留 v1 三项前缀、导出和 validator，并新增 `p5-a4a-astrology-missing-time`，累计 4 项。该项是唯一新增 owner decision；不把两个原始 gap 冒充负责人决策。
+- A4b input-resolution 以 `p5-a4b-input-resolution.v6` 累计记录 14 项（v1=3、v2=5、v3=6、v4=8、v5=12、v6=14）；v6 是 additive overlay 版本，不新增另一个 A4b 批次编号。它关闭 `p5-a4a-astrology-missing-coordinate` 与 `p5-a4a-cross-no-guessing`。
+- Astrology 精度/定位 contract 版本固定为 `astrology-calculation-policy.v1`、`astrology-precision-policy.v1`、`astrology-location-policy.v1`、`astrology-date-level-approximation.v1` 与 `astrology-date-level-policy.v1`。显式成对坐标优先，城市数据命中次之；空城市、未知城市或无成对坐标不猜测。
+- 未知时辰不调用 `requireExactBirth`，采用 `Asia/Shanghai` 当地 `12:00:00` 正午作为内部锚点，并以 `00:00:00`、`12:00:00`、`23:59:59` 三点的星座结果做日首/日末稳定性筛选。仅保留全天稳定的天体星座和锚点度数；全天可能跨星座的 Moon 等快速因素隐藏，逆行等瞬时字段也隐藏。
+- 日级结果固定为 `calculationMode=approximate`、`precision=date-level-approximate`、`completeness=partial`；不返回/解释 Ascendant、Midheaven、houses、angles 或 aspects。caveats/focus 明示正午锚点、日首/日末检查和度数偏差，不伪装精确盘。
+
+### 错误、快照与兼容性
+
+- 已知时辰加有效显式坐标或可识别城市仍走 exact 路径，显式坐标优先于城市数据；成功盘保持既有结构深度兼容，只增加精度/地点 metadata。
+- 缺失、单边、越界或非有限显式坐标沿稳定坐标错误返回；空城市或未命中城市且没有有效成对坐标统一返回 `ChartInputError`：`code=MISSING_BIRTH_COORDINATES`、`field=birthCity`，安全文案为“无法识别出生城市，请补充城市或成对的纬度和经度。”；Horoscope 不再收到 `0,0`。
+- 新建结果在 `calculationSettings`、`inputSnapshot`、`ChartSnapshotMeta`、`SavedReading` 及普通/加密 backup/replay 中保留 exact/date-level-approximate、锚点/规则版本和 location source/policy。旧快照仍可读取；缺失历史政策不补写、不静默重算。
+- P5-A4a immutable registry、`41 / 18 / 15 / 5 / 2 / 1` 统计及其历史 `0,0` probe/currentBehavior/evidence 文本不改写；上述新行为只由 A4b v6 additive resolution 与 v2 owner overlay 记录。
+
+### 测试、提交与远端证据
+
+实现共 21 个 changed paths（Astrology policy/model/evidence/explanation、engine/facade、storage/types、两个 overlay/index、既有回归和 `tests/p5-astrology-safety.regression.mjs`）；实现 local `7f0caef63a0656ff21a571c7edb9cb7db1828d49`、remote `6d00ad4834f012e61a99431d24d2301f766d7d40`，remote parent `44488581f0853a1be7a8366881f42b6a6f65f581`。
+
+专项回归 **7/7**；统一 `npm test` **162/162**；`npm run typecheck` PASS；`npm run lint` PASS（0 warning）；`npm run build:web` PASS（8 routes，Web Export 实际执行）；`git diff --check` PASS；`npm audit --omit=dev` 生产基线为 **0 critical / 8 high / 13 moderate / 0 low**，未升级依赖。专项覆盖 exact 显式坐标/城市命中、未知时辰近似字段隐藏与 caveats、缺地点/空城市/单边/越界坐标 fail-fast、Horoscope `0,0` seam 证据、旧快照读取、SavedReading/backup/replay roundtrip、TZ UTC/Asia/Shanghai deepEqual、overlay v1/v2/v6 validators 与 exact fixture 兼容。
+
+GitHub Actions run `33385531379` / job `99467178839` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。Sol High 独立验收结论：**P5-A5b PASS**。下一批为 **P5-A5c 中国大陆 1986–1991 历史 DST**；P5-A 与 Phase 5 仍未完成。
 
 ## 6. 统一批次验收模板
 
@@ -493,4 +522,4 @@ Sol High 独立验收结论：**P5-A5a PASS**。本批只关闭三项公开出�
 - P5-A2 仅增加 HKO 公开资料支持的两条 published-reference Golden 与离线测试，不改变任何 resolver/engine 输出；立春只比较分钟，农历只比较日期，且不验证四柱流派结论。
 - P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成实现与最小兼容修复，并经 Sol High 独立验收 PASS。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现并经 Sol High 独立验收 PASS，范围为历史证据展示与显式“按当前规则复核”。
 
-P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4b5 仅以 v5 overlay 关闭四个真实 engine-error/cross-copy gap，P5-A5a 以独立 `p5-a5a-owner-decision.v1` overlay 关闭三项公开日期范围决策；A4a immutable audit、A4b v1-v5 overlays 和 P5-B/P5-C 路由不代表算法已修复。Astrology `0,0`/no-guessing、1986–1991 DST、缺时辰等仍未完成；下一步为 P5-A5b Astrology 日级近似 + 缺坐标 fail-closed。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
+P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4b5 仅以 v5 overlay 关闭四个真实 engine-error/cross-copy gap，P5-A5a 以独立 `p5-a5a-owner-decision.v1` overlay 关闭三项公开日期范围决策，P5-A5b 以 owner-decision v2 新增一项缺时辰决策并以 A4b v6 关闭两个原始 Astrology 安全 gap；A4a immutable audit、A4b v1-v6 overlays 和 P5-B/P5-C 路由不代表算法已修复。日级近似仍明确为 partial，不能当作精确星盘；1986–1991 DST、城市数据完整覆盖、UI/a11y 和其他发布门仍未完成。下一步为 P5-A5c 中国大陆 1986–1991 历史 DST。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。

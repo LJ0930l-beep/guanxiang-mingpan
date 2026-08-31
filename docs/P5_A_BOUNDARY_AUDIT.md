@@ -1,6 +1,6 @@
-# P5-A4a / P5-A5a · 四术边界与输入策略审计矩阵
+# P5-A4a / P5-A5a / P5-A5b · 四术边界与输入策略审计矩阵
 
-状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5 与 P5-A5a 已由 Sol High 独立验收 PASS（2026-08-31）
+状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a 与 P5-A5b 已由 Sol High 独立验收 PASS（2026-08-31）
 
 本文件只说明机器可检查审计合同的范围和当前事实，不把项目回归测试、第三方库返回或 CI 通过提升为四术专业真值，也不表示整个 P5-A 或 Phase 5 已完成。
 
@@ -172,3 +172,28 @@ Sol High 独立验收结论：**P5-A4b5 PASS**。本节形成时 Astrology `0,0`
 实现远端 commit `61805e8998ab4ca701e4960d6129e3b7cb381b17`（parent `496902c875072769439c90cf52f130331fa473d3`），GitHub Actions run `33375970276` / job `99437414040`；该实现提交错误新增根目录 `STATUS.md`。cleanup 远端 commit `5350baa9a857b86e2a02c0c42036d72dfe06a0c4`（parent `61805e8998ab4ca701e4960d6129e3b7cb381b17`）仅删除 `STATUS.md`，当前仓库无该文件；最终 CI run `33376590722` / job `99439354459` 为 Success，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。
 
 Sol High 独立验收结论：**P5-A5a PASS**。本批只关闭三项日期 decision-required；P5-A 仍未完成。下一批为 **P5-A5b Astrology 日级近似 + 缺坐标 fail-closed**；DST、缺时辰与 `0,0`/no-guessing 仍 pending。
+
+## 14. P5-A5b Astrology 安全 resolution overlay（Sol High 独立验收 PASS）
+
+本节是对前述 immutable A4a 审计的 additive resolution 记录，不改写第 1～7 节的原始 registry、统计或历史 probe/evidence 文本。P5-A5b 只关闭以下三项：
+
+| auditCaseId | 处置 | contract |
+|---|---|---|
+| `p5-a4a-astrology-missing-time` | 负责人接受固定 Asia/Shanghai 正午锚点的日级近似；不伪装精确盘。 | `p5-a5a-owner-decision.v2`（owner decision overlay 累计 4 项） |
+| `p5-a4a-astrology-missing-coordinate` | 缺成对坐标且城市无法识别时 fail-fast，要求补充城市或成对经纬度。 | `p5-a4b-input-resolution.v6`（累计 14 项） |
+| `p5-a4a-cross-no-guessing` | 占星地点与时辰精度统一 fail-closed，不猜测 `0,0` 或依赖时辰的角点/宫位/相位。 | `p5-a4b-input-resolution.v6`（累计 14 项） |
+
+`p5-a5a-owner-decision.v2` 保留 v1 三项 prefix/export/validator，只新增缺时辰这一项 owner decision；两个原始 gap 不进入 owner overlay。`p5-a4b-input-resolution.v6` 保留 v1～v5 的 prefix/export/validator，累计为 v1=3、v2=5、v3=6、v4=8、v5=12、v6=14；v6 仅为 cumulative overlay 版本，不新增 A4b 批次。
+
+### 14.1 日级近似与地点 policy
+
+- policy contract 版本固定为 `astrology-calculation-policy.v1`、`astrology-precision-policy.v1`、`astrology-location-policy.v1`、`astrology-date-level-approximation.v1` 与 `astrology-date-level-policy.v1`。
+- 未知时辰不调用 `requireExactBirth`，内部锚点为 `Asia/Shanghai` 当地 `12:00:00`；日首 `00:00:00`、锚点和日末 `23:59:59` 比较星座，只有全天稳定的天体才显示锚点度数。Moon 等快速因素在全天跨星座时隐藏，逆行等瞬时字段隐藏。
+- 近似结果为 `calculationMode=approximate`、`precision=date-level-approximate`、`completeness=partial`；不产生 Ascendant、Midheaven、houses、angles、aspects，caveats/focus 明示锚点、日首/日末检查及偏差。
+- 显式成对坐标优先，城市数据次之。缺少、单边、非有限或越界显式坐标继续返回 `INVALID_BIRTH_COORDINATES`；空城市或未知城市且无有效成对坐标返回 `MISSING_BIRTH_COORDINATES`、field `birthCity` 和安全中文文案，不将 `0,0` 传入 Horoscope。已知时辰 exact 成功盘保持深度兼容，仅增加 metadata。
+
+### 14.2 快照、测试与证据
+
+精度、锚点/规则版本和 location source/policy 随新结果写入 `calculationSettings`、`inputSnapshot`、`ChartSnapshotMeta`、`SavedReading`、普通/加密 backup/replay；旧快照缺少政策时保持可读，不补写历史政策或静默重算。专项 `tests/p5-astrology-safety.regression.mjs` **7/7**，统一 `npm test` **162/162**；typecheck、lint（0 warning）、Web Export 8 routes、`git diff --check` 均 PASS；production audit 为 0 critical / 8 high / 13 moderate / 0 low，未升级依赖。回归含 exact 坐标/城市优先级、日级隐藏字段、缺地点/空城市/单边/越界坐标、局部 seam 的 `0,0` 防回归、旧快照与 backup/replay、UTC/Asia/Shanghai deepEqual、v1/v2/v6 validators 及 exact fixture 兼容。
+
+实现 local `7f0caef63a0656ff21a571c7edb9cb7db1828d49` / remote `6d00ad4834f012e61a99431d24d2301f766d7d40`，remote parent `44488581f0853a1be7a8366881f42b6a6f65f581`；GitHub Actions run `33385531379` / job `99467178839` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。Sol High 独立验收结论：**P5-A5b PASS**。关闭 IDs 为 `p5-a4a-astrology-missing-time`、`p5-a4a-astrology-missing-coordinate`、`p5-a4a-cross-no-guessing`；下一批为 P5-A5c 中国大陆 1986–1991 历史 DST，P5-A 与 Phase 5 仍未完成。
