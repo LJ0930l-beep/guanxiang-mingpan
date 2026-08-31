@@ -2,7 +2,7 @@
 
 > 文档状态：可作为后续产品、设计、研发和上线协作的单一交接入口  
 > 更新日期：2026-08-15  
-> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容、P5-A3b 历史真太阳时证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计、P5-A4b1 安全输入校验/错误合同/resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现均已通过 Sol High 独立验收；P5-A3 子里程碑整体完成，但整个 P5-A/Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
+> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容、P5-A3b 历史真太阳时证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计、P5-A4b1 安全输入校验/错误合同/resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现均已通过 Sol High 独立验收；P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative overlay 已实现，状态为实现完成待 Sol High 独立验收；P5-A3 子里程碑整体完成，但整个 P5-A/Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
 
 ## 1. 一页总览
 
@@ -253,6 +253,18 @@ npm audit --omit=dev --json
 - [开源方案清单](../../metaphysics-app-research/SOURCE_MANIFEST.md)：固定提交、许可证与采用边界。
 - `src/services/chart-engine.ts`：四模块统一计算适配层。
 - `src/state/app-context.tsx`：本地数据与会话的当前实现。
+
+## 13. P5-A4b3 当前交接：八字真太阳时跨日/子初边界矩阵
+
+**状态：实现完成待 Sol High 独立验收**
+
+本小批只关闭 `p5-a4a-bazi-true-solar-cross-day`，新增 regression-only 矩阵覆盖 135°E / 75°E（相对 120°E 标准经线两侧）、正负应用修正、民用时刻向前/向后跨日以及 `midnight` / `ziEarly`；冻结真太阳时民用/有效时刻（含日期）、应用修正和最终八字有效计算时刻。结果只表示当前已验收 NOAA v2 实现的工程回归，不代表专业或独立真值。
+
+新增 cumulative `p5-a4b-input-resolution.v3` 共 6 项（v1 原 3 + v2 追加 2 + 本批八字 1），v1/v2 原 exports、registry、validator、顺序和精确 3/5 计数保持可用；version-aware validator 保持纯 JSON、唯一 resolution/audit ID、原始 `gap` / `P5-A4b` 关联且不写 commit SHA。UTC 与 `Asia/Shanghai` 下同一矩阵整体 deepEqual；A4a `41 / 18 / 15 / 5 / 2 / 1` 与 astrology unknown-city `0,0` probe 保持不变。
+
+本批只改授权的 golden overlay/index、一个 regression 测试、统一测试接入和五份 P5 文档；没有使用 Expo API（已核对 Expo SDK 57 exact docs）。日期范围、1986–1991 DST、缺时辰、`0,0` 语义、engine/cross taxonomy、其他 gap/owner decisions 以及 P5-B/P5-C 仍未完成。Sol High 尚未独立验收。
+
+本地质量命令结果：`git diff --check` PASS、`npm run typecheck` PASS、`npm run lint` PASS（0 warning）、`npm test` PASS（132/132）、`npm run build:web` PASS（8 routes，Web Export 实际执行）。
 
 ---
 

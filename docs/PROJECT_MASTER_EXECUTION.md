@@ -2,8 +2,8 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现
-> 本批状态：Sol High 独立验收 PASS；P5-A4b1/P5-A4a 为历史已验收批次（2026-08-15）
+> 批次：P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
+> 本批状态：实现完成待 Sol High 独立验收；P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现已由 Sol High 独立验收 PASS；P5-A4b1/P5-A4a 为历史已验收批次（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -317,6 +317,41 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
 实现 local `0815612cb8e2261325828ccf0d07e51525f34280` / remote `a976b4f07a2d516713db10cb2c0f2b53c98aa51a`；GitHub Actions run `31884436927` 为 `completed/success`，validate job `95011564415` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；主管本地独立门禁 `git diff --check`、typecheck、lint、`npm test` 128/128 和 `build:web` 8 routes 均 PASS。Sol High 独立验收结论：**P5-A4b2 PASS**。本批只关闭六爻 date/seed 两项；六爻 engine/cross taxonomy、`0,0`、日期范围、DST、缺时辰、owner decisions 及其他 gap/decision-required 未完成，P5-A 与 Phase 5 仍未完成。
+
+## 5.8 P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
+
+**状态：实现完成待 Sol High 独立验收**
+
+### Scope 与明确不做
+
+本小批只关闭原始审计 gap `p5-a4a-bazi-true-solar-cross-day`。新增固定 regression-only 矩阵，覆盖标准经线东西两侧（135°E / 75°E）、正负 `appliedCorrectionMinutes`、民用时刻向前/向后跨日，以及 `midnight` / `ziEarly` 两种 `dayBoundary`；每项冻结 `trueSolarCorrection.civilTime`、含日期的 `effectiveTime`、修正分钟数和最终 `calculationEvidence.effectiveCalculationTime`。矩阵只记录已验收 NOAA v2 当前实现的工程回归事实，不宣称专业或独立真值。
+
+本批不修改八字算法、公式、日界线、Storage/schema、UI、依赖、lockfile、CI，也不处理日期范围、1986–1991 DST、缺时辰、`0,0`、紫微农历、engine taxonomy、cross taxonomy 或其他 owner decision/gap。
+
+### 实施摘要与白名单
+
+- 新增纯 JSON `p5-a4b-input-resolution.v3`，累计 v1 原 3 项、v2 追加 2 项和本批八字 1 项，共 6 项；v1/v2 原 exports、registry、validator、顺序和精确 3/5 计数保持不变。
+- version-aware validator 同时支持 v1/v2/v3，强制纯 JSON、唯一 resolution/audit ID、原始 audit case `status=gap` 与 `targetBatch=P5-A4b`，不写 commit SHA。
+- 同一矩阵在 `TZ=UTC` 与 `TZ=Asia/Shanghai` 下整体 deepEqual；A4a `41 / 18 / 15 / 5 / 2 / 1` immutable snapshot 与 astrology unknown-city `0,0` probe 保持不变。
+- 已核对 Expo SDK 57 exact docs；本批没有使用 Expo API。
+
+实际变更文件严格限于：`src/domains/golden/boundary-input-resolution.ts`、`src/domains/golden/index.ts`、新增 `tests/p5-bazi-true-solar-boundary.regression.mjs`、`package.json` 测试接入，以及本账本、`docs/PHASE5_EXECUTION.md`、`docs/HANDOFF.md`、`docs/ROADMAP.md`、`docs/P5_A_BOUNDARY_AUDIT.md` 五份 P5 文档。
+
+### 测试与当前限制
+
+新增回归覆盖 v1=3/v2=5/v3=6、v3 前缀保持、混版本/重复/缺项/非 JSON/错误 audit 引用负向门禁、跨 TZ deepEqual、A4a 统计与 `0,0` probe。
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS（0 warning）
+npm test               PASS（132/132）
+npm run build:web      PASS（8 routes，Web Export 实际执行）
+```
+
+以上为本地质量命令结果；Sol High 尚未独立验收。
+
+其余 A4a gap、owner decisions、六爻 engine/cross taxonomy、unknown-coordinate `0,0` 语义、日期范围、DST、缺时辰及 P5-B/P5-C 路由仍未完成；本记录不表示 P5-A 或 Phase 5 完成。
 
 ## 6. 统一批次验收模板
 

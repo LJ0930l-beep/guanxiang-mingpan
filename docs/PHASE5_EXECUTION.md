@@ -1,10 +1,10 @@
-# Phase 5 · P5-A1～P5-A4b2 四术可信度与输入边界审计
+# Phase 5 · P5-A1～P5-A4b3 四术可信度与输入边界审计
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2 已由 Sol High 独立验收 PASS；P5-A4b3 状态为实现完成待 Sol High 独立验收；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现完成待 Sol High 独立验收，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -259,7 +259,7 @@ Sol High 独立验收结论：**P5-A3b PASS**。P5-A3a 与 P5-A3b 均完成，P5
 
 - 占星未知城市会把缺失坐标传为 `0,0`；虽标记为 approximate 并隐藏角点/宫位，但行星位置仍会变化，不能视为仅降低精度；因此跨模块“无猜测”整体仍是 gap。
 - 紫微对 `2024-02-30` 等无效公历日期当前可能返回 `solarDate=2024-2-30`；占星同输入依赖第三方错误，普通无效日期已拆成 P5-A4b 安全输入 gap；错误 taxonomy/contract 进入 P5-A4b，UI/读屏文案仍单独路由 P5-C，公开支持日期范围仍保留为 owner decision。
-- 八字东西经真太阳时跨日矩阵、六爻 seed/非法日期与四术统一错误分类仍为后续 gap；城市完整覆盖路由 P5-B，无障碍文案路由 P5-C。
+- 八字真太阳时在 120°E 标准经线两侧的跨日矩阵、六爻 seed/非法日期与四术统一错误分类仍为后续 gap；城市完整覆盖路由 P5-B，无障碍文案路由 P5-C。
 - 八字/紫微/占星的公开日期范围、历史夏令时处理、占星缺时辰近似模式等会改变公开规则或承诺，标记为 `decision-required`，等待负责人决策，不在本批擅自选择；普通无效公历日期拒绝则单独标为 P5-A4b 安全输入 gap，不升级为 owner 决策。
 
 ### 11.3 DoD 与当前状态
@@ -350,3 +350,36 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
 实现 local `0815612cb8e2261325828ccf0d07e51525f34280` / remote `a976b4f07a2d516713db10cb2c0f2b53c98aa51a`；GitHub Actions run `31884436927` 为 `completed/success`，validate job `95011564415` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；主管本地独立门禁 `git diff --check`、typecheck、lint、`npm test` 128/128 和 `build:web` 8 routes 均 PASS。Sol High 独立验收结论：**P5-A4b2 PASS**。当前仅关闭六爻 date/seed 两项；六爻引擎错误/跨模块 taxonomy、`0,0`、公开日期范围、DST、缺时辰、owner decisions 和其余 gap/decision-required 仍未完成，P5-A 与 Phase 5 仍未完成。
+
+## 14. P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
+
+**状态：实现完成待 Sol High 独立验收**
+
+### 14.1 Scope 与明确不做
+
+本小批只关闭原始 gap `p5-a4a-bazi-true-solar-cross-day`。新增 regression-only 八字真太阳时边界矩阵，覆盖 135°E / 75°E（相对 120°E 标准经线两侧）、正负应用修正、民用时刻跨到前/后一天，以及 `midnight` / `ziEarly` 两种日界线；固定断言 `trueSolarCorrection.civilTime`、含日期的 `effectiveTime`、`appliedCorrectionMinutes` 和最终 `calculationEvidence.effectiveCalculationTime`。结果只代表当前已验收 NOAA v2 实现的工程回归，不是专业或独立真值。
+
+本批不修改任何八字算法、公式、日界线、Storage/schema、UI、依赖、lockfile 或 CI，不处理日期范围、1986–1991 DST、缺时辰、`0,0`、紫微 lunar、engine/cross taxonomy 或其他 owner decision/gap。
+
+### 14.2 实施摘要与合同
+
+- 新增纯 JSON `p5-a4b-input-resolution.v3`，累计 v1 原 3 项 + v2 追加 2 项 + 本批八字 1 项，共 6 项；v1/v2 原 exports、registry、validator、数据顺序与精确 3/5 计数保持可用。
+- version-aware validator 同时支持 v1/v2/v3，检查纯 JSON、唯一 resolution/audit ID、原始 audit case `status=gap`、`targetBatch=P5-A4b` 和测试引用，不写 commit SHA。
+- 同一矩阵在 `TZ=UTC` 与 `TZ=Asia/Shanghai` 下整体 deepEqual；A4a `41 / 18 / 15 / 5 / 2 / 1` 与 astrology unknown-city `0,0` probe 保持不变。
+- 已核对 Expo SDK 57 exact docs；本批没有使用 Expo API。
+
+实际变更严格限于两份 golden 源文件、新增一份 regression 测试、`package.json` 测试接入和五份 P5 文档；未修改算法测试历史含义。Sol High 尚未独立验收。
+
+### 14.3 回归与未完成项
+
+新增测试覆盖 v1/v2/v3 计数与前缀、v3 混版本/重复/缺项/非 JSON/错误 audit 引用门禁、跨宿主 TZ deepEqual、A4a 统计和 `0,0` probe。
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS（0 warning）
+npm test               PASS（132/132）
+npm run build:web      PASS（8 routes，Web Export 实际执行）
+```
+
+以上为本地质量命令结果；其余 A4a gap、owner decisions、六爻 engine/cross taxonomy、日期范围、DST、缺时辰和 P5-B/P5-C 路由仍未完成；本小批不表示整个 P5-A 或 Phase 5 完成。

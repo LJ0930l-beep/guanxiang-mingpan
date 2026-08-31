@@ -7,6 +7,7 @@ export const BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION = 'p5-a4b-input-resoluti
 /** Explicit v1 aliases keep the original short exports source-compatible. */
 export const BOUNDARY_INPUT_RESOLUTION_V1_CONTRACT_VERSION = BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION;
 export const BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION = 'p5-a4b-input-resolution.v2' as const;
+export const BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION = 'p5-a4b-input-resolution.v3' as const;
 export const BOUNDARY_INPUT_RESOLUTION_STATUS = 'resolved' as const;
 
 export const BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS = [
@@ -21,10 +22,16 @@ export const BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS = [
   'p5-a4a-liuyao-invalid-seed',
 ] as const;
 
+export const BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS = [
+  ...BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS,
+  'p5-a4a-bazi-true-solar-cross-day',
+] as const;
+
 export const BOUNDARY_INPUT_RESOLUTION_V1_AUDIT_CASE_IDS = BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS;
 
 export type BoundaryInputResolutionAuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_AUDIT_CASE_IDS)[number];
 export type BoundaryInputResolutionV2AuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS)[number];
+export type BoundaryInputResolutionV3AuditCaseId = (typeof BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS)[number];
 
 export interface BoundaryInputResolution {
   contractVersion: typeof BOUNDARY_INPUT_RESOLUTION_CONTRACT_VERSION;
@@ -48,8 +55,19 @@ export interface BoundaryInputResolutionV2 {
   notes: string;
 }
 
+export interface BoundaryInputResolutionV3 {
+  contractVersion: typeof BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION;
+  resolutionId: string;
+  auditCaseId: BoundaryInputResolutionV3AuditCaseId;
+  status: typeof BOUNDARY_INPUT_RESOLUTION_STATUS;
+  targetBatch: 'P5-A4b';
+  summary: string;
+  testRefs: readonly string[];
+  notes: string;
+}
+
 export type BoundaryInputResolutionV1 = BoundaryInputResolution;
-export type BoundaryInputResolutionVersioned = BoundaryInputResolution | BoundaryInputResolutionV2;
+export type BoundaryInputResolutionVersioned = BoundaryInputResolution | BoundaryInputResolutionV2 | BoundaryInputResolutionV3;
 
 const RESOLUTION_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const TEST_REF_PATTERN = /^tests\/[^\s#]+(?:#[^\s]+)?$/;
@@ -101,6 +119,11 @@ function isResolutionV2AuditCaseId(value: unknown): value is BoundaryInputResolu
     && BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS.includes(value as BoundaryInputResolutionV2AuditCaseId);
 }
 
+function isResolutionV3AuditCaseId(value: unknown): value is BoundaryInputResolutionV3AuditCaseId {
+  return typeof value === 'string'
+    && BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS.includes(value as BoundaryInputResolutionV3AuditCaseId);
+}
+
 interface ResolutionContractSpec {
   contractVersion: string;
   auditCaseIds: readonly string[];
@@ -114,6 +137,11 @@ const V1_RESOLUTION_SPEC: ResolutionContractSpec = {
 const V2_RESOLUTION_SPEC: ResolutionContractSpec = {
   contractVersion: BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION,
   auditCaseIds: BOUNDARY_INPUT_RESOLUTION_V2_AUDIT_CASE_IDS,
+};
+
+const V3_RESOLUTION_SPEC: ResolutionContractSpec = {
+  contractVersion: BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION,
+  auditCaseIds: BOUNDARY_INPUT_RESOLUTION_V3_AUDIT_CASE_IDS,
 };
 
 function isResolutionAuditCaseIdForSpec(value: unknown, spec: ResolutionContractSpec): boolean {
@@ -193,6 +221,29 @@ export function validateBoundaryInputResolutionV2(value: unknown): BoundaryInput
   const errors = getBoundaryInputResolutionV2ValidationErrors(value);
   if (errors.length > 0) throw new Error(`Invalid P5-A4b v2 boundary input resolution:\n${errors.join('\n')}`);
   return value as BoundaryInputResolutionV2;
+}
+
+export function getBoundaryInputResolutionV3ValidationErrors(
+  value: unknown,
+  path = 'boundaryInputResolution',
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  const errors = validateResolutionValue(value, path, V3_RESOLUTION_SPEC);
+  if (errors.length > 0 || !isRecord(value) || !isResolutionV3AuditCaseId(value.auditCaseId)) return errors;
+  const auditCase = auditCaseById(auditRegistry).get(value.auditCaseId);
+  if (!auditCase) {
+    errors.push(`${path}.auditCaseId must exist in the P5-A4a audit registry`);
+  } else {
+    if (auditCase.status !== 'gap') errors.push(`${path}.auditCaseId must map from an original gap case`);
+    if (auditCase.targetBatch !== 'P5-A4b') errors.push(`${path}.auditCaseId must map from targetBatch P5-A4b`);
+  }
+  return errors;
+}
+
+export function validateBoundaryInputResolutionV3(value: unknown): BoundaryInputResolutionV3 {
+  const errors = getBoundaryInputResolutionV3ValidationErrors(value);
+  if (errors.length > 0) throw new Error(`Invalid P5-A4b v3 boundary input resolution:\n${errors.join('\n')}`);
+  return value as BoundaryInputResolutionV3;
 }
 
 function getBoundaryInputResolutionRegistryValidationErrorsForSpec(
@@ -308,12 +359,36 @@ export function validateBoundaryInputResolutionV2Registry(
   return value as readonly BoundaryInputResolutionV2[];
 }
 
+export function getBoundaryInputResolutionV3RegistryValidationErrors(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  return getBoundaryInputResolutionRegistryValidationErrorsForSpec(
+    value,
+    auditRegistry,
+    V3_RESOLUTION_SPEC,
+    getBoundaryInputResolutionV3ValidationErrors,
+  );
+}
+
+export function validateBoundaryInputResolutionV3Registry(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly BoundaryInputResolutionV3[] {
+  const errors = getBoundaryInputResolutionV3RegistryValidationErrors(value, auditRegistry);
+  if (errors.length > 0) throw new Error(`Invalid P5-A4b v3 boundary input resolution registry:\n${errors.join('\n')}`);
+  return value as readonly BoundaryInputResolutionV3[];
+}
+
 /** Version-aware entry points for consumers that receive a serialized overlay. */
 export function getBoundaryInputResolutionVersionedValidationErrors(
   value: unknown,
   path = 'boundaryInputResolution',
   auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
 ): readonly string[] {
+  if (isRecord(value) && value.contractVersion === BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION) {
+    return getBoundaryInputResolutionV3ValidationErrors(value, path, auditRegistry);
+  }
   if (isRecord(value) && value.contractVersion === BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION) {
     return getBoundaryInputResolutionV2ValidationErrors(value, path, auditRegistry);
   }
@@ -335,6 +410,9 @@ export function getBoundaryInputResolutionVersionedRegistryValidationErrors(
   }
   const versions = new Set(value.map((item) => (isRecord(item) ? item.contractVersion : undefined)));
   if (versions.size !== 1) return ['boundaryInputResolutions must contain exactly one contract version'];
+  if (versions.has(BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION)) {
+    return getBoundaryInputResolutionV3RegistryValidationErrors(value, auditRegistry);
+  }
   if (versions.has(BOUNDARY_INPUT_RESOLUTION_V2_CONTRACT_VERSION)) {
     return getBoundaryInputResolutionV2RegistryValidationErrors(value, auditRegistry);
   }
@@ -410,5 +488,23 @@ export const P5_A4B_INPUT_RESOLUTION_V2_CASES: readonly BoundaryInputResolutionV
   },
 ] as const;
 
+export const P5_A4B_INPUT_RESOLUTION_V3_CASES: readonly BoundaryInputResolutionV3[] = [
+  ...P5_A4B_INPUT_RESOLUTION_V2_CASES.map((resolution): BoundaryInputResolutionV3 => ({
+    ...resolution,
+    contractVersion: BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION,
+  })),
+  {
+    contractVersion: BOUNDARY_INPUT_RESOLUTION_V3_CONTRACT_VERSION,
+    resolutionId: 'p5-a4b-resolve-bazi-true-solar-cross-day',
+    auditCaseId: 'p5-a4a-bazi-true-solar-cross-day',
+    status: 'resolved',
+    targetBatch: 'P5-A4b',
+    summary: '八字真太阳时回归矩阵冻结 120°E 标准经线两侧的正负修正、民用跨日和 midnight/ziEarly 最终有效计算时刻。',
+    testRefs: ['tests/p5-bazi-true-solar-boundary.regression.mjs#bazi-true-solar-cross-day-matrix'],
+    notes: '只关闭当前 regression-only 边界证据 gap；沿用已验收 NOAA v2 实现，不宣称专业或独立真值，不修改公式或日界线。',
+  },
+] as const;
+
 validateBoundaryInputResolutionRegistry(P5_A4B_INPUT_RESOLUTION_CASES);
 validateBoundaryInputResolutionV2Registry(P5_A4B_INPUT_RESOLUTION_V2_CASES);
+validateBoundaryInputResolutionV3Registry(P5_A4B_INPUT_RESOLUTION_V3_CASES);
