@@ -11,6 +11,10 @@ import {
   ASTROLOGY_DATE_LEVEL_APPROXIMATION_POLICY,
   type AstrologyDateLevelApproximationPolicy,
 } from '@/domains/astrology/policy';
+import {
+  BAZI_HISTORICAL_DST_POLICY,
+  type BaziHistoricalDstPolicy,
+} from '@/domains/bazi/historical-dst';
 
 /**
  * Owner decisions are deliberately kept out of the P5-A4b input-resolution
@@ -66,7 +70,29 @@ export interface OwnerDecisionResolutionV2 {
   notes: string;
 }
 
-export type OwnerDecisionResolutionVersioned = OwnerDecisionResolution | OwnerDecisionResolutionV2;
+export const OWNER_DECISION_RESOLUTION_V3_CONTRACT_VERSION = 'p5-a5a-owner-decision.v3' as const;
+export const OWNER_DECISION_RESOLUTION_V3_TARGET_BATCH = 'P5-A5c' as const;
+export const BAZI_HISTORICAL_DST_DECISION_ID = 'cn-mainland-historical-dst' as const;
+export const OWNER_DECISION_RESOLUTION_V3_AUDIT_CASE_IDS = [
+  ...OWNER_DECISION_RESOLUTION_V2_AUDIT_CASE_IDS,
+  'p5-a4a-bazi-historical-dst',
+] as const;
+export type OwnerDecisionResolutionV3AuditCaseId = (typeof OWNER_DECISION_RESOLUTION_V3_AUDIT_CASE_IDS)[number];
+
+export interface OwnerDecisionResolutionV3 {
+  contractVersion: typeof OWNER_DECISION_RESOLUTION_V3_CONTRACT_VERSION;
+  resolutionId: string;
+  decisionId: string;
+  auditCaseId: OwnerDecisionResolutionV3AuditCaseId;
+  status: typeof OWNER_DECISION_RESOLUTION_STATUS;
+  targetBatch: typeof OWNER_DECISION_RESOLUTION_TARGET_BATCH | typeof OWNER_DECISION_RESOLUTION_V2_TARGET_BATCH | typeof OWNER_DECISION_RESOLUTION_V3_TARGET_BATCH;
+  policy: PublicBirthDateRangePolicy | AstrologyDateLevelApproximationPolicy | BaziHistoricalDstPolicy;
+  summary: string;
+  testRefs: readonly string[];
+  notes: string;
+}
+
+export type OwnerDecisionResolutionVersioned = OwnerDecisionResolution | OwnerDecisionResolutionV2 | OwnerDecisionResolutionV3;
 
 const RESOLUTION_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const TEST_REF_PATTERN = /^tests\/[^\s#]+(?:#[^\s]+)?$/;
@@ -406,11 +432,165 @@ export function validateOwnerDecisionResolutionV2Registry(
   return value as readonly OwnerDecisionResolutionV2[];
 }
 
+const OWNER_DECISION_RESOLUTION_V3_SPEC = {
+  contractVersion: OWNER_DECISION_RESOLUTION_V3_CONTRACT_VERSION,
+  auditCaseIds: OWNER_DECISION_RESOLUTION_V3_AUDIT_CASE_IDS,
+};
+
+function validateResolutionV3Value(
+  value: unknown,
+  path: string,
+  auditRegistry: readonly BoundaryInputAuditCase[],
+): string[] {
+  const errors: string[] = [];
+  if (!isRecord(value)) return [`${path} must be an object`];
+  collectJsonErrors(value, path, errors, new WeakSet<object>());
+  for (const property of [
+    'contractVersion',
+    'resolutionId',
+    'decisionId',
+    'auditCaseId',
+    'status',
+    'targetBatch',
+    'policy',
+    'summary',
+    'testRefs',
+    'notes',
+  ]) {
+    if (!Object.prototype.hasOwnProperty.call(value, property)) errors.push(`${path}.${property} is required`);
+  }
+  if (value.contractVersion !== OWNER_DECISION_RESOLUTION_V3_SPEC.contractVersion) {
+    errors.push(`${path}.contractVersion must be ${OWNER_DECISION_RESOLUTION_V3_SPEC.contractVersion}`);
+  }
+  if (typeof value.resolutionId !== 'string' || !RESOLUTION_ID_PATTERN.test(value.resolutionId)) {
+    errors.push(`${path}.resolutionId must be a stable kebab-case identifier`);
+  }
+  if (!OWNER_DECISION_RESOLUTION_V3_SPEC.auditCaseIds.includes(value.auditCaseId as OwnerDecisionResolutionV3AuditCaseId)) {
+    errors.push(`${path}.auditCaseId is not supported`);
+  }
+  if (value.status !== OWNER_DECISION_RESOLUTION_STATUS) errors.push(`${path}.status must be accepted`);
+
+  if (value.auditCaseId === 'p5-a4a-bazi-historical-dst') {
+    if (value.decisionId !== BAZI_HISTORICAL_DST_DECISION_ID) {
+      errors.push(`${path}.decisionId must be ${BAZI_HISTORICAL_DST_DECISION_ID}`);
+    }
+    if (value.targetBatch !== OWNER_DECISION_RESOLUTION_V3_TARGET_BATCH) {
+      errors.push(`${path}.targetBatch must be ${OWNER_DECISION_RESOLUTION_V3_TARGET_BATCH}`);
+    }
+    if (!sameJson(value.policy, BAZI_HISTORICAL_DST_POLICY)) {
+      errors.push(`${path}.policy must match the owner-approved China mainland historical DST policy`);
+    }
+  } else if (value.auditCaseId === 'p5-a4a-astrology-missing-time') {
+    if (value.decisionId !== ASTROLOGY_MISSING_TIME_DECISION_ID) {
+      errors.push(`${path}.decisionId must be ${ASTROLOGY_MISSING_TIME_DECISION_ID}`);
+    }
+    if (value.targetBatch !== OWNER_DECISION_RESOLUTION_V2_TARGET_BATCH) {
+      errors.push(`${path}.targetBatch must be ${OWNER_DECISION_RESOLUTION_V2_TARGET_BATCH}`);
+    }
+    if (!sameJson(value.policy, ASTROLOGY_DATE_LEVEL_APPROXIMATION_POLICY)) {
+      errors.push(`${path}.policy must match the owner-approved Astrology date-level approximation policy`);
+    }
+  } else {
+    if (value.decisionId !== PUBLIC_BIRTH_DATE_RANGE_DECISION_ID) {
+      errors.push(`${path}.decisionId must be ${PUBLIC_BIRTH_DATE_RANGE_DECISION_ID}`);
+    }
+    if (value.targetBatch !== OWNER_DECISION_RESOLUTION_TARGET_BATCH) {
+      errors.push(`${path}.targetBatch must be ${OWNER_DECISION_RESOLUTION_TARGET_BATCH}`);
+    }
+    if (!isPublicBirthDateRangePolicy(value.policy) || !sameJson(value.policy, PUBLIC_BIRTH_DATE_RANGE_POLICY)) {
+      errors.push(`${path}.policy must match the owner-approved public birth-date range policy`);
+    }
+  }
+  if (!isNonEmptyString(value.summary)) errors.push(`${path}.summary must be a non-empty string`);
+  if (!Array.isArray(value.testRefs)
+    || value.testRefs.length === 0
+    || value.testRefs.some((ref) => typeof ref !== 'string' || !TEST_REF_PATTERN.test(ref))) {
+    errors.push(`${path}.testRefs must contain one or more test repository references`);
+  }
+  if (!isNonEmptyString(value.notes)) errors.push(`${path}.notes must be a non-empty string`);
+
+  const auditCase = auditCaseById(auditRegistry).get(String(value.auditCaseId));
+  if (!auditCase) {
+    errors.push(`${path}.auditCaseId must exist in the P5-A4a audit registry`);
+  } else {
+    if (auditCase.status !== 'decision-required') errors.push(`${path}.auditCaseId must map from a decision-required case`);
+    if (auditCase.targetBatch !== 'OWNER-DECISION' || auditCase.ownerDecisionRequired !== true) {
+      errors.push(`${path}.auditCaseId must map from an owner decision case`);
+    }
+  }
+  return errors;
+}
+
+export function getOwnerDecisionResolutionV3ValidationErrors(
+  value: unknown,
+  path = 'ownerDecisionResolution',
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  return validateResolutionV3Value(value, path, auditRegistry);
+}
+
+export function validateOwnerDecisionResolutionV3(value: unknown): OwnerDecisionResolutionV3 {
+  const errors = getOwnerDecisionResolutionV3ValidationErrors(value);
+  if (errors.length > 0) throw new Error(`Invalid P5-A5c owner decision resolution:\n${errors.join('\n')}`);
+  return value as OwnerDecisionResolutionV3;
+}
+
+export function getOwnerDecisionResolutionV3RegistryValidationErrors(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly string[] {
+  if (!Array.isArray(value)) return ['ownerDecisionResolutions must be an array'];
+  const errors: string[] = [];
+  const resolutionIds = new Set<string>();
+  const auditCaseIds = new Set<string>();
+  const auditMap = auditCaseById(auditRegistry);
+  value.forEach((item, index) => {
+    const path = `ownerDecisionResolutions[${index}]`;
+    const itemErrors = validateResolutionV3Value(item, path, auditRegistry);
+    errors.push(...itemErrors);
+    if (itemErrors.length === 0 && isRecord(item)) {
+      if (typeof item.resolutionId === 'string') {
+        if (resolutionIds.has(item.resolutionId)) errors.push(`${path}.resolutionId duplicates ${item.resolutionId}`);
+        resolutionIds.add(item.resolutionId);
+      }
+      if (typeof item.auditCaseId === 'string') {
+        if (auditCaseIds.has(item.auditCaseId)) errors.push(`${path}.auditCaseId duplicates ${item.auditCaseId}`);
+        auditCaseIds.add(item.auditCaseId);
+      }
+    }
+  });
+  if (value.length !== OWNER_DECISION_RESOLUTION_V3_SPEC.auditCaseIds.length) {
+    errors.push(`ownerDecisionResolutions must contain exactly ${OWNER_DECISION_RESOLUTION_V3_SPEC.auditCaseIds.length} resolutions`);
+  }
+  for (const auditCaseId of OWNER_DECISION_RESOLUTION_V3_SPEC.auditCaseIds) {
+    if (!auditMap.has(auditCaseId)) errors.push(`audit registry is missing ${auditCaseId}`);
+    if (!auditCaseIds.has(auditCaseId)) errors.push(`owner decision registry is missing ${auditCaseId}`);
+  }
+  for (const auditCaseId of auditCaseIds) {
+    if (!OWNER_DECISION_RESOLUTION_V3_SPEC.auditCaseIds.includes(auditCaseId as OwnerDecisionResolutionV3AuditCaseId)) {
+      errors.push(`owner decision registry contains unsupported auditCaseId ${auditCaseId}`);
+    }
+  }
+  return errors;
+}
+
+export function validateOwnerDecisionResolutionV3Registry(
+  value: unknown,
+  auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
+): readonly OwnerDecisionResolutionV3[] {
+  const errors = getOwnerDecisionResolutionV3RegistryValidationErrors(value, auditRegistry);
+  if (errors.length > 0) throw new Error(`Invalid P5-A5c owner decision resolution registry:\n${errors.join('\n')}`);
+  return value as readonly OwnerDecisionResolutionV3[];
+}
+
 export function getOwnerDecisionResolutionVersionedValidationErrors(
   value: unknown,
   path = 'ownerDecisionResolution',
   auditRegistry: readonly BoundaryInputAuditCase[] = P5_BOUNDARY_INPUT_AUDIT_CASES,
 ): readonly string[] {
+  if (isRecord(value) && value.contractVersion === OWNER_DECISION_RESOLUTION_V3_CONTRACT_VERSION) {
+    return getOwnerDecisionResolutionV3ValidationErrors(value, path, auditRegistry);
+  }
   if (isRecord(value) && value.contractVersion === OWNER_DECISION_RESOLUTION_V2_CONTRACT_VERSION) {
     return getOwnerDecisionResolutionV2ValidationErrors(value, path, auditRegistry);
   }
@@ -436,6 +616,9 @@ export function getOwnerDecisionResolutionVersionedRegistryValidationErrors(
   const versions = new Set(value.map((item) => (isRecord(item) ? item.contractVersion : undefined)));
   if (versions.size !== 1) {
     return ['ownerDecisionResolutions must contain exactly one supported contract version'];
+  }
+  if (versions.has(OWNER_DECISION_RESOLUTION_V3_CONTRACT_VERSION)) {
+    return getOwnerDecisionResolutionV3RegistryValidationErrors(value, auditRegistry);
   }
   if (versions.has(OWNER_DECISION_RESOLUTION_V2_CONTRACT_VERSION)) {
     return getOwnerDecisionResolutionV2RegistryValidationErrors(value, auditRegistry);
@@ -513,5 +696,25 @@ export const P5_A5A_OWNER_DECISION_RESOLUTION_V2_CASES: readonly OwnerDecisionRe
   },
 ] as const;
 
+export const P5_A5A_OWNER_DECISION_RESOLUTION_V3_CASES: readonly OwnerDecisionResolutionV3[] = [
+  ...P5_A5A_OWNER_DECISION_RESOLUTION_V2_CASES.map((resolution): OwnerDecisionResolutionV3 => ({
+    ...resolution,
+    contractVersion: OWNER_DECISION_RESOLUTION_V3_CONTRACT_VERSION,
+  })),
+  {
+    contractVersion: OWNER_DECISION_RESOLUTION_V3_CONTRACT_VERSION,
+    resolutionId: 'p5-a5c-accept-bazi-historical-dst',
+    decisionId: BAZI_HISTORICAL_DST_DECISION_ID,
+    auditCaseId: 'p5-a4a-bazi-historical-dst',
+    status: OWNER_DECISION_RESOLUTION_STATUS,
+    targetBatch: OWNER_DECISION_RESOLUTION_V3_TARGET_BATCH,
+    policy: BAZI_HISTORICAL_DST_POLICY,
+    summary: '八字中国大陆首版支持 1986 至 1991 历史夏令时，采用冻结、版本化、可审计的 Asia/Shanghai 规则自动修正民用时刻。',
+    testRefs: ['tests/p5-bazi-historical-dst.regression.mjs#historical-policy'],
+    notes: '保留原始民用出生日期与时刻；春季不存在时刻、秋季重复时刻均拒绝，不默认猜测；有效标准时、修正量与规则来源写入快照证据链。',
+  },
+] as const;
+
 validateOwnerDecisionResolutionVersionedRegistry(P5_A5A_OWNER_DECISION_RESOLUTION_CASES);
 validateOwnerDecisionResolutionV2Registry(P5_A5A_OWNER_DECISION_RESOLUTION_V2_CASES);
+validateOwnerDecisionResolutionV3Registry(P5_A5A_OWNER_DECISION_RESOLUTION_V3_CASES);

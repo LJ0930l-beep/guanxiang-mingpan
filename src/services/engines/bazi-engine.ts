@@ -3,6 +3,7 @@ import { calculateBazi } from 'taibu-core/bazi';
 import { resolveBaziDayBoundary } from '@/domains/bazi/day-boundary';
 import { createBaziCalculationEvidence } from '@/domains/bazi/evidence';
 import { resolveBaziCalendar } from '@/domains/bazi/calendar-resolver';
+import { resolveBaziHistoricalDst } from '@/domains/bazi/historical-dst';
 import { resolveTrueSolarTime } from '@/domains/bazi/true-solar-time';
 import { normalizeBaziChart } from '@/domains/bazi/model/normalized-chart';
 import { buildBaziEvidenceGraph } from '@/domains/bazi/evidence/index';
@@ -131,14 +132,28 @@ export function calculateBaziView(
     birthDate: calendarResolution.normalizedSolarDate,
     birthTime: calendarResolution.normalizedSolarTime.slice(0, 5),
   };
-  const trueSolarResolution = resolveTrueSolarTime(calendarProfile, settings);
-  const calculationProfile = trueSolarResolution.applied
+  // Resolve historical DST after lunar-to-solar normalization and before
+  // true-solar/day-boundary logic.  The original profile remains untouched.
+  const historicalDstResolution = resolveBaziHistoricalDst(
+    profile,
+    calendarResolution.conversion.normalizedSolarDateTime,
+    settings,
+  );
+  const historicalDstProfile = historicalDstResolution.applied
     ? {
         ...calendarProfile,
+        birthDate: historicalDstResolution.effectiveDate,
+        birthTime: historicalDstResolution.effectiveTime.slice(0, 5),
+      }
+    : calendarProfile;
+  const trueSolarResolution = resolveTrueSolarTime(historicalDstProfile, settings);
+  const calculationProfile = trueSolarResolution.applied
+    ? {
+        ...historicalDstProfile,
         birthDate: trueSolarResolution.effectiveDate,
         birthTime: trueSolarResolution.effectiveTime.slice(0, 5),
       }
-    : calendarProfile;
+    : historicalDstProfile;
   const parts = birthParts(calculationProfile);
   const dayBoundaryResolution = resolveBaziDayBoundary(calculationProfile, settings);
   return withChartEngineErrorBoundary('bazi', () => {
@@ -178,17 +193,25 @@ export function calculateBaziView(
     generatedAt: generated,
     engineVersion: ENGINE_VERSIONS.bazi,
     calculationSettings: settings,
-    calculationEvidence: createBaziCalculationEvidence(profile, settings, dayBoundaryResolution, trueSolarResolution, calendarResolution),
+    calculationEvidence: createBaziCalculationEvidence(
+      profile,
+      settings,
+      dayBoundaryResolution,
+      trueSolarResolution,
+      calendarResolution,
+      historicalDstResolution,
+    ),
     normalizedChart,
     evidenceGraph,
     strengthAssessment: evidenceGraph.strengthAssessment!,
     interpretation,
     explanation,
-    inputSnapshot: birthInputSnapshot(profile, gender, settings),
+    inputSnapshot: birthInputSnapshot(profile, gender, settings, historicalDstResolution),
     completeness: 'complete',
     caveats: [
       '基础版展示结构证据，不直接给出吉凶定论。',
       'P1-A～P1-D 已记录并应用日界线、节气、位置数据与历法解析版本；流派选择仍待后续批次。',
+      ...(historicalDstResolution.applied ? [historicalDstResolution.note] : []),
       ...(trueSolarResolution.applied ? [trueSolarResolution.note] : []),
     ],
     dayMaster: result.dayMaster,

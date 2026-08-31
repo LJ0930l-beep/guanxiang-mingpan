@@ -3,6 +3,7 @@ import { resolveSolarTermBoundary } from '@/domains/bazi/solar-terms';
 import type { BaziDayBoundaryResolution } from '@/domains/bazi/day-boundary';
 import type { TrueSolarTimeResolution } from '@/domains/bazi/true-solar-time';
 import type { BaziCalendarResolution } from '@/domains/bazi/calendar-resolver';
+import type { BaziHistoricalDstResolution } from '@/domains/bazi/historical-dst';
 import type { BaziCalculationEvidence, BaziCalculationSettings, SolarTermBoundaryEvidence } from '@/domains/bazi/types';
 
 function normalizedCivilTime(profile: BirthProfile): string {
@@ -16,6 +17,7 @@ export function createBaziCalculationEvidence(
   dayBoundaryResolution?: BaziDayBoundaryResolution,
   trueSolarResolution?: TrueSolarTimeResolution,
   calendarResolution?: BaziCalendarResolution,
+  historicalDstResolution?: BaziHistoricalDstResolution,
 ): BaziCalculationEvidence {
   const civilTime = normalizedCivilTime(profile);
   const calendarConversion = calendarResolution?.conversion ?? {
@@ -28,21 +30,49 @@ export function createBaziCalculationEvidence(
     resolverVersion: 'calendar-resolver-p1e-v1',
     note: '未提供独立历法解析上下文。',
   };
+  const effectiveCivilTime = historicalDstResolution?.effectiveDateTime ?? calendarConversion.normalizedSolarDateTime;
+  const resolvedHistoricalDst = historicalDstResolution ?? (settings.historicalDstPolicy ? {
+    policyVersion: settings.historicalDstPolicy.version,
+    dataSource: settings.historicalDstPolicy.dataSource,
+    dataVersion: settings.historicalDstPolicy.dataVersion,
+    dataSourceUrl: settings.historicalDstPolicy.dataSourceUrl,
+    dataSourceCommit: settings.historicalDstPolicy.dataSourceCommit,
+    dataSourceCommitUrl: settings.historicalDstPolicy.dataSourceCommitUrl,
+    sourceFile: settings.historicalDstPolicy.sourceFile,
+    timezone: settings.timezone,
+    sourceCalendar: profile.calendar,
+    inputClock: 'local-civil' as const,
+    sourceCivilTime: civilTime,
+    normalizedSolarDateTime: calendarConversion.normalizedSolarDateTime,
+    effectiveDate: calendarConversion.normalizedSolarDateTime.slice(0, 10),
+    effectiveTime: calendarConversion.normalizedSolarDateTime.slice(11),
+    effectiveDateTime: calendarConversion.normalizedSolarDateTime,
+    status: 'not-applicable' as const,
+    applied: false,
+    adjustmentMinutes: 0 as const,
+    inputOffsetMinutes: 480 as const,
+    effectiveOffsetMinutes: 480 as const,
+    dayOffset: 0 as const,
+    note: '未提供历史夏令时解析上下文；未应用历史夏令时修正。',
+  } : undefined);
   const effectiveTime = dayBoundaryResolution
     ? `${dayBoundaryResolution.effectiveDate}T${dayBoundaryResolution.effectiveTime}`
     : trueSolarResolution?.applied
       ? `${trueSolarResolution.effectiveDate}T${trueSolarResolution.effectiveTime}`
-      : calendarConversion.normalizedSolarDateTime;
+      : effectiveCivilTime;
   const warningsForDayBoundary: string[] = [];
   if (dayBoundaryResolution?.shiftedToNextDate) {
     warningsForDayBoundary.push(dayBoundaryResolution.note);
   }
   const warnings = trueSolarResolution?.applied
     ? []
-    : ['P1-B：真太阳时尚未启用，当前有效计算时刻与输入民用时刻相同。'];
+    : [resolvedHistoricalDst?.applied
+      ? 'P1-B：真太阳时尚未启用；当前有效计算时刻沿用历史夏令时归一化后的标准时民用时刻。'
+      : 'P1-B：真太阳时尚未启用，当前有效计算时刻与输入民用时刻相同。'];
   warnings.push(...warningsForDayBoundary);
   if (dayBoundaryResolution?.shiftedToNextDate && !trueSolarResolution?.applied && warnings.length > 0) warnings[0] = 'P1-B：真太阳时尚未启用；日界线规则已改变有效计算日期。';
   if (trueSolarResolution?.applied) warnings.push(trueSolarResolution.note);
+  if (resolvedHistoricalDst?.applied) warnings.push(resolvedHistoricalDst.note);
   if (profile.calendar === 'lunar') warnings.push(calendarConversion.note);
   let solarTermBoundary: SolarTermBoundaryEvidence = {
     status: 'pending',
@@ -71,6 +101,7 @@ export function createBaziCalculationEvidence(
     effectiveCalculationTime: effectiveTime,
     timezone: settings.timezone,
     calendarConversion,
+    ...(resolvedHistoricalDst ? { historicalDstResolution: resolvedHistoricalDst } : {}),
     solarTermBoundary,
     dayBoundaryRule: settings.dayBoundary,
     trueSolarCorrection: trueSolarResolution?.applied
@@ -97,7 +128,7 @@ export function createBaziCalculationEvidence(
           applied: false,
           model: settings.solarTimeModel,
           algorithmVersion: settings.trueSolarTimeVersion,
-          civilTime: calendarConversion.normalizedSolarDateTime,
+          civilTime: effectiveCivilTime,
           effectiveTime,
           rawCorrectionMinutes: 0,
           correctionMinutes: 0,
@@ -108,7 +139,9 @@ export function createBaziCalculationEvidence(
           provenanceStatus: 'not-applied',
           standardMeridian: 120,
           precisionMinutes: 1,
-          note: '未启用真太阳时；有效计算时刻等于输入民用时刻。',
+          note: resolvedHistoricalDst?.applied
+            ? '未启用真太阳时；有效计算时刻沿用历史夏令时归一化后的标准时民用时刻。'
+            : '未启用真太阳时；有效计算时刻等于输入民用时刻。',
         },
     locationUsed: profile.latitude != null && profile.longitude != null
       ? {

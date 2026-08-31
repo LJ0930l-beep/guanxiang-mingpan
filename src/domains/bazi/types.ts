@@ -1,6 +1,11 @@
 import type { CalculationTimezone } from '@/types/charts';
 import type { BaziCalendarConversionEvidence } from '@/domains/bazi/calendar-resolver';
 import {
+  BAZI_HISTORICAL_DST_POLICY,
+  type BaziHistoricalDstPolicy,
+  type BaziHistoricalDstResolution,
+} from '@/domains/bazi/historical-dst';
+import {
   PUBLIC_BIRTH_DATE_RANGE_POLICY,
   type PublicBirthDateRangePolicy,
 } from '@/domains/policy/public-birth-date-range';
@@ -28,6 +33,8 @@ export type BaziTrueSolarRoundingRule =
 export interface BaziCalculationSettings {
   timezone: CalculationTimezone;
   birthDateRangePolicy: PublicBirthDateRangePolicy;
+  /** Frozen IANA-derived policy; absent only on legacy snapshots after migration. */
+  historicalDstPolicy: BaziHistoricalDstPolicy;
   dayBoundary: BaziDayBoundary;
   trueSolarTime: boolean;
   solarTimeModel: BaziSolarTimeModel;
@@ -39,6 +46,7 @@ export interface BaziCalculationSettings {
 export const DEFAULT_BAZI_CALCULATION_SETTINGS: BaziCalculationSettings = {
   timezone: 'Asia/Shanghai',
   birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
+  historicalDstPolicy: BAZI_HISTORICAL_DST_POLICY,
   dayBoundary: 'midnight',
   trueSolarTime: false,
   solarTimeModel: 'none',
@@ -110,6 +118,8 @@ export interface BaziCalculationEvidence {
   effectiveCalculationTime?: string;
   timezone: CalculationTimezone;
   calendarConversion: BaziCalendarConversionEvidence;
+  /** Resolution is additive metadata; legacy snapshots may omit it. */
+  historicalDstResolution?: BaziHistoricalDstResolution;
   solarTermBoundary: SolarTermBoundaryEvidence;
   dayBoundaryRule: BaziDayBoundary;
   trueSolarCorrection: TrueSolarCorrectionEvidence;

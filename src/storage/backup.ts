@@ -4,6 +4,7 @@ import {
   BAZI_TRUE_SOLAR_TIME_V1,
   BAZI_TRUE_SOLAR_TIME_V2,
 } from '@/domains/bazi/types';
+import { isBaziHistoricalDstPolicy } from '@/domains/bazi/historical-dst';
 import type { BirthProfile, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import { validateExplanationSnapshot } from '@/domains/explanation/snapshot';
 
@@ -78,6 +79,10 @@ function hasCurrentBaziMetadata(reading: SavedReading): boolean {
     || !isBaziSolarTimeVersion(payloadSettings.trueSolarTimeVersion)
     || !isBaziSolarTimeVersion(snapshotSettings.trueSolarTimeVersion)
     || !sameJson(payloadSettings, snapshotSettings)) {
+    return false;
+  }
+  if ((payloadSettings.historicalDstPolicy !== undefined && !isBaziHistoricalDstPolicy(payloadSettings.historicalDstPolicy))
+    || (snapshotSettings.historicalDstPolicy !== undefined && !isBaziHistoricalDstPolicy(snapshotSettings.historicalDstPolicy))) {
     return false;
   }
   const evidence = payload.calculationEvidence;

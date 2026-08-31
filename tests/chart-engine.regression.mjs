@@ -44,7 +44,8 @@ test('八字固定样例保持四柱与关系证据稳定', () => {
   assert.equal(result.generatedAt, generatedAt);
   assert.equal(result.engineVersion, 'taibu-core@3.4.0/bazi');
   assert.equal(result.snapshotVersion, 1);
-  assert.deepEqual(result.inputSnapshot, {
+  const { historicalDstPolicy: _historicalDstPolicy, historicalDstResolution: _historicalDstResolution, ...inputSnapshotWithoutHistoricalDst } = result.inputSnapshot;
+  assert.deepEqual(inputSnapshotWithoutHistoricalDst, {
     type: 'birth',
     timezone: 'Asia/Shanghai',
     profileId: 'fixture-2001-shenzhen',
@@ -58,7 +59,8 @@ test('八字固定样例保持四柱与关系证据稳定', () => {
     latitude: 22.5431,
     longitude: 114.0579,
   });
-  assert.deepEqual(result.calculationSettings, {
+  const { historicalDstPolicy: _settingsHistoricalDstPolicy, ...settingsWithoutHistoricalDst } = result.calculationSettings;
+  assert.deepEqual(settingsWithoutHistoricalDst, {
     timezone: 'Asia/Shanghai',
     birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
     dayBoundary: 'midnight',

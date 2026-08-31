@@ -10,6 +10,30 @@ export { calculateZiweiView } from '@/services/engines/ziwei-engine';
 export { calculateAstrologyView } from '@/services/engines/astrology-engine';
 export { assertZiweiLunarDate } from '@/domains/ziwei/lunar-input';
 export {
+  BAZI_HISTORICAL_DST_ADJUSTMENT_MINUTES,
+  BAZI_HISTORICAL_DST_DATA_SOURCE,
+  BAZI_HISTORICAL_DST_DATA_SOURCE_COMMIT,
+  BAZI_HISTORICAL_DST_DATA_SOURCE_COMMIT_URL,
+  BAZI_HISTORICAL_DST_DATA_SOURCE_URL,
+  BAZI_HISTORICAL_DST_DATA_VERSION,
+  BAZI_HISTORICAL_DST_DAYLIGHT_OFFSET_MINUTES,
+  BAZI_HISTORICAL_DST_POLICY,
+  BAZI_HISTORICAL_DST_POLICY_VERSION,
+  BAZI_HISTORICAL_DST_SOURCE_FILE,
+  BAZI_HISTORICAL_DST_SOURCE_RULE,
+  BAZI_HISTORICAL_DST_STANDARD_OFFSET_MINUTES,
+  BAZI_HISTORICAL_DST_TIMEZONE,
+  BAZI_HISTORICAL_DST_TRANSITIONS,
+  isBaziHistoricalDstPolicy,
+  resolveBaziHistoricalDst,
+} from '@/domains/bazi/historical-dst';
+export type {
+  BaziHistoricalDstPolicy,
+  BaziHistoricalDstResolution,
+  BaziHistoricalDstStatus,
+  BaziHistoricalDstTransition,
+} from '@/domains/bazi/historical-dst';
+export {
   assertPublicBirthDateRange,
   isPublicBirthDateRangePolicy,
   PUBLIC_BIRTH_DATE_RANGE_END_DATE,

@@ -7,6 +7,10 @@ import {
   DEFAULT_BAZI_CALCULATION_SETTINGS,
 } from '@/domains/bazi/types';
 import type { BaziCalculationSettings } from '@/domains/bazi/types';
+import {
+  isBaziHistoricalDstPolicy,
+  type BaziHistoricalDstResolution,
+} from '@/domains/bazi/historical-dst';
 import type { BirthProfile, Gender } from '@/types/domain';
 import { ChartInputError } from '@/services/chart-errors';
 import {
@@ -167,6 +171,9 @@ export function baziCalculationSettings(options?: CalculationOptions): BaziCalcu
   if (![BAZI_TRUE_SOLAR_TIME_V1, BAZI_TRUE_SOLAR_TIME_V2, BAZI_TRUE_SOLAR_TIME_UNKNOWN].includes(base.trueSolarTimeVersion)) {
     throw new Error('真太阳时规则版本无效。');
   }
+  if (!isBaziHistoricalDstPolicy(base.historicalDstPolicy)) {
+    throw new Error('历史夏令时规则版本无效。');
+  }
   return base;
 }
 
@@ -178,6 +185,7 @@ export function birthInputSnapshot(
   profile: BirthProfile,
   gender?: Gender,
   settings: CalculationSettings = { timezone: DEFAULT_CALCULATION_TIMEZONE },
+  historicalDstResolution?: BaziHistoricalDstResolution,
 ): BirthInputSnapshot {
   const snapshot: BirthInputSnapshot = {
     type: 'birth',
@@ -197,6 +205,8 @@ export function birthInputSnapshot(
   if (profile.latitude !== undefined) snapshot.latitude = profile.latitude;
   if (profile.longitude !== undefined) snapshot.longitude = profile.longitude;
   if (settings.birthDateRangePolicy) snapshot.birthDateRangePolicy = settings.birthDateRangePolicy;
+  if (settings.historicalDstPolicy) snapshot.historicalDstPolicy = settings.historicalDstPolicy;
+  if (historicalDstResolution) snapshot.historicalDstResolution = historicalDstResolution;
   if (settings.astrologyPolicy) snapshot.astrologyPolicy = settings.astrologyPolicy;
   return snapshot;
 }

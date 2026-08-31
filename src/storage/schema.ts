@@ -13,6 +13,7 @@ import {
   DEFAULT_BAZI_CALCULATION_SETTINGS,
 } from '@/domains/bazi/types';
 import type { BaziCalculationEvidence, BaziCalculationSettings, BaziSolarTimeVersion } from '@/domains/bazi/types';
+import { isBaziHistoricalDstPolicy } from '@/domains/bazi/historical-dst';
 import { TRUE_SOLAR_DATA_URL } from '@/domains/bazi/true-solar-time';
 import type { BirthProfile, DivinationModule, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import { migrateExplanationSnapshot } from '@/domains/explanation/snapshot';
@@ -188,7 +189,11 @@ function migrateCalculationSettings(value: unknown, module?: DivinationModule): 
     // Keep the current policy only when the snapshot explicitly persisted it.
     // A legacy snapshot remains readable without being retroactively labeled
     // as having been admitted by a policy that did not exist when it ran.
-    const { birthDateRangePolicy: _legacyPolicy, ...legacyBaziDefaults } = DEFAULT_BAZI_CALCULATION_SETTINGS;
+    const {
+      birthDateRangePolicy: _legacyPolicy,
+      historicalDstPolicy: _legacyHistoricalDstPolicy,
+      ...legacyBaziDefaults
+    } = DEFAULT_BAZI_CALCULATION_SETTINGS;
     const hasCompleteLegacySettings = isCompleteLegacyBaziSettings(raw);
     const trueSolarTimeVersion = isBaziSolarTimeVersion(raw.trueSolarTimeVersion)
       ? raw.trueSolarTimeVersion
@@ -208,6 +213,9 @@ function migrateCalculationSettings(value: unknown, module?: DivinationModule): 
       ...(typeof raw.calendarResolverVersion === 'string' ? { calendarResolverVersion: raw.calendarResolverVersion } : {}),
       ...(isPublicBirthDateRangePolicy(raw.birthDateRangePolicy)
         ? { birthDateRangePolicy: raw.birthDateRangePolicy }
+        : {}),
+      ...(isBaziHistoricalDstPolicy(raw.historicalDstPolicy)
+        ? { historicalDstPolicy: raw.historicalDstPolicy }
         : {}),
     } as BaziCalculationSettings;
   }

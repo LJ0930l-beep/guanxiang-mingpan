@@ -1,5 +1,6 @@
 import type { DivinationModule, Gender } from '@/types/domain';
 import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
+import type { BaziHistoricalDstPolicy, BaziHistoricalDstResolution } from '@/domains/bazi/historical-dst';
 import type { NormalizedBaziChart } from '@/domains/bazi/model/normalized-chart';
 import type { BaziEvidenceGraph, StrengthAssessment } from '@/domains/bazi/evidence/index';
 import type { BaziInterpretation } from '@/domains/bazi/interpretation/rules';
@@ -26,6 +27,8 @@ export interface CalculationSettings {
    * legacy/Liuyao snapshots without a birth date policy remain readable.
    */
   birthDateRangePolicy?: PublicBirthDateRangePolicy;
+  /** Frozen Bazi historical DST policy; absent on legacy non-Bazi snapshots. */
+  historicalDstPolicy?: BaziHistoricalDstPolicy;
   /** Versioned Astrology precision and location policy; absent on legacy records. */
   astrologyPolicy?: AstrologyCalculationPolicy;
 }
@@ -47,6 +50,10 @@ export interface BirthInputSnapshot {
   longitude?: number;
   /** The same policy is copied into the input snapshot for replay/export. */
   birthDateRangePolicy?: PublicBirthDateRangePolicy;
+  /** The frozen historical DST policy is copied for Bazi replay/export. */
+  historicalDstPolicy?: BaziHistoricalDstPolicy;
+  /** Original clock plus post-calendar historical DST resolution metadata. */
+  historicalDstResolution?: BaziHistoricalDstResolution;
   /** Versioned Astrology precision and location policy; absent on legacy records. */
   astrologyPolicy?: AstrologyCalculationPolicy;
 }

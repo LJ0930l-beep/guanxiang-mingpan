@@ -29,6 +29,8 @@ export const CHART_INPUT_ERROR_CODES = [
   'MISSING_BIRTH_COORDINATES',
   'INVALID_LIUYAO_DATE',
   'INVALID_LIUYAO_SEED',
+  'NONEXISTENT_LOCAL_TIME',
+  'AMBIGUOUS_LOCAL_TIME',
 ] as const;
 
 export type ChartInputErrorCode = (typeof CHART_INPUT_ERROR_CODES)[number];
@@ -42,6 +44,8 @@ export const CHART_INPUT_ERROR_MESSAGES: Record<ChartInputErrorCode, string> = {
   MISSING_BIRTH_COORDINATES: '无法识别出生城市，请补充城市或成对的纬度和经度。',
   INVALID_LIUYAO_DATE: '六爻日期无效，请使用有效的本地时间或带时区 ISO 时间。',
   INVALID_LIUYAO_SEED: '六爻 seed 无效，请提供 1 至 256 个字符的非空字符串。',
+  NONEXISTENT_LOCAL_TIME: '出生时间落在中国大陆历史夏令时跳时产生的不存在时段，请确认当地民用钟表记录。',
+  AMBIGUOUS_LOCAL_TIME: '出生时间落在中国大陆历史夏令时回拨产生的重复时段，请确认当地民用钟表记录。',
 };
 
 export interface ChartInputErrorContract {
