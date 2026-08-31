@@ -2,8 +2,8 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-A4b4 紫微农历/闰月输入校验与 cumulative resolution overlay
-> 本批状态：Sol High 独立验收 PASS；P5-A4b3 八字真太阳时跨日/子初边界矩阵已由 Sol High 独立验收 PASS；P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次（2026-08-15）
+> 批次：P5-A4b5 四模块 engine failures 与跨模块失败契约
+> 本批状态：Sol High 独立验收 PASS；P5-A4b4/P5-A4b3/P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -385,6 +385,47 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 
 Sol High 独立验收结论：**P5-A4b4 PASS**。本批只关闭上述两个紫微农历/闰月输入 gap；下一微批为 **P5-A4b5 四模块 engine errors 与跨模块失败契约**，日期范围、DST、未知时辰、Astrology `0,0` 及其他负责人决策项继续 pending。整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
 
+## 5.10 P5-A4b5 四模块 engine failures 与跨模块失败契约（Sol High 独立验收 PASS）
+
+**状态：P5-A4b5 PASS；P5-A 与 Phase 5 仍未完成**
+
+### Scope 与明确不做
+
+本小批只关闭 immutable P5-A4a registry 中仍为 `gap` 的四个真实条目：
+
+- `p5-a4a-ziwei-engine-error-path`
+- `p5-a4a-astrology-engine-error-path`
+- `p5-a4a-liuyao-engine-error-path`
+- `p5-a4a-cross-error-copy-failure-mode`
+
+真实跨模块审计项是 `p5-a4a-cross-error-copy-failure-mode`；不存在且未使用 `p5-a4a-cross-error-taxonomy`。八字 engine-error 路径在原审计中已经通过，本批仅纳入四模块同形/兼容回归，不虚构新的八字 gap。
+
+本批不处理 Astrology unknown-coordinate `0,0`/no-guessing、公开日期支持范围、DST、未知时辰、算法/公式/历法规则、UI/读屏、Storage/schema、依赖或 CI，也不代替负责人决策。正常成功盘保持原样；引擎失败不得返回部分盘、默认盘或猜测盘。
+
+### 实施摘要与 cumulative overlay
+
+- 新增纯 JSON `p5-a4b-input-resolution.v5`，累计保持 v1=3、v2=5、v3=6、v4=8，并追加四项为 v5=12；v1/v2/v3/v4 exports、顺序前缀与 validators 保持兼容，新增 version-aware v5 validator。
+- Bazi/Ziwei/Astrology/Liuyao 统一使用稳定、JSON-safe、fail-closed 的引擎失败契约：公开形状严格为 `{name,category,module,code}`，本批错误的 `name/category/module/code` 为 `ChartEngineError`/`engine-failure`/对应模块/`ENGINE_FAILURE`。公开 contract 不含 `cause`、`message`、`stack`、PII 或底层库细节。
+- 底层未知异常按模块包装；稳定 engine error 不重复包装。`ChartInputError` 保持完全兼容并原样重抛（同步、异步及跨边界纯合同均保持输入错误语义）；任何引擎失败均 fail-closed，不生成部分盘、默认盘或猜测盘。
+- 本批不改变正常成功盘；局部 seam 注入异常，避免全局 monkey patch 和并行污染。新增回归覆盖四模块成功、输入错误、异常包装、安全序列化、跨模块同形与 overlay 前缀/校验。
+
+实现批次实际变更为 10 paths：`package.json`、`src/domains/golden/boundary-input-resolution.ts`、`src/domains/golden/index.ts`、`src/services/chart-engine.ts`、`src/services/chart-errors.ts`、`src/services/engines/astrology-engine.ts`、`src/services/engines/bazi-engine.ts`、`src/services/engines/liuyao-engine.ts`、`src/services/engines/ziwei-engine.ts`、`tests/p5-engine-errors.regression.mjs`。本次文档收口只修改本账本及另外四份指定 P5 文档。
+
+### 测试、质量与远端证据
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS（0 warning）
+npm test               PASS（146/146）
+npm run build:web      PASS（8 routes，Web Export 实际导出/路由校验通过）
+npm audit --omit=dev   0 critical / 8 high / 13 moderate / 0 low（21 total；未升级依赖）
+```
+
+GitHub Actions [run 33363580174](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33363580174) 的 validate job `99399593743` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。实现基线 local `f6dad29fc72b1c49e296b5300ae19c5a2cd6a5b3`；remote `98a336b8381016d781abc2b5584cc0777cb8bbd5`；remote parent `c7801ddc28522a7fdcfe0b38931443ba559868c2`。
+
+P5-A4a immutable audit 本体、`41 / 18 / 15 / 5 / 2 / 1` 统计与 Astrology `0,0` probe 原样不动；npm audit 生产基线为 `0 critical / 8 high / 13 moderate / 0 low`。Sol High 已独立验收 **P5-A4b5 PASS**。下一步为 **P5-A 负责人决策项收口**；日期范围、DST、未知时辰、Astrology `0,0`/no-guessing 及其他 owner decision/gap 仍 pending，整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
+
 ## 6. 统一批次验收模板
 
 以后每个 P5 小批都必须在交接记录中填写以下字段，缺项不得宣称完成：
@@ -426,4 +467,4 @@ Sol High 独立验收结论：**P5-A4b4 PASS**。本批只关闭上述两个紫�
 - P5-A2 仅增加 HKO 公开资料支持的两条 published-reference Golden 与离线测试，不改变任何 resolver/engine 输出；立春只比较分钟，农历只比较日期，且不验证四柱流派结论。
 - P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成实现与最小兼容修复，并经 Sol High 独立验收 PASS。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现并经 Sol High 独立验收 PASS，范围为历史证据展示与显式“按当前规则复核”。
 
-P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4a 的剩余 gap、P5-A4b1/P5-A4b2/P5-A4b3/P5-A4b4 未覆盖事项、owner decisions 和 P5-B/P5-C 路由不代表算法已修复。六爻 engine/cross taxonomy、unknown-coordinate `0,0`、公开日期范围、1986–1991 DST、缺时辰等仍未完成；下一微批为 P5-A4b5 四模块 engine errors 与跨模块失败契约。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
+P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4b5 仅以 v5 overlay 关闭四个真实 engine-error/cross-copy gap，A4a immutable audit、owner decisions 和 P5-B/P5-C 路由不代表算法已修复。Astrology `0,0`/no-guessing、公开日期范围、1986–1991 DST、缺时辰等仍未完成；下一步为 P5-A 负责人决策项收口。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。

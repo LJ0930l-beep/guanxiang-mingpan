@@ -123,3 +123,24 @@ Sol High 独立验收结论：**P5-A4b3 PASS**。紫微 lunar/闰月、六爻 en
 新增回归覆盖普通农历、有效闰月、无效闰月组合、无效农历日期，以及 `TZ=UTC` 与 `TZ=Asia/Shanghai` deepEqual，且不依赖 OS/process TZ。实现 local `62697525875a6214b19b447c1d08753bfdb18d75` / remote `306fdcdc89090f2c3c018ab8a25c5938b1e74195`，remote parent `e41513d3343c7d081bd17d06521c9410139286ab`；GitHub Actions [run 33357809089](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33357809089) 与 validate job `99383188584` 均 `completed/success`，Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；本地 `git diff --check`、typecheck、lint（0 warning）、`npm test` 139/139、`build:web` 8 routes 均 PASS。`npm audit --omit=dev` 生产基线为 0 critical、8 high、13 moderate、0 low，未升级依赖。
 
 Sol High 独立验收结论：**P5-A4b4 PASS**。下一微批为 **P5-A4b5 四模块 engine errors 与跨模块失败契约**；负责人决策项继续 pending，整个 P5-A 与 Phase 5 仍未完成。
+
+## 12. P5-A4b5 四模块 engine failures 与跨模块失败 resolution overlay（Sol High 独立验收 PASS）
+
+本节只记录 P5-A4b5 overlay 的增量验收事实；前述 P5-A4a immutable audit 本体、原始 registry、`41 / 18 / 15 / 5 / 2 / 1` 统计与 Astrology `0,0` probe 原样不动。immutable registry 的原始 `gap` 状态不被改写，以下四项由 v5 overlay 记录为本批关闭：
+
+| auditCaseId | 本批关闭事实 |
+|---|---|
+| `p5-a4a-ziwei-engine-error-path` | 紫微引擎未知异常统一包装为稳定、JSON-safe、fail-closed 的模块化 engine error；不返回部分盘、默认盘或猜测盘。 |
+| `p5-a4a-astrology-engine-error-path` | 占星引擎未知异常统一包装为稳定、JSON-safe、fail-closed 的模块化 engine error；正常成功盘和 `0,0`/no-guessing 边界不被改变。 |
+| `p5-a4a-liuyao-engine-error-path` | 六爻引擎未知异常统一包装为稳定、JSON-safe、fail-closed 的模块化 engine error；不返回部分盘、默认盘或猜测盘。 |
+| `p5-a4a-cross-error-copy-failure-mode` | 四模块跨边界失败结果统一为同形安全 contract，并验证输入错误兼容、稳定错误不重复包装和安全序列化。 |
+
+真实跨模块审计项是 `p5-a4a-cross-error-copy-failure-mode`；不存在且未使用 `p5-a4a-cross-error-taxonomy`。八字 engine-error 路径在 A4a 原审计中已经通过，本批仅纳入 Bazi 的跨模块同形/兼容回归，不虚构新的八字 gap。
+
+四模块公开 engine failure contract 严格为 `{name,category,module,code}`，本批值为 `ChartEngineError`/`engine-failure`/对应模块/`ENGINE_FAILURE`；不暴露 `cause`、`message`、`stack`、PII 或底层库细节。未知异常按模块包装，稳定 engine error 不重复包装；`ChartInputError` 完全兼容并原样重抛。所有 engine failure fail-closed，正常成功盘保持不变；异常注入使用局部 seam，不使用全局 monkey patch 或并行污染。
+
+新增纯 JSON `p5-a4b-input-resolution.v5`，累计 v1=3/v2=5/v3=6/v4=8/v5=12；保留 v1/v2/v3/v4 exports、顺序前缀与 validators，并新增 version-aware v5 validator。回归覆盖四模块成功、输入错误、异常包装、安全序列化、跨模块同形与 overlay 前缀/校验。实现批次实际变更为 10 paths：`package.json`、`src/domains/golden/boundary-input-resolution.ts`、`src/domains/golden/index.ts`、`src/services/chart-engine.ts`、`src/services/chart-errors.ts`、`src/services/engines/astrology-engine.ts`、`src/services/engines/bazi-engine.ts`、`src/services/engines/liuyao-engine.ts`、`src/services/engines/ziwei-engine.ts`、`tests/p5-engine-errors.regression.mjs`。
+
+质量门：`git diff --check` PASS、`npm run typecheck` PASS、`npm run lint` PASS（0 warning）、`npm test` PASS（146/146）、`npm run build:web` PASS（8 routes，Web Export 实际导出/路由校验通过）；`npm audit --omit=dev` 为 0 critical / 8 high / 13 moderate / 0 low（21 total，未升级依赖）。GitHub Actions [run 33363580174](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33363580174) 的 validate job `99399593743` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。实现基线 local `f6dad29fc72b1c49e296b5300ae19c5a2cd6a5b3`、remote `98a336b8381016d781abc2b5584cc0777cb8bbd5`、remote parent `c7801ddc28522a7fdcfe0b38931443ba559868c2`。
+
+Sol High 独立验收结论：**P5-A4b5 PASS**。Astrology `0,0`/no-guessing、日期范围、DST、未知时辰及其他负责人决策项仍 pending；下一步为 **P5-A 负责人决策项收口**。本节不表示 P5-A 或 Phase 5 完成。

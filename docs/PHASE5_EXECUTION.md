@@ -1,10 +1,10 @@
-# Phase 5 · P5-A1～P5-A4b4 四术可信度与输入边界审计
+# Phase 5 · P5-A1～P5-A4b5 四术可信度与输入边界审计
 
-更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
-范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay、P5-A4b4 紫微农历/闰月输入校验与 cumulative resolution overlay
+更新日期：2026-08-31
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay、P5-A4b4 紫微农历/闰月输入校验与 cumulative resolution overlay、P5-A4b5 四模块 engine failures 与跨模块失败契约
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现及 Sol High 独立验收 PASS，第 15 节记录 P5-A4b4 紫微农历/闰月输入校验与 v4 overlay 实现及 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现及 Sol High 独立验收 PASS，第 15 节记录 P5-A4b4 紫微农历/闰月输入校验与 v4 overlay 实现及 Sol High 独立验收 PASS，第 16 节记录 P5-A4b5 四模块 engine failures 与 v5 overlay 实现及 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -419,3 +419,42 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 ### 15.4 验收结论与下一批
 
 Sol High 独立验收结论：**P5-A4b4 PASS**。本批只关闭上述两个紫微农历/闰月输入 gap；下一微批为 **P5-A4b5 四模块 engine errors 与跨模块失败契约**，owner decision items 继续 pending。整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
+
+## 16. P5-A4b5 四模块 engine failures 与跨模块失败契约（Sol High 独立验收 PASS）
+
+### 16.1 Scope 与明确不做
+
+本小批只关闭 immutable P5-A4a registry 中仍为 `gap` 的四个真实条目：
+
+- `p5-a4a-ziwei-engine-error-path`
+- `p5-a4a-astrology-engine-error-path`
+- `p5-a4a-liuyao-engine-error-path`
+- `p5-a4a-cross-error-copy-failure-mode`
+
+真实跨模块审计项是 `p5-a4a-cross-error-copy-failure-mode`；不存在且未使用 `p5-a4a-cross-error-taxonomy`。八字 engine-error 路径在原审计中已经通过，本批仅纳入四模块同形/兼容回归，不虚构新的八字 gap。
+
+本批不处理 Astrology unknown-coordinate `0,0`/no-guessing、公开日期支持范围、DST、未知时辰、算法/公式/历法规则、UI/读屏、Storage/schema、依赖或 CI，也不代替负责人决策；正常成功盘保持原样，任何引擎失败均不得返回部分盘、默认盘或猜测盘。
+
+### 16.2 实施摘要与失败契约
+
+- 新增纯 JSON `p5-a4b-input-resolution.v5`，累计 v1=3、v2=5、v3=6、v4=8、v5=12；v1/v2/v3/v4 exports、顺序前缀与 validators 保持兼容，并新增 version-aware v5 validator。
+- Bazi/Ziwei/Astrology/Liuyao 统一使用稳定、JSON-safe、fail-closed 的引擎失败契约，公开形状严格为 `{name,category,module,code}`；本批错误值为 `ChartEngineError`/`engine-failure`/对应模块/`ENGINE_FAILURE`。公开 contract 不含 `cause`、`message`、`stack`、PII 或底层库细节。
+- 底层未知异常按模块包装，稳定 engine error 不重复包装；`ChartInputError` 完全兼容并原样重抛，同步、异步及跨边界纯合同均保持输入错误语义。引擎失败不会返回部分盘、默认盘或猜测盘。
+- 只使用局部 seam 注入异常，避免全局 monkey patch 和并行污染；正常成功盘保持不变。回归覆盖四模块成功、输入错误、异常包装、安全序列化、跨模块同形与 overlay 前缀/校验。
+
+实现批次实际变更为 10 paths：`package.json`、`src/domains/golden/boundary-input-resolution.ts`、`src/domains/golden/index.ts`、`src/services/chart-engine.ts`、`src/services/chart-errors.ts`、`src/services/engines/astrology-engine.ts`、`src/services/engines/bazi-engine.ts`、`src/services/engines/liuyao-engine.ts`、`src/services/engines/ziwei-engine.ts`、`tests/p5-engine-errors.regression.mjs`。本次文档收口只修改五份指定 P5 文档。
+
+### 16.3 测试、质量与远端证据
+
+```text
+git diff --check       PASS
+npm run typecheck      PASS
+npm run lint           PASS（0 warning）
+npm test               PASS（146/146）
+npm run build:web      PASS（8 routes，Web Export 实际导出/路由校验通过）
+npm audit --omit=dev   0 critical / 8 high / 13 moderate / 0 low（21 total；未升级依赖）
+```
+
+GitHub Actions [run 33363580174](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33363580174) 的 validate job `99399593743` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。实现基线 local `f6dad29fc72b1c49e296b5300ae19c5a2cd6a5b3`；remote `98a336b8381016d781abc2b5584cc0777cb8bbd5`；remote parent `c7801ddc28522a7fdcfe0b38931443ba559868c2`。
+
+P5-A4a immutable audit 本体、`41 / 18 / 15 / 5 / 2 / 1` 统计与 Astrology `0,0` probe 原样不动；npm audit 生产基线为 `0 critical / 8 high / 13 moderate / 0 low`。Sol High 独立验收结论：**P5-A4b5 PASS**。下一步为 **P5-A 负责人决策项收口**；日期范围、DST、未知时辰、Astrology `0,0`/no-guessing 及其他 owner decision/gap 仍 pending，整个 P5-A、Phase 5 和 Level A 发布门仍未完成。
