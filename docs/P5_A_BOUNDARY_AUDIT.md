@@ -1,6 +1,6 @@
-# P5-A4a / P5-A5a / P5-A5b · 四术边界与输入策略审计矩阵
+# P5-A4a / P5-A5a / P5-A5b / P5-A5c · 四术边界与输入策略审计矩阵
 
-状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a 与 P5-A5b 已由 Sol High 独立验收 PASS（2026-08-31）
+状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b 与 P5-A5c 已由 Sol High 独立验收 PASS（2026-08-31）
 
 本文件只说明机器可检查审计合同的范围和当前事实，不把项目回归测试、第三方库返回或 CI 通过提升为四术专业真值，也不表示整个 P5-A 或 Phase 5 已完成。
 
@@ -25,7 +25,7 @@ runtime validator 会检查纯 JSON（拒绝函数、`Date`、循环引用、NaN
 | 跨模块 | 5 | 1 | 3 | 0 | 0 | 1 |
 | **合计** | **41** | **18** | **15** | **5** | **2** | **1** |
 
-覆盖类别包括：八字公历/农历闰月、节气、日界、真太阳时、固定业务时区、未知时辰/经度、日期范围与历史 DST；紫微时辰、solar/lunar/闰月、日期范围、未知城市与引擎错误；占星精确/近似、坐标、非法坐标、日期范围、跨宿主 TZ 与错误；六爻 seed/date/scope/timezone、非法输入、空问题、用神、跨宿主 TZ、应期承诺与错误；以及跨模块无猜测、错误文案、历史 snapshot、城市覆盖和 a11y 路由。
+覆盖类别包括：八字公历/农历闰月、节气、日界、真太阳时、固定业务时区、未知时辰/经度、日期范围与历史 DST；紫微时辰、solar/lunar/闰月、日期范围、未知城市与引擎错误；占星精确/近似、坐标、非法坐标、日期范围、跨宿主 TZ 与错误；六爻 seed/date/scope/timezone、非法输入、空问题、用神、跨宿主 TZ、应期承诺与错误；以及跨模块无猜测、错误文案、历史 snapshot、城市覆盖和 a11y 路由。P5-A5c 以 additive overlay 解析八字历史 DST decision-required，不改变上述 immutable 统计。
 
 ## 3. 已覆盖的工程事实
 
@@ -197,3 +197,21 @@ Sol High 独立验收结论：**P5-A5a PASS**。本批只关闭三项日期 deci
 精度、锚点/规则版本和 location source/policy 随新结果写入 `calculationSettings`、`inputSnapshot`、`ChartSnapshotMeta`、`SavedReading`、普通/加密 backup/replay；旧快照缺少政策时保持可读，不补写历史政策或静默重算。专项 `tests/p5-astrology-safety.regression.mjs` **7/7**，统一 `npm test` **162/162**；typecheck、lint（0 warning）、Web Export 8 routes、`git diff --check` 均 PASS；production audit 为 0 critical / 8 high / 13 moderate / 0 low，未升级依赖。回归含 exact 坐标/城市优先级、日级隐藏字段、缺地点/空城市/单边/越界坐标、局部 seam 的 `0,0` 防回归、旧快照与 backup/replay、UTC/Asia/Shanghai deepEqual、v1/v2/v6 validators 及 exact fixture 兼容。
 
 实现 local `7f0caef63a0656ff21a571c7edb9cb7db1828d49` / remote `6d00ad4834f012e61a99431d24d2301f766d7d40`，remote parent `44488581f0853a1be7a8366881f42b6a6f65f581`；GitHub Actions run `33385531379` / job `99467178839` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。Sol High 独立验收结论：**P5-A5b PASS**。关闭 IDs 为 `p5-a4a-astrology-missing-time`、`p5-a4a-astrology-missing-coordinate`、`p5-a4a-cross-no-guessing`；下一批为 P5-A5c 中国大陆 1986–1991 历史 DST，P5-A 与 Phase 5 仍未完成。
+
+## 15. P5-A5c 中国大陆 1986–1991 历史 DST resolution overlay（Sol High 独立验收 PASS）
+
+本节只记录对 A4a immutable 审计的 additive resolution，不改写第 1～7 节原始 registry、统计或历史行为文本。P5-A5c 关闭的唯一 decision-required case 为：
+
+| auditCaseId | 处置 | contract |
+|---|---|---|
+| `p5-a4a-bazi-historical-dst` | 中国大陆首发八字在 1986–1991 采用冻结的 `Asia/Shanghai` 官方民用钟表/北京时间规则；春季 gap 与秋季 overlap 均 fail-fast，不猜测；夏令时有效输入固定 -60 分钟。 | `p5-a5a-owner-decision.v3`（owner decision 累计 v1=3、v2=4、v3=5） |
+
+来源冻结为 IANA `tzdata2025b` `asia`/`Rule PRC`，release [archive](https://data.iana.org/time-zones/releases/tzdata2025b.tar.gz)，源码 commit [7e1145bfdb9630c127841dc8ce808a937a300938](https://github.com/eggert/tz/commit/7e1145bfdb9630c127841dc8ce808a937a300938)。冻结规则行是 `Rule PRC 1986 only - May 4 2:00 1:00 D`、`Rule PRC 1987 1991 - Apr Sun>=11 2:00 1:00 D`、`Rule PRC 1986 1991 - Sep Sun>=11 2:00 0 S`；六年 transition 为：1986 `05-04/09-14`、1987 `04-12/09-13`、1988 `04-17/09-11`、1989 `04-16/09-17`、1990 `04-15/09-16`、1991 `04-14/09-15`，当地转换时刻均为 `02:00:00`。春季 `02:00–02:59` 为 nonexistent，秋季 `01:00–01:59` 为 ambiguous；运行时使用仓库静态表，不读取 OS/process timezone 或设备 tzdata。非官方地区习惯时间不在 v1 承诺范围内，作为残余风险保留。
+
+八字计算顺序锁定为 **calendar validation + 1900–2099 range → lunar-to-solar → DST → true solar → day boundary → engine**。policy/resolution/settings/input/evidence、`ChartSnapshotMeta`、`SavedReading`、普通/加密 backup/replay 均保留来源、版本、时区、原始民用时间和有效计算时刻；旧快照可读但不补写、不静默重算。A4a immutable `41 / 18 / 15 / 5 / 2 / 1` 统计不变，A4b v1–v6 overlays 不变；v3 仅在 owner overlay cumulative prefix 后追加第五项。
+
+专项 `tests/p5-bazi-historical-dst.regression.mjs` **8/8**，统一 `npm test` **170/170**；typecheck、lint（0 warning）、`git diff --check`、Web Export 8 routes 均 PASS，Web Export 实际执行。回归覆盖每年 start/end、冬季 0、季中 -60、spring gap、autumn overlap、solar+lunar、跨日、true-solar on/off、`midnight`/`ziEarly`、快照/备份/旧快照及 `TZ=UTC`/`Asia/Shanghai`/第三时区 deepEqual；`npm audit --omit=dev` 保持 0 critical / 8 high / 13 moderate / 0 low，未升级依赖。
+
+实现 local `886aec930564c5399e8e67d4878ff8aee135fa28`（parent `72287ce7698a673b098badcb0a0f0e2a196e3f29`），remote `43def88793c189313c20c959f9a23712cd2fd811`（parent `fa40f8a389f64b214d672e6f3dc45c3f6341ee54`），实现 16 paths；GitHub Actions [run 33401047517](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33401047517) / job `99517136945` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。
+
+Sol High 独立验收结论：**P5-A5c PASS**。A4a immutable matrix 仍是 5 个 decision-required，只是现在五项均有 additive accepted overlay；这不表示整个 P5-A 或 Phase 5 完成。下一步固定为 **P5-A final acceptance/audit closure**；P5-B 城市覆盖及非官方地区时间习惯风险继续保留。
