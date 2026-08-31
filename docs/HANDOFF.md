@@ -2,7 +2,7 @@
 
 > 文档状态：可作为后续产品、设计、研发和上线协作的单一交接入口  
 > 更新日期：2026-08-15  
-> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容、P5-A3b 历史真太阳时证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计、P5-A4b1 安全输入校验/错误合同/resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现均已通过 Sol High 独立验收；P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative overlay 已实现，状态为实现完成待 Sol High 独立验收；P5-A3 子里程碑整体完成，但整个 P5-A/Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
+> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容、P5-A3b 历史真太阳时证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计、P5-A4b1 安全输入校验/错误合同/resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative overlay 均已通过 Sol High 独立验收；P5-A3 子里程碑整体完成，但整个 P5-A/Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
 
 ## 1. 一页总览
 
@@ -16,7 +16,7 @@
 - 首发支持 Web 与 iPhone；界面与文案为简体中文、中国大陆场景。
 - 使用“观象仪”作为原创视觉母题：曜石黑、深玉绿、旧铜金，以及克制的同心环动画。
 
-当前结论：**页面不再只是壳子**。四个模块均能在本地生成、解释并保存结构化排盘结果；八字、紫微、占星和六爻现在都有标准化模型/证据图/版本化解释快照，解释层支持术语与原始证据展开，记录页只读展示保存时解释，历史 Diff 只比较已保存快照。P5-A1 已建立 `golden-case.v1` 四术合同、分类门禁和现状 registry；P5-A2 又加入两条 HKO published-reference：立春只按公开分钟比较、农历只按公开日期比较，均不代表四柱流派或专业真值；P5-A3a、P5-A3b、P5-A4a、P5-A4b1 与 P5-A4b2 均已通过 Sol High 独立验收，P5-A3 子里程碑整体完成；P5-A4a 已将四术边界/输入策略整理为 41 项机器可检查审计合同，P5-A4b1 已关闭三项安全输入 gap，P5-A4b2 已关闭六爻 date/seed 两项 gap 并将 overlay 累计到五项。Phase 3 的记录搜索/分组/对比、按日事实反馈、普通/加密备份、导入冲突预览和事务回滚仍保持有效。账号、支付、专业校验、实体设备签字与合规材料尚未完成，因此不应将当前版本作为正式公开产品提交。Phase 2 的批次记录见 [PHASE2_BAZI_EXECUTION.md](PHASE2_BAZI_EXECUTION.md)，Phase 3 的批次记录见 [PHASE3_EXECUTION.md](PHASE3_EXECUTION.md)，Phase 4 的批次记录见 [PHASE4_EXECUTION.md](PHASE4_EXECUTION.md)，P5-A1/P5-A2/P5-A3a/P5-A3b/P5-A4a/P5-A4b1/P5-A4b2 的记录见 [PHASE5_EXECUTION.md](PHASE5_EXECUTION.md)。
+当前结论：**页面不再只是壳子**。四个模块均能在本地生成、解释并保存结构化排盘结果；八字、紫微、占星和六爻现在都有标准化模型/证据图/版本化解释快照，解释层支持术语与原始证据展开，记录页只读展示保存时解释，历史 Diff 只比较已保存快照。P5-A1 已建立 `golden-case.v1` 四术合同、分类门禁和现状 registry；P5-A2 又加入两条 HKO published-reference：立春只按公开分钟比较、农历只按公开日期比较，均不代表四柱流派或专业真值；P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2 与 P5-A4b3 均已通过 Sol High 独立验收，P5-A3 子里程碑整体完成；P5-A4a 已将四术边界/输入策略整理为 41 项机器可检查审计合同，P5-A4b1 已关闭三项安全输入 gap，P5-A4b2 已关闭六爻 date/seed 两项 gap 并将 overlay 累计到五项，P5-A4b3 已关闭八字真太阳时跨日/子初边界 gap 并将 overlay 累计到六项。Phase 3 的记录搜索/分组/对比、按日事实反馈、普通/加密备份、导入冲突预览和事务回滚仍保持有效。账号、支付、专业校验、实体设备签字与合规材料尚未完成，因此不应将当前版本作为正式公开产品提交。Phase 2 的批次记录见 [PHASE2_BAZI_EXECUTION.md](PHASE2_BAZI_EXECUTION.md)，Phase 3 的批次记录见 [PHASE3_EXECUTION.md](PHASE3_EXECUTION.md)，Phase 4 的批次记录见 [PHASE4_EXECUTION.md](PHASE4_EXECUTION.md)，P5-A1/P5-A2/P5-A3a/P5-A3b/P5-A4a/P5-A4b1/P5-A4b2/P5-A4b3 的记录见 [PHASE5_EXECUTION.md](PHASE5_EXECUTION.md)。
 
 ## 2. 已确认的产品设计草案
 
@@ -146,6 +146,7 @@
 | P5-A4a：四术边界与输入策略机器可检查审计 | Sol High 独立验收 PASS | 新增纯 JSON `p5-a4a-boundary-input.v1` 合同与 runtime validator，覆盖八字 10、紫微 9、占星 8、六爻 9、跨模块 5，共 41 项；状态为 covered 18、gap 15、decision-required 5、not-applicable 2、routed-p5-b 1，全部 regression-only。新增 8 项回归并接入统一 `npm test`，只盘点/建门禁，不改算法、UI、Storage、备份、依赖或城市数据。已确认占星未知坐标 0,0 会改变行星位置、跨模块无猜测尚未闭环、紫微/占星普通非法公历日期是 P5-A4b gap；cross error taxonomy/contract 仍未完成，后续批次另行授权，UI/读屏 copy 进入 P5-C；5 个 contract cases 归并为 4 个 owner decisions（八字日期范围、紫微/占星日期范围、历史 DST、占星缺时辰近似）。实现 local `2cf82d402e2f840ebf7c29bf47ee3b167fab9688` / remote `c7055e8962b3b21dd8b78c8f5c64769e9528daf0`；CI `31879638540` completed/success，Typecheck、Lint、Regression tests 与 Web Export 均实际执行；主管独立复跑 112/112 与 Web Export 8 routes PASS。 | 当前不关闭 P5-A；P5-A4b、P5-B、P5-C 和 owner 决策仍需后续授权。 |
 | P5-A4b1：安全输入校验、可识别错误与 resolution overlay | Sol High 独立验收 PASS | 新增 `ChartInputError`（`input-validation`、`INVALID_GREGORIAN_DATE`、`INVALID_BIRTH_COORDINATES`）、严格宿主 TZ 无关 Gregorian validator、Astrology 显式坐标 pair/finite/range 校验，以及纯 JSON `p5-a4b-input-resolution.v1` 三项 overlay；Ziwei lunar 不被 Gregorian validator 拦截，两坐标缺失仍保留 A4a 的 unknown-city/`0,0` gap。新增 8 项回归接入统一 `npm test`，A4a registry/41 项统计不变。实现 local `0d279c677c1c05eb2492f9ae3b779267feb8b165` / remote `8ab5c6981c89590f6f19fabdc688c34ae60650ed`；CI run `31882220415` completed/success，Typecheck、Lint、Regression tests 与 Web Export 均实际执行；主管本地 `git diff --check`、typecheck、lint、`npm test` 120/120、`build:web` 8 routes 均 PASS。 | 只关闭三项安全 gap；cross error taxonomy、0,0、日期范围、DST、缺时辰及其余 gap/decision-required 未完成，P5-A/Phase 5 仍未完成。 |
 | P5-A4b2：六爻 seed/date 输入合同与跨宿主 TZ 复现 | Sol High 独立验收 PASS | `ChartInputError` 增加 `INVALID_LIUYAO_DATE`/`INVALID_LIUYAO_SEED`；严格 civil date/offset 校验、原始 Unicode seed 1～256 长度校验和自动 seed 验证；v1 三项 overlay 保持不变，v2 `p5-a4b-input-resolution.v2` 累计五项且纯 JSON/唯一/关联原始 gap 与 `P5-A4b`。新增 8 项回归，统一 `npm test` 128/128；覆盖 local/seconds/millis、Z/`+08:00`/`+0800`、非法 date/seed 矩阵、Unicode payload/inputSnapshot、deepEqual 和 UTC/Asia/Shanghai 宿主一致性。实现 local `0815612cb8e2261325828ccf0d07e51525f34280` / remote `a976b4f07a2d516713db10cb2c0f2b53c98aa51a`；GitHub Actions run `31884436927` completed/success，validate job `95011564415` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；主管本地独立门禁 128/128、Web Export 8 routes 均 PASS。 | 本批只关闭六爻 date/seed 两项；六爻 engine/cross taxonomy、0,0、日期范围、DST、缺时辰、owner decisions 及其他 gap/decision-required 未完成，P5-A/Phase 5 仍未完成。 |
+| P5-A4b3：八字真太阳时跨日/子初边界矩阵与 cumulative overlay | Sol High 独立验收 PASS | 新增 regression-only 135°E / 75°E 标准经线两侧矩阵，覆盖正负修正、民用跨日前后、`midnight` / `ziEarly` 和 UTC/Asia/Shanghai deepEqual；新增 `p5-a4b-input-resolution.v3` 六项并保持 v1/v2 前缀、纯 JSON、唯一 ID、原始 gap/`P5-A4b` 关联。实现 local `53a3c46a1145a10f78f7f193df9b6e01dc12bbeb` / remote `c2daaf5691980da3faa839df4847680331d90b53`；GitHub Actions run `33352537186` completed/success，validate job `99368535197` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；Luna Max 本地 `npm test` 132/132、Web Export 8 routes，`git diff --check`、typecheck、lint 均通过。 | 本批只关闭八字真太阳时跨日/子初边界 gap；紫微 lunar/闰月、六爻 engine/cross taxonomy、unknown-coordinate `0,0`、公开日期范围、1986–1991 DST、缺时辰、owner decisions 及其余 gap/decision-required 未完成，P5-A/Phase 5 仍未完成。 |
 | M3：中国大陆真实账号 | 5% | 三种登录入口的界面与本地流程。 | 短信、Apple、微信认证，手机号绑定，权益同步，账户安全与注销。 |
 | M4：商业化和 AI | 0% | 产品边界已确定。 | 支付、订阅、单次付费、服务端权益、AI 成本控制、内容安全。 |
 | 正式公开上线准备度 | 约 35% | 可演示、可进行小范围内部体验。 | 账号、隐私合规、数据保护、设备发布、质量基线和运营能力均未闭环。 |
@@ -156,13 +157,14 @@
 
 - `npm run typecheck`
 - `npm run lint`
-- `npm test`（四模块固定样例、P1-A～P1-F、P2-A～P2-F、P3-A～P3-F、P4-A～P4-H 解释/证据/Golden/历史/备份回归、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、P5-A1/P5-A2/P5-A3a 兼容回归、P5-A3b 复核展示、P5-A4a 边界审计、P5-A4b1 输入校验及 P5-A4b2 六爻 seed/date 回归，共 128 项测试；主管本地独立门禁 128/128 PASS，P5-A4b2 已通过 Sol High 独立验收）
+- `npm test`（四模块固定样例、P1-A～P1-F、P2-A～P2-F、P3-A～P3-F、P4-A～P4-H 解释/证据/Golden/历史/备份回归、城市精确匹配、缺失时辰、六爻复现、真实用户写操作写保护、P5-A1/P5-A2/P5-A3a 兼容回归、P5-A3b 复核展示、P5-A4a 边界审计、P5-A4b1 输入校验、P5-A4b2 六爻 seed/date 与 P5-A4b3 八字真太阳时跨日/子初回归，共 132 项测试；主管本地独立门禁 132/132 PASS，P5-A4b2 与 P5-A4b3 已通过 Sol High 独立验收）
 - `npm run build:web`（静态 Web 构建成功，8 条路由；本批 Web Export 实际执行并 PASS）
 - P5-A3a 两次 GitHub Actions 均为 `completed/success`；最终 run `31873458023` 的 Regression tests 与 Web export 均实际执行并 success。
 - P5-A3b 候选实现本地 `30f2db2c164bd1cac709025a340e91f32a3fa147`、远端等价 `baea5f6e53bcc52564fd7b7e375cc4e70463398f`；[CI run 31875157338](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31875157338) 为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。账本修复本地 `1189f5e9d7ed6001ac8ce132e8ee69b79435c052`、远端等价 `c5bc6f04a0b6ddc1f43233d88c061a7efeccebfb`；[CI run 31876037500](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31876037500) 同为 `completed/success`，Regression tests 与 Web Export 均实际执行并成功。主管初审及最终独立验收本地 diff check/typecheck/lint/104/104/build 8 routes 均 PASS。
 - P5-A4a 实现 local `2cf82d402e2f840ebf7c29bf47ee3b167fab9688`、remote `c7055e8962b3b21dd8b78c8f5c64769e9528daf0`；[CI run 31879638540](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31879638540) 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并 Success。主管独立复跑 `git diff --check`、typecheck、lint、`npm test`（112/112）和 `build:web`（8 routes），全部 PASS。唯一非阻断 warning 是 runner 将 `actions/checkout@v4`、`actions/setup-node@v4` 的 Node 20 action runtime 强制为 Node 24；登记为后续 CI maintenance，本批不修改 workflow。
 - P5-A4b1 实现 local `0d279c677c1c05eb2492f9ae3b779267feb8b165` / remote `8ab5c6981c89590f6f19fabdc688c34ae60650ed`；[CI run 31882220415](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/31882220415) 为 `completed/success`，validate job 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功，Web export 未 skip。主管本地独立复跑 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`（120/120）和 `npm run build:web`（8 routes），全部 PASS。Expo SDK 57 exact docs 已核对，本批没有使用 Expo API。
 - P5-A4b2 实现 local `0815612cb8e2261325828ccf0d07e51525f34280` / remote `a976b4f07a2d516713db10cb2c0f2b53c98aa51a`；GitHub Actions run `31884436927` 为 `completed/success`，validate job `95011564415` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；主管本地独立门禁 128/128、Web Export 8 routes 均 PASS，Sol High 独立验收结论为 **P5-A4b2 PASS**。Expo SDK 57 exact docs 已核对，本批没有使用 Expo API；六爻 engine/cross taxonomy、0,0、日期范围、DST、缺时辰、owner decisions 及其他 gap/decision-required 仍未完成，P5-A/Phase 5 仍未完成。
+- P5-A4b3 实现 local `53a3c46a1145a10f78f7f193df9b6e01dc12bbeb` / remote `c2daaf5691980da3faa839df4847680331d90b53`；GitHub Actions [run 33352537186](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33352537186) 为 `completed/success`，validate job `99368535197` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功；Luna Max 本地独立门禁 132/132、Web Export 8 routes 均 PASS，`git diff --check`、typecheck、lint 均通过（Lint 0 warning），Sol High 独立验收结论为 **P5-A4b3 PASS**。Expo SDK 57 exact docs 已核对，本批没有使用 Expo API；紫微 lunar/闰月、六爻 engine/cross taxonomy、unknown-coordinate `0,0`、公开日期范围、1986–1991 DST、缺时辰、owner decisions 及其余 gap/decision-required 仍未完成，P5-A/Phase 5 仍未完成。
 - GitHub Actions CI：安装依赖后自动执行 typecheck、lint、npm test 和 Web 构建；Web Export 使用 `always()`，不会因测试失败被跳过。
 - 浏览器手工走查：首页、八字落柱、六爻起卦、紫微十二宫、星盘精确/近似分支、自动保存及记录展开；文件导出/选择与导入预览的具体签字项见 [DEVICE_ACCEPTANCE.md](DEVICE_ACCEPTANCE.md)。
 - 视觉与响应式基线已检查过 375px、手机横屏和 1440px；正式发布前仍必须在实际 iPhone 上做全量回归。
@@ -206,7 +208,7 @@
 
 1. **P5-0 项目总账本与 Phase 5 启动基线**已完成：以 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 作为后续批次入口，保留当前 Phase 0～4 代码事实，不回退已完成能力。
 2. **P5-A1：四术 Golden Case 统一合同、分类门禁与现状盘点**、**P5-A2：HKO published-reference Golden** 均已实现并通过主管独立验收。城市覆盖属于 P5-B，不在本小批；HKO 两条 fixture 只比较公开精度，不提升流派真值等级。
-3. **P5-A3a、P5-A3b、P5-A4a、P5-A4b1 与 P5-A4b2 均已经 Sol High 独立验收 PASS**：方案 A 为新计算 NOAA v2、旧 v1 仅历史复现、unknown 不伪造证据；P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现并验收，P5-A3 子里程碑整体完成；P5-A4a 已完成四术边界与输入策略审计合同、机器门禁和现状事实登记；P5-A4b1 只关闭三项安全输入 gap；P5-A4b2 只关闭六爻 date/seed 两项，当前 overlay 累计五项。六爻 engine/cross taxonomy、0,0、日期范围、DST、缺时辰、owner decisions 和其他 gap/decision-required 仍未完成，未在本批修算法或 UI。UX/可访问性、性能稳定性、Release Security、隐私合规、Web、iPhone/TestFlight 和 App Store 材料各自保留独立 DoD。只有相关 schema、dataset、rules、interpretation 或 explanation 发生兼容性变化时才评估并递增版本，不能无条件递增。
+3. **P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2 与 P5-A4b3 均已经 Sol High 独立验收 PASS**：方案 A 为新计算 NOAA v2、旧 v1 仅历史复现、unknown 不伪造证据；P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现并验收，P5-A3 子里程碑整体完成；P5-A4a 已完成四术边界与输入策略审计合同、机器门禁和现状事实登记；P5-A4b1 只关闭三项安全输入 gap；P5-A4b2 只关闭六爻 date/seed 两项，overlay 累计五项；P5-A4b3 只关闭八字真太阳时跨日/子初边界一项，overlay 累计六项。紫微 lunar/闰月、六爻 engine/cross taxonomy、0,0、日期范围、DST、缺时辰、owner decisions 和其他 gap/decision-required 仍未完成，未在本批修算法或 UI。UX/可访问性、性能稳定性、Release Security、隐私合规、Web、iPhone/TestFlight 和 App Store 材料各自保留独立 DoD。只有相关 schema、dataset、rules、interpretation 或 explanation 发生兼容性变化时才评估并递增版本，不能无条件递增。
 4. **完成 Phase 5 后进入 OWNER DECISION**：明确公开版本继续本地入口，还是首发前先完成真实账号；该决定不能由执行者默认推断。
 5. **若选择首发前真实账号，按独立 Phase 6 推进真实账号与可选权益；若选择公开版本地入口，则 Level A 发布门仍需先完成 Phase 5 证据。** Phase 7 的订阅、单次付费和付费 AI 只在后续条件满足后推进，基础版继续不依赖 AI、广告或支付。
 
@@ -246,7 +248,7 @@ npm audit --omit=dev --json
 - [README.md](../README.md)：快速启动、当前能力和基础数据边界。
 - [ROADMAP.md](ROADMAP.md)：路线图与重大决策门槛。
 - [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md)：Phase 5 总账本、批次图、风险与验收模板。
-- [PHASE5_EXECUTION.md](PHASE5_EXECUTION.md)：P5-A1 Golden Case 合同、P5-A2 HKO published-reference、P5-A3 版本兼容/历史复核、P5-A4a 边界审计、P5-A4b1/P5-A4b2 输入校验和测试证据。
+- [PHASE5_EXECUTION.md](PHASE5_EXECUTION.md)：P5-A1 Golden Case 合同、P5-A2 HKO published-reference、P5-A3 版本兼容/历史复核、P5-A4a 边界审计、P5-A4b1/P5-A4b2/P5-A4b3 输入校验和测试证据。
 - [P5_A_BOUNDARY_AUDIT.md](P5_A_BOUNDARY_AUDIT.md)：P5-A4a 四术边界与输入策略审计矩阵、P5-A4b1/v2 overlay、gap、决策门和后续路由。
 - [SECURITY_NOTES.md](SECURITY_NOTES.md)：依赖审计基线。
 - [设计系统主规范](../design-system/guanxiang/MASTER.md)：色彩、字体、动效、无障碍和产品语气。
@@ -256,15 +258,17 @@ npm audit --omit=dev --json
 
 ## 13. P5-A4b3 当前交接：八字真太阳时跨日/子初边界矩阵
 
-**状态：实现完成待 Sol High 独立验收**
+**状态：Sol High 独立验收 PASS**
 
 本小批只关闭 `p5-a4a-bazi-true-solar-cross-day`，新增 regression-only 矩阵覆盖 135°E / 75°E（相对 120°E 标准经线两侧）、正负应用修正、民用时刻向前/向后跨日以及 `midnight` / `ziEarly`；冻结真太阳时民用/有效时刻（含日期）、应用修正和最终八字有效计算时刻。结果只表示当前已验收 NOAA v2 实现的工程回归，不代表专业或独立真值。
 
 新增 cumulative `p5-a4b-input-resolution.v3` 共 6 项（v1 原 3 + v2 追加 2 + 本批八字 1），v1/v2 原 exports、registry、validator、顺序和精确 3/5 计数保持可用；version-aware validator 保持纯 JSON、唯一 resolution/audit ID、原始 `gap` / `P5-A4b` 关联且不写 commit SHA。UTC 与 `Asia/Shanghai` 下同一矩阵整体 deepEqual；A4a `41 / 18 / 15 / 5 / 2 / 1` 与 astrology unknown-city `0,0` probe 保持不变。
 
-本批只改授权的 golden overlay/index、一个 regression 测试、统一测试接入和五份 P5 文档；没有使用 Expo API（已核对 Expo SDK 57 exact docs）。日期范围、1986–1991 DST、缺时辰、`0,0` 语义、engine/cross taxonomy、其他 gap/owner decisions 以及 P5-B/P5-C 仍未完成。Sol High 尚未独立验收。
+本批只改授权的 golden overlay/index、一个 regression 测试、统一测试接入和五份 P5 文档；没有使用 Expo API（已核对 Expo SDK 57 exact docs）。紫微 lunar/闰月、日期范围、1986–1991 DST、缺时辰、`0,0` 语义、六爻 engine/cross taxonomy、其他 gap/owner decisions 以及 P5-B/P5-C 仍未完成。
 
-本地质量命令结果：`git diff --check` PASS、`npm run typecheck` PASS、`npm run lint` PASS（0 warning）、`npm test` PASS（132/132）、`npm run build:web` PASS（8 routes，Web Export 实际执行）。
+本地质量命令结果：`git diff --check` PASS、`npm run typecheck` PASS、`npm run lint` PASS（0 warning）、`npm test` PASS（132/132）、`npm run build:web` PASS（8 routes，Web Export 实际执行）。实现 local `53a3c46a1145a10f78f7f193df9b6e01dc12bbeb` / remote `c2daaf5691980da3faa839df4847680331d90b53`；GitHub Actions [run 33352537186](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33352537186) 为 `completed/success`，validate job `99368535197` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功。
+
+Sol High 独立验收结论：**P5-A4b3 PASS**。本小批只关闭 `p5-a4a-bazi-true-solar-cross-day`，不表示整个 P5-A、Phase 5 或 Level A 发布门完成。
 
 ---
 

@@ -1,10 +1,10 @@
 # Phase 5 · P5-A1～P5-A4b3 四术可信度与输入边界审计
 
 更新日期：2026-08-15  
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2 已由 Sol High 独立验收 PASS；P5-A4b3 状态为实现完成待 Sol High 独立验收；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3 已由 Sol High 独立验收 PASS；P5-A3 子里程碑已完成；整个 P5-A 与 Phase 5 仍未完成
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现完成待 Sol High 独立验收，不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现及 Sol High 独立验收 PASS，不表示整个 P5-A 或 Phase 5 完成。
 
 ## 1. Scope 与明确不做
 
@@ -353,7 +353,7 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 
 ## 14. P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
 
-**状态：实现完成待 Sol High 独立验收**
+**状态：Sol High 独立验收 PASS**
 
 ### 14.1 Scope 与明确不做
 
@@ -368,7 +368,7 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 - 同一矩阵在 `TZ=UTC` 与 `TZ=Asia/Shanghai` 下整体 deepEqual；A4a `41 / 18 / 15 / 5 / 2 / 1` 与 astrology unknown-city `0,0` probe 保持不变。
 - 已核对 Expo SDK 57 exact docs；本批没有使用 Expo API。
 
-实际变更严格限于两份 golden 源文件、新增一份 regression 测试、`package.json` 测试接入和五份 P5 文档；未修改算法测试历史含义。Sol High 尚未独立验收。
+实际变更严格限于两份 golden 源文件、新增一份 regression 测试、`package.json` 测试接入和五份 P5 文档；未修改算法测试历史含义。Sol High 已完成独立验收，结论为 **P5-A4b3 PASS**。
 
 ### 14.3 回归与未完成项
 
@@ -382,4 +382,6 @@ npm test               PASS（132/132）
 npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
-以上为本地质量命令结果；其余 A4a gap、owner decisions、六爻 engine/cross taxonomy、日期范围、DST、缺时辰和 P5-B/P5-C 路由仍未完成；本小批不表示整个 P5-A 或 Phase 5 完成。
+实现 local `53a3c46a1145a10f78f7f193df9b6e01dc12bbeb` / remote `c2daaf5691980da3faa839df4847680331d90b53`；GitHub Actions [run 33352537186](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33352537186) 为 `completed/success`，validate job `99368535197` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功。Luna Max 本地独立门禁为 `npm test` 132/132、Web Export 8 routes；`git diff --check`、typecheck、lint 均通过（Lint 0 warning）。
+
+Sol High 独立验收结论：**P5-A4b3 PASS**。本批只关闭 `p5-a4a-bazi-true-solar-cross-day`；紫微 lunar/闰月、六爻 engine/cross taxonomy、unknown-coordinate `0,0`、公开日期范围、1986–1991 DST、缺时辰、owner decisions 及其余 A4a gap/P5-B/P5-C 路由仍未完成。整个 P5-A 与 Phase 5 仍未完成。

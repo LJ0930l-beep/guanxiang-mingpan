@@ -3,7 +3,7 @@
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
 > 批次：P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
-> 本批状态：实现完成待 Sol High 独立验收；P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现已由 Sol High 独立验收 PASS；P5-A4b1/P5-A4a 为历史已验收批次（2026-08-15）
+> 本批状态：Sol High 独立验收 PASS；P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现已由 Sol High 独立验收 PASS；P5-A4b1/P5-A4a 为历史已验收批次（2026-08-15）
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -320,7 +320,7 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 
 ## 5.8 P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay
 
-**状态：实现完成待 Sol High 独立验收**
+**状态：Sol High 独立验收 PASS**
 
 ### Scope 与明确不做
 
@@ -349,9 +349,9 @@ npm test               PASS（132/132）
 npm run build:web      PASS（8 routes，Web Export 实际执行）
 ```
 
-以上为本地质量命令结果；Sol High 尚未独立验收。
+实现 local `53a3c46a1145a10f78f7f193df9b6e01dc12bbeb` / remote `c2daaf5691980da3faa839df4847680331d90b53`；GitHub Actions [run 33352537186](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33352537186) 为 `completed/success`，validate job `99368535197` 的 Typecheck、Lint、Regression tests 与 Web export 均实际执行并成功。Luna Max 本地独立门禁为 `npm test` 132/132、Web Export 8 routes；`git diff --check`、typecheck、lint 均通过（Lint 0 warning）。
 
-其余 A4a gap、owner decisions、六爻 engine/cross taxonomy、unknown-coordinate `0,0` 语义、日期范围、DST、缺时辰及 P5-B/P5-C 路由仍未完成；本记录不表示 P5-A 或 Phase 5 完成。
+Sol High 独立验收结论：**P5-A4b3 PASS**。本批只关闭 `p5-a4a-bazi-true-solar-cross-day`；紫微 lunar/闰月、六爻 engine/cross taxonomy、unknown-coordinate `0,0`、公开日期范围、1986–1991 DST、缺时辰、owner decisions 及其余 A4a gap/P5-B/P5-C 路由仍未完成。本记录不表示 P5-A 或 Phase 5 完成。
 
 ## 6. 统一批次验收模板
 
@@ -394,4 +394,4 @@ npm run build:web      PASS（8 routes，Web Export 实际执行）
 - P5-A2 仅增加 HKO 公开资料支持的两条 published-reference Golden 与离线测试，不改变任何 resolver/engine 输出；立春只比较分钟，农历只比较日期，且不验证四柱流派结论。
 - P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成实现与最小兼容修复，并经 Sol High 独立验收 PASS。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现并经 Sol High 独立验收 PASS，范围为历史证据展示与显式“按当前规则复核”。
 
-P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4a/P5-A4b1 的 gap、decision-required 和 P5-B/P5-C 路由不代表算法已修复。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
+P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3 已经 Sol High 独立验收通过；P5-A3 子里程碑已完成。P5-A4a 的剩余 gap、P5-A4b1/P5-A4b2/P5-A4b3 未覆盖事项、owner decisions 和 P5-B/P5-C 路由不代表算法已修复。紫微 lunar/闰月、六爻 engine/cross taxonomy、unknown-coordinate `0,0`、公开日期范围、1986–1991 DST、缺时辰等仍未完成。整个 P5-A、Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
