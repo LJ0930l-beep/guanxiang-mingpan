@@ -2,35 +2,89 @@ import { calculateLiuyao } from 'taibu-core/liuyao';
 
 import type { LiuyaoChartView } from '@/types/charts';
 import { calculationSettings, CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generatedAt, LIUYAO_SEED_SCOPE, normalizeLiuyaoDate, normalizeLiuyaoSeed, strengthLabels } from '@/services/chart-engine-shared';
+import { withAsyncChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 import { buildLiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 import { buildLiuyaoExplanation } from '@/domains/liuyao/explanation/index';
+
+const LIUYAO_TARGETS = ['父母', '兄弟', '官鬼', '妻财', '子孙'] as const;
+
+function assertLiuyaoEngineResult(value: unknown): void {
+  if (value === null || typeof value !== 'object') throw new Error('六爻引擎未返回完整盘面。');
+  const candidate = value as {
+    fullYaos?: unknown;
+    ganZhiTime?: unknown;
+    kongWang?: unknown;
+    hexagramName?: unknown;
+    hexagramGong?: unknown;
+    hexagramElement?: unknown;
+  };
+  const isText = (item: unknown): item is string => typeof item === 'string' && item.trim().length > 0;
+  const isTimePart = (item: unknown): boolean => {
+    if (item === null || typeof item !== 'object') return false;
+    const part = item as Record<string, unknown>;
+    return isText(part.gan) && isText(part.zhi);
+  };
+  const isLine = (item: unknown): boolean => {
+    if (item === null || typeof item !== 'object') return false;
+    const line = item as Record<string, unknown>;
+    return typeof line.position === 'number'
+      && Number.isFinite(line.position)
+      && (line.type === 0 || line.type === 1)
+      && isText(line.liuQin)
+      && isText(line.liuShen)
+      && isText(line.naJia)
+      && isText(line.wuXing)
+      && typeof line.isChanging === 'boolean'
+      && typeof line.isShiYao === 'boolean'
+      && typeof line.isYingYao === 'boolean';
+  };
+  if (!Array.isArray(candidate.fullYaos)
+    || candidate.fullYaos.length !== 6
+    || !candidate.fullYaos.every(isLine)
+    || candidate.ganZhiTime === null
+    || typeof candidate.ganZhiTime !== 'object'
+    || !['year', 'month', 'day', 'hour'].every((key) => isTimePart((candidate.ganZhiTime as Record<string, unknown>)[key]))
+    || candidate.kongWang === null
+    || typeof candidate.kongWang !== 'object'
+    || !isText((candidate.kongWang as Record<string, unknown>).xun)
+    || !Array.isArray((candidate.kongWang as Record<string, unknown>).kongDizhi)
+    || !isText(candidate.hexagramName)
+    || !isText(candidate.hexagramGong)
+    || !isText(candidate.hexagramElement)) {
+    throw new Error('六爻引擎返回的盘面结构不完整。');
+  }
+}
 
 export async function calculateLiuyaoView(
   question: string,
   target: string,
   options?: CalculationOptions,
 ): Promise<LiuyaoChartView> {
+  if (typeof question !== 'string' || question.trim().length === 0) throw new Error('请先明确问题后再解卦');
+  if (!LIUYAO_TARGETS.includes(target as (typeof LIUYAO_TARGETS)[number])) throw new Error('yongShenTargets 含非法值');
   const autoSeed = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const seed = normalizeLiuyaoSeed(options?.seed === undefined ? autoSeed : options.seed);
   const date = options?.date === undefined ? new Date().toISOString() : options.date;
   const settings = calculationSettings(options);
   const calculationDate = normalizeLiuyaoDate(date, settings.timezone);
   const seedScope = LIUYAO_SEED_SCOPE;
-  const result = await calculateLiuyao({
-    question,
-    yongShenTargets: [target as '父母' | '兄弟' | '官鬼' | '妻财' | '子孙'],
-    method: 'auto',
-    date: calculationDate,
-    seed,
-    seedScope,
-    detailLevel: 'more',
-  });
-  const lines = result.fullYaos
-    .slice()
-    .sort((a, b) => b.position - a.position)
-    .map((line) => ({
+  return withAsyncChartEngineErrorBoundary('liuyao', async () => {
+    const result = await calculateLiuyao({
+      question,
+      yongShenTargets: [target as '父母' | '兄弟' | '官鬼' | '妻财' | '子孙'],
+      method: 'auto',
+      date: calculationDate,
+      seed,
+      seedScope,
+      detailLevel: 'more',
+    });
+    assertLiuyaoEngineResult(result);
+    const lines = result.fullYaos
+      .slice()
+      .sort((a, b) => b.position - a.position)
+      .map((line) => ({
       position: line.position,
       yinYang: line.type === 1 ? ('阳' as const) : ('阴' as const),
       liuQin: line.liuQin,
@@ -42,11 +96,11 @@ export async function calculateLiuyaoView(
       isYingYao: line.isYingYao,
       strength: line.strength?.wangShuai ? (strengthLabels[line.strength.wangShuai] ?? line.strength.wangShuai) : undefined,
       evidence: line.strength?.evidence?.slice(0, 3) ?? [],
-    }));
-  const moving = lines.filter((line) => line.isChanging);
-  const time = result.ganZhiTime;
-  const generated = generatedAt(options);
-  const normalizedChart = normalizeLiuyaoChart({
+      }));
+    const moving = lines.filter((line) => line.isChanging);
+    const time = result.ganZhiTime;
+    const generated = generatedAt(options);
+    const normalizedChart = normalizeLiuyaoChart({
     question,
     yongShenTarget: target,
     seed,
@@ -58,10 +112,10 @@ export async function calculateLiuyaoView(
     ganZhiTime: `${time.year.gan}${time.year.zhi}年 ${time.month.gan}${time.month.zhi}月 ${time.day.gan}${time.day.zhi}日 ${time.hour.gan}${time.hour.zhi}时`,
     kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongDizhi.join('、')}`,
     lines,
-  }, { engineVersion: ENGINE_VERSIONS.liuyao, snapshotVersion: CHART_SNAPSHOT_VERSION });
-  const evidenceGraph = buildLiuyaoEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.liuyao });
+    }, { engineVersion: ENGINE_VERSIONS.liuyao, snapshotVersion: CHART_SNAPSHOT_VERSION });
+    const evidenceGraph = buildLiuyaoEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.liuyao });
 
-  return {
+    return {
     module: 'liuyao',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generated,
@@ -88,5 +142,6 @@ export async function calculateLiuyaoView(
       moving.length ? `共有 ${moving.length} 个动爻：${moving.map((line) => `${line.position}爻`).join('、')}，复盘时应优先核对动变。` : '本次为静卦，后续复盘应侧重世应、月日与用神状态。',
       `本次以「${target}」为用神方向；页面同时保留纳甲、六亲、六神、世应、空亡与旺衰证据。`,
     ],
-  };
+    };
+  });
 }

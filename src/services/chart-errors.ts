@@ -1,5 +1,25 @@
 export const CHART_INPUT_ERROR_CATEGORY = 'input-validation' as const;
 
+/**
+ * A calculation failure is deliberately smaller than the underlying Error.
+ * The module is part of the public identity, while the code stays stable for
+ * callers that only need to decide whether a retry is appropriate.
+ */
+export const CHART_ENGINE_ERROR_CATEGORY = 'engine-failure' as const;
+export const CHART_ENGINE_ERROR_CODE = 'ENGINE_FAILURE' as const;
+export const CHART_ENGINE_ERROR_CODES = [CHART_ENGINE_ERROR_CODE] as const;
+
+export const CHART_ENGINE_MODULES = ['bazi', 'ziwei', 'astrology', 'liuyao'] as const;
+export type ChartEngineModule = (typeof CHART_ENGINE_MODULES)[number];
+export type ChartEngineErrorCode = (typeof CHART_ENGINE_ERROR_CODES)[number];
+
+export const CHART_ENGINE_ERROR_MESSAGES: Record<ChartEngineModule, string> = {
+  bazi: '八字排盘暂时无法完成，请稍后重试。',
+  ziwei: '紫微排盘暂时无法完成，请稍后重试。',
+  astrology: '星盘计算暂时无法完成，请稍后重试。',
+  liuyao: '六爻起卦暂时无法完成，请稍后重试。',
+};
+
 export const CHART_INPUT_ERROR_CODES = [
   'INVALID_GREGORIAN_DATE',
   'INVALID_LUNAR_DATE',
@@ -33,6 +53,18 @@ export interface ChartInputErrorOptions {
   field: string;
 }
 
+export interface ChartEngineErrorContract {
+  name: 'ChartEngineError';
+  category: typeof CHART_ENGINE_ERROR_CATEGORY;
+  module: ChartEngineModule;
+  code: ChartEngineErrorCode;
+}
+
+export interface ChartEngineErrorOptions {
+  module: ChartEngineModule;
+  code?: ChartEngineErrorCode;
+}
+
 export class ChartInputError extends Error implements ChartInputErrorContract {
   readonly name = 'ChartInputError' as const;
   readonly category = CHART_INPUT_ERROR_CATEGORY;
@@ -57,6 +89,45 @@ export class ChartInputError extends Error implements ChartInputErrorContract {
   }
 }
 
+/**
+ * Publicly exposed calculation failures never carry the original exception.
+ * Error.message remains safe for the existing UI catch path, while
+ * toContract/JSON serialization intentionally omit message, stack and cause.
+ */
+export class ChartEngineError extends Error implements ChartEngineErrorContract {
+  readonly name = 'ChartEngineError' as const;
+  readonly category = CHART_ENGINE_ERROR_CATEGORY;
+  readonly module: ChartEngineModule;
+  readonly code: ChartEngineErrorCode;
+
+  constructor(options: ChartEngineErrorOptions) {
+    const code = options.code ?? CHART_ENGINE_ERROR_CODE;
+    super(CHART_ENGINE_ERROR_MESSAGES[options.module]);
+    this.module = options.module;
+    this.code = code;
+    Object.setPrototypeOf(this, ChartEngineError.prototype);
+  }
+
+  toContract(): ChartEngineErrorContract {
+    return {
+      name: this.name,
+      category: this.category,
+      module: this.module,
+      code: this.code,
+    };
+  }
+
+  toJSON(): ChartEngineErrorContract {
+    return this.toContract();
+  }
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
 export function isChartInputErrorContract(value: unknown): value is ChartInputErrorContract {
   if (value === null || typeof value !== 'object') return false;
   const candidate = value as Partial<ChartInputErrorContract>;
@@ -70,11 +141,70 @@ export function isChartInputErrorContract(value: unknown): value is ChartInputEr
     && candidate.message === CHART_INPUT_ERROR_MESSAGES[code as ChartInputErrorCode];
 }
 
+export function isChartEngineErrorContract(value: unknown): value is ChartEngineErrorContract {
+  if (!isPlainRecord(value)) return false;
+  const keys = Object.keys(value).sort();
+  if (keys.join('|') !== 'category|code|module|name') return false;
+  return value.name === 'ChartEngineError'
+    && value.category === CHART_ENGINE_ERROR_CATEGORY
+    && typeof value.module === 'string'
+    && CHART_ENGINE_MODULES.includes(value.module as ChartEngineModule)
+    && value.code === CHART_ENGINE_ERROR_CODE;
+}
+
 export function isChartInputError(value: unknown): value is ChartInputError {
   return value instanceof ChartInputError;
+}
+
+export function isChartEngineError(value: unknown): value is ChartEngineError {
+  return value instanceof ChartEngineError;
 }
 
 export function getChartInputErrorContract(value: unknown): ChartInputErrorContract | undefined {
   if (value instanceof ChartInputError) return value.toContract();
   return isChartInputErrorContract(value) ? value : undefined;
+}
+
+export function getChartEngineErrorContract(value: unknown): ChartEngineErrorContract | undefined {
+  if (value instanceof ChartEngineError) return value.toContract();
+  return isChartEngineErrorContract(value) ? value : undefined;
+}
+
+export type ChartFailureContract = ChartInputErrorContract | ChartEngineErrorContract;
+
+/** Returns either an existing input contract or the safe engine contract. */
+export function getChartFailureContract(value: unknown): ChartFailureContract | undefined {
+  return getChartInputErrorContract(value) ?? getChartEngineErrorContract(value);
+}
+
+function normalizeChartEngineFailure(module: ChartEngineModule, reason: unknown): never {
+  // Preserve both in-process and serialized stable contracts. In particular,
+  // a retry boundary must not turn one ChartEngineError into a new one.
+  if (isChartInputError(reason) || isChartInputErrorContract(reason)) throw reason;
+  if (isChartEngineError(reason) || isChartEngineErrorContract(reason)) throw reason;
+  throw new ChartEngineError({ module });
+}
+
+/**
+ * Local, deterministic seam used by each synchronous facade and by tests.
+ * It never stores or exposes the callback's exception.
+ */
+export function withChartEngineErrorBoundary<T>(module: ChartEngineModule, operation: () => T): T {
+  try {
+    return operation();
+  } catch (reason) {
+    return normalizeChartEngineFailure(module, reason);
+  }
+}
+
+/** Async counterpart for the Liuyao facade; stable failures are not wrapped twice. */
+export async function withAsyncChartEngineErrorBoundary<T>(
+  module: ChartEngineModule,
+  operation: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await operation();
+  } catch (reason) {
+    return normalizeChartEngineFailure(module, reason);
+  }
 }

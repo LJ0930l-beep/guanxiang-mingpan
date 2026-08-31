@@ -10,6 +10,7 @@ import { buildBaziInterpretation } from '@/domains/bazi/interpretation/rules';
 import { buildBaziExplanation } from '@/domains/bazi/explanation/index';
 import type { BaziChartView } from '@/types/charts';
 import { baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { withChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 
@@ -67,6 +68,51 @@ function calculateWithDayBoundary(
   };
 }
 
+function assertBaziEngineResult(value: unknown): asserts value is ReturnType<typeof calculateBazi> {
+  if (value === null || typeof value !== 'object') throw new Error('八字引擎未返回完整盘面。');
+  const candidate = value as {
+    fourPillars?: unknown;
+    relations?: unknown;
+    dayMaster?: unknown;
+    kongWang?: unknown;
+  };
+  const pillars = candidate.fourPillars;
+  const isText = (item: unknown): item is string => typeof item === 'string' && item.trim().length > 0;
+  const isPillar = (item: unknown): boolean => {
+    if (item === null || typeof item !== 'object') return false;
+    const pillar = item as Record<string, unknown>;
+    return isText(pillar.stem)
+      && isText(pillar.branch)
+      && Array.isArray(pillar.hiddenStems)
+      && pillar.hiddenStems.every((hidden) => {
+        if (hidden === null || typeof hidden !== 'object') return false;
+        const hiddenStem = hidden as Record<string, unknown>;
+        return isText(hiddenStem.stem) && isText(hiddenStem.tenGod);
+      })
+      && isText(pillar.naYin);
+  };
+  const isKongWang = (item: unknown): boolean => {
+    if (item === null || typeof item !== 'object') return false;
+    const kongWang = item as Record<string, unknown>;
+    return isText(kongWang.xun)
+      && Array.isArray(kongWang.kongZhi)
+      && kongWang.kongZhi.every((branch) => isText(branch));
+  };
+  if (pillars === null || typeof pillars !== 'object'
+    || !['year', 'month', 'day', 'hour'].every((key) => {
+      const pillar = (pillars as Record<string, unknown>)[key];
+      return isPillar(pillar);
+    })
+    || !Array.isArray(candidate.relations)
+    || !candidate.relations.every((relation) => relation !== null
+      && typeof relation === 'object'
+      && isText((relation as Record<string, unknown>).description))
+    || !isText(candidate.dayMaster)
+    || !isKongWang(candidate.kongWang)) {
+    throw new Error('八字引擎返回的盘面结构不完整。');
+  }
+}
+
 export function calculateBaziView(
   profile: BirthProfile,
   genderOverride?: Gender,
@@ -92,36 +138,38 @@ export function calculateBaziView(
     : calendarProfile;
   const parts = birthParts(calculationProfile);
   const dayBoundaryResolution = resolveBaziDayBoundary(calculationProfile, settings);
-  const result = calculateWithDayBoundary(calculationProfile, parts, gender, dayBoundaryResolution);
-  const order = [
-    ['year', '年柱'],
-    ['month', '月柱'],
-    ['day', '日柱'],
-    ['hour', '时柱'],
-  ] as const;
-  const pillars = order.map(([key, label]) => {
-    const pillar = result.fourPillars[key];
-    return {
-      key,
-      label,
-      stem: pillar.stem,
-      branch: pillar.branch,
-      tenGod: pillar.tenGod,
-      hiddenStems: pillar.hiddenStems.map((item) => `${item.stem}·${item.tenGod}`),
-      naYin: pillar.naYin,
-    };
-  });
-  const relations = result.relations.slice(0, 6).map((item) => item.description);
-  const normalizedChart = normalizeBaziChart(result, {
-    engineVersion: ENGINE_VERSIONS.bazi,
-    snapshotVersion: CHART_SNAPSHOT_VERSION,
-  });
-  const evidenceGraph = buildBaziEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.bazi });
-  const interpretation = buildBaziInterpretation(normalizedChart, evidenceGraph);
-  const generated = generatedAt(options);
-  const explanation = buildBaziExplanation({ evidenceGraph, interpretation, generatedAt: generated });
+  return withChartEngineErrorBoundary('bazi', () => {
+    const result = calculateWithDayBoundary(calculationProfile, parts, gender, dayBoundaryResolution);
+    assertBaziEngineResult(result);
+    const order = [
+      ['year', '年柱'],
+      ['month', '月柱'],
+      ['day', '日柱'],
+      ['hour', '时柱'],
+    ] as const;
+    const pillars = order.map(([key, label]) => {
+      const pillar = result.fourPillars[key];
+      return {
+        key,
+        label,
+        stem: pillar.stem,
+        branch: pillar.branch,
+        tenGod: pillar.tenGod,
+        hiddenStems: pillar.hiddenStems.map((item) => `${item.stem}·${item.tenGod}`),
+        naYin: pillar.naYin,
+      };
+    });
+    const relations = result.relations.slice(0, 6).map((item) => item.description);
+    const normalizedChart = normalizeBaziChart(result, {
+      engineVersion: ENGINE_VERSIONS.bazi,
+      snapshotVersion: CHART_SNAPSHOT_VERSION,
+    });
+    const evidenceGraph = buildBaziEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.bazi });
+    const interpretation = buildBaziInterpretation(normalizedChart, evidenceGraph);
+    const generated = generatedAt(options);
+    const explanation = buildBaziExplanation({ evidenceGraph, interpretation, generatedAt: generated });
 
-  return {
+    return {
     module: 'bazi',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generated,
@@ -149,5 +197,6 @@ export function calculateBaziView(
       relations.length ? `当前可见的柱间关系包括：${relations.slice(0, 2).join('；')}。` : '当前盘面未检出需要优先标注的柱间合冲刑害。',
       '旺衰与取用需要结合月令、根气、透干和组合继续判断，基础版不把单一五行数量当作结论。',
     ],
-  };
+    };
+  });
 }
