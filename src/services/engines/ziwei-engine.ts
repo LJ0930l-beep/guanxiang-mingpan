@@ -1,7 +1,7 @@
 import * as iztro from 'iztro/dist/iztro.min.js';
 
 import type { ZiweiChartView } from '@/types/charts';
-import { assertGregorianDate, calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { assertGregorianDate, assertPublicBirthDateRange, calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import { withChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
@@ -60,9 +60,10 @@ export function calculateZiweiView(
   requireExactBirth(profile);
   if (profile.calendar === 'solar') assertGregorianDate(profile.birthDate);
   if (profile.calendar === 'lunar') assertZiweiLunarDate(profile.birthDate, profile.isLeapMonth);
+  assertPublicBirthDateRange(profile.birthDate, profile.calendar);
   const parts = birthParts(profile);
   const gender = requireGender(profile, genderOverride);
-  const settings = calculationSettings(options);
+  const settings = calculationSettings(options, true);
   return withChartEngineErrorBoundary('ziwei', () => {
     const timeIndex = parts.hour >= 23 ? 12 : parts.hour < 1 ? 0 : Math.floor((parts.hour + 1) / 2);
     const date = `${parts.year}-${parts.month}-${parts.day}`;

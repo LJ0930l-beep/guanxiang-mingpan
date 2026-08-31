@@ -22,6 +22,7 @@ export const CHART_ENGINE_ERROR_MESSAGES: Record<ChartEngineModule, string> = {
 
 export const CHART_INPUT_ERROR_CODES = [
   'INVALID_GREGORIAN_DATE',
+  'UNSUPPORTED_BIRTH_DATE_RANGE',
   'INVALID_LUNAR_DATE',
   'INVALID_LUNAR_LEAP_MONTH',
   'INVALID_BIRTH_COORDINATES',
@@ -33,6 +34,7 @@ export type ChartInputErrorCode = (typeof CHART_INPUT_ERROR_CODES)[number];
 
 export const CHART_INPUT_ERROR_MESSAGES: Record<ChartInputErrorCode, string> = {
   INVALID_GREGORIAN_DATE: '公历日期无效，请使用 YYYY-MM-DD 格式并填写真实日期。',
+  UNSUPPORTED_BIRTH_DATE_RANGE: '出生日期超出当前公开支持范围：1900-01-01 至 2099-12-31（含端点）。',
   INVALID_LUNAR_DATE: '农历日期无效，请使用 YYYY-MM-DD 格式并填写该月真实日期。',
   INVALID_LUNAR_LEAP_MONTH: '农历闰月无效，该年份不存在所选月份的闰月。',
   INVALID_BIRTH_COORDINATES: '出生坐标无效，请提供成对且在有效范围内的纬度和经度。',

@@ -16,6 +16,7 @@ import type { BaziCalculationEvidence, BaziCalculationSettings, BaziSolarTimeVer
 import { TRUE_SOLAR_DATA_URL } from '@/domains/bazi/true-solar-time';
 import type { BirthProfile, DivinationModule, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import { migrateExplanationSnapshot } from '@/domains/explanation/snapshot';
+import { isPublicBirthDateRangePolicy } from '@/domains/policy/public-birth-date-range';
 
 export const STORAGE_SCHEMA_VERSION = 3 as const;
 
@@ -183,6 +184,10 @@ function isBaziSolarTimeVersion(value: unknown): value is BaziSolarTimeVersion {
 function migrateCalculationSettings(value: unknown, module?: DivinationModule): CalculationSettings {
   if (module === 'bazi') {
     const raw = isRecord(value) ? value : {};
+    // Keep the current policy only when the snapshot explicitly persisted it.
+    // A legacy snapshot remains readable without being retroactively labeled
+    // as having been admitted by a policy that did not exist when it ran.
+    const { birthDateRangePolicy: _legacyPolicy, ...legacyBaziDefaults } = DEFAULT_BAZI_CALCULATION_SETTINGS;
     const hasCompleteLegacySettings = isCompleteLegacyBaziSettings(raw);
     const trueSolarTimeVersion = isBaziSolarTimeVersion(raw.trueSolarTimeVersion)
       ? raw.trueSolarTimeVersion
@@ -192,7 +197,7 @@ function migrateCalculationSettings(value: unknown, module?: DivinationModule): 
           ? BAZI_TRUE_SOLAR_TIME_V1
           : BAZI_TRUE_SOLAR_TIME_UNKNOWN;
     return {
-      ...DEFAULT_BAZI_CALCULATION_SETTINGS,
+      ...legacyBaziDefaults,
       timezone: DEFAULT_CALCULATION_TIMEZONE,
       ...(raw.dayBoundary === 'midnight' || raw.dayBoundary === 'ziEarly' ? { dayBoundary: raw.dayBoundary } : {}),
       ...(typeof raw.trueSolarTime === 'boolean' ? { trueSolarTime: raw.trueSolarTime } : {}),
@@ -200,9 +205,18 @@ function migrateCalculationSettings(value: unknown, module?: DivinationModule): 
       trueSolarTimeVersion,
       ...(typeof raw.locationDatasetVersion === 'string' ? { locationDatasetVersion: raw.locationDatasetVersion } : {}),
       ...(typeof raw.calendarResolverVersion === 'string' ? { calendarResolverVersion: raw.calendarResolverVersion } : {}),
+      ...(isPublicBirthDateRangePolicy(raw.birthDateRangePolicy)
+        ? { birthDateRangePolicy: raw.birthDateRangePolicy }
+        : {}),
     } as BaziCalculationSettings;
   }
-  return { timezone: DEFAULT_CALCULATION_TIMEZONE };
+  const raw = isRecord(value) ? value : {};
+  return {
+    timezone: DEFAULT_CALCULATION_TIMEZONE,
+    ...(isPublicBirthDateRangePolicy(raw.birthDateRangePolicy)
+      ? { birthDateRangePolicy: raw.birthDateRangePolicy }
+      : {}),
+  };
 }
 
 function migrateInputSnapshot(value: unknown): ChartInputSnapshot | null {

@@ -9,6 +9,7 @@ import type { ZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 import type { NormalizedAstrologyChart } from '@/domains/astrology/model/normalized-chart';
 import type { AstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
 import type { NormalizedLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
+import type { PublicBirthDateRangePolicy } from '@/domains/policy/public-birth-date-range';
 import type { LiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 
 export const CHART_SNAPSHOT_VERSION = 1 as const;
@@ -19,6 +20,11 @@ export type CalculationTimezone = typeof DEFAULT_CALCULATION_TIMEZONE;
 export interface CalculationSettings {
   /** Business timezone used for civil-time calculations and replay. */
   timezone: CalculationTimezone;
+  /**
+   * Owner-approved public birth-date contract.  It is optional only so
+   * legacy/Liuyao snapshots without a birth date policy remain readable.
+   */
+  birthDateRangePolicy?: PublicBirthDateRangePolicy;
 }
 
 export interface BirthInputSnapshot {
@@ -36,6 +42,8 @@ export interface BirthInputSnapshot {
   locationDatasetVersion?: string;
   latitude?: number;
   longitude?: number;
+  /** The same policy is copied into the input snapshot for replay/export. */
+  birthDateRangePolicy?: PublicBirthDateRangePolicy;
 }
 
 export interface LiuyaoInputSnapshot {

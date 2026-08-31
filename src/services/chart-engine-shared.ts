@@ -9,6 +9,10 @@ import {
 import type { BaziCalculationSettings } from '@/domains/bazi/types';
 import type { BirthProfile, Gender } from '@/types/domain';
 import { ChartInputError } from '@/services/chart-errors';
+import {
+  assertPublicBirthDateRange,
+  PUBLIC_BIRTH_DATE_RANGE_POLICY,
+} from '@/domains/policy/public-birth-date-range';
 
 export const ENGINE_VERSIONS = {
   bazi: 'taibu-core@3.4.0/bazi',
@@ -133,12 +137,18 @@ export interface CalculationOptions {
   bazi?: Partial<BaziCalculationSettings>;
 }
 
-export function calculationSettings(options?: CalculationOptions): CalculationSettings {
+export function calculationSettings(
+  options?: CalculationOptions,
+  includeBirthDateRangePolicy = false,
+): CalculationSettings {
   const timezone = options?.timezone ?? DEFAULT_CALCULATION_TIMEZONE;
   if (timezone !== DEFAULT_CALCULATION_TIMEZONE) {
     throw new Error(`当前版本仅支持 ${DEFAULT_CALCULATION_TIMEZONE}，不允许依赖设备或服务器时区。`);
   }
-  return { timezone };
+  return {
+    timezone,
+    ...(includeBirthDateRangePolicy ? { birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY } : {}),
+  };
 }
 
 export function baziCalculationSettings(options?: CalculationOptions): BaziCalculationSettings {
@@ -146,6 +156,7 @@ export function baziCalculationSettings(options?: CalculationOptions): BaziCalcu
     ...DEFAULT_BAZI_CALCULATION_SETTINGS,
     timezone: calculationSettings(options).timezone,
     ...options?.bazi,
+    birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
   };
   if (base.dayBoundary !== 'midnight' && base.dayBoundary !== 'ziEarly') {
     throw new Error('八字日界线规则无效；当前仅支持 midnight 或 ziEarly。');
@@ -185,8 +196,17 @@ export function birthInputSnapshot(
   if (profile.locationDatasetVersion) snapshot.locationDatasetVersion = profile.locationDatasetVersion;
   if (profile.latitude !== undefined) snapshot.latitude = profile.latitude;
   if (profile.longitude !== undefined) snapshot.longitude = profile.longitude;
+  if (settings.birthDateRangePolicy) snapshot.birthDateRangePolicy = settings.birthDateRangePolicy;
   return snapshot;
 }
+
+/**
+ * Apply the owner-approved public date contract after a module-specific
+ * calendar validator has accepted the input.  Keeping this call in the
+ * shared layer makes the range and error contract identical for all birth
+ * chart modules while leaving Liuyao outside the birth-date policy.
+ */
+export { assertPublicBirthDateRange };
 
 function formatDateInTimezone(value: Date, timezone: CalculationTimezone): string {
   const parts = new Intl.DateTimeFormat('en-CA', {

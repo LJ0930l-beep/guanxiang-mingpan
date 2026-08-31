@@ -1,5 +1,9 @@
 import type { CalculationTimezone } from '@/types/charts';
 import type { BaziCalendarConversionEvidence } from '@/domains/bazi/calendar-resolver';
+import {
+  PUBLIC_BIRTH_DATE_RANGE_POLICY,
+  type PublicBirthDateRangePolicy,
+} from '@/domains/policy/public-birth-date-range';
 
 export type BaziDayBoundary = 'midnight' | 'ziEarly';
 export type BaziSolarTimeModel = 'none' | 'localMeanSolarTime' | 'apparentSolarTime';
@@ -23,6 +27,7 @@ export type BaziTrueSolarRoundingRule =
  */
 export interface BaziCalculationSettings {
   timezone: CalculationTimezone;
+  birthDateRangePolicy: PublicBirthDateRangePolicy;
   dayBoundary: BaziDayBoundary;
   trueSolarTime: boolean;
   solarTimeModel: BaziSolarTimeModel;
@@ -33,6 +38,7 @@ export interface BaziCalculationSettings {
 
 export const DEFAULT_BAZI_CALCULATION_SETTINGS: BaziCalculationSettings = {
   timezone: 'Asia/Shanghai',
+  birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
   dayBoundary: 'midnight',
   trueSolarTime: false,
   solarTimeModel: 'none',

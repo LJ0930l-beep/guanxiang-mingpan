@@ -10,6 +10,14 @@ export { calculateZiweiView } from '@/services/engines/ziwei-engine';
 export { calculateAstrologyView } from '@/services/engines/astrology-engine';
 export { assertZiweiLunarDate } from '@/domains/ziwei/lunar-input';
 export {
+  assertPublicBirthDateRange,
+  isPublicBirthDateRangePolicy,
+  PUBLIC_BIRTH_DATE_RANGE_END_DATE,
+  PUBLIC_BIRTH_DATE_RANGE_POLICY,
+  PUBLIC_BIRTH_DATE_RANGE_POLICY_VERSION,
+  PUBLIC_BIRTH_DATE_RANGE_START_DATE,
+} from '@/domains/policy/public-birth-date-range';
+export {
   ENGINE_VERSIONS,
   LIUYAO_SEED_MAX_LENGTH,
   LIUYAO_SEED_SCOPE,

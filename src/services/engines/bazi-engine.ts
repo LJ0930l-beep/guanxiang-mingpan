@@ -9,7 +9,7 @@ import { buildBaziEvidenceGraph } from '@/domains/bazi/evidence/index';
 import { buildBaziInterpretation } from '@/domains/bazi/interpretation/rules';
 import { buildBaziExplanation } from '@/domains/bazi/explanation/index';
 import type { BaziChartView } from '@/types/charts';
-import { baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { assertPublicBirthDateRange, baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import { withChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
@@ -122,6 +122,9 @@ export function calculateBaziView(
   const gender = requireGender(profile, genderOverride);
   const settings = baziCalculationSettings(options);
   const calendarResolution = resolveBaziCalendar(profile);
+  // The real solar/lunar validator runs first.  The owner policy then applies
+  // to the original input date/year, never to a converted lunar solar date.
+  assertPublicBirthDateRange(profile.birthDate, profile.calendar);
   const calendarProfile = {
     ...profile,
     calendar: 'solar' as const,

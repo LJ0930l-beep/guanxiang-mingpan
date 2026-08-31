@@ -1,4 +1,5 @@
 import type { BaziCalculationSettings } from '@/domains/bazi/types';
+import { PUBLIC_BIRTH_DATE_RANGE_POLICY } from '@/domains/policy/public-birth-date-range';
 
 export type BaziPillarKey = 'year' | 'month' | 'day' | 'hour';
 
@@ -54,6 +55,7 @@ export const BAZI_GOLDEN_CASES: readonly BaziGoldenCase[] = [
     },
     calculationSettings: {
       timezone: 'Asia/Shanghai',
+      birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
       dayBoundary: 'midnight',
       trueSolarTime: false,
       solarTimeModel: 'none',
@@ -87,6 +89,7 @@ export const BAZI_GOLDEN_CASES: readonly BaziGoldenCase[] = [
     },
     calculationSettings: {
       timezone: 'Asia/Shanghai',
+      birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
       dayBoundary: 'midnight',
       trueSolarTime: false,
       solarTimeModel: 'none',

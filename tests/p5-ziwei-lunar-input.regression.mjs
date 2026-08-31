@@ -29,6 +29,7 @@ import {
   calculateZiweiView,
   getChartInputErrorContract,
   isChartInputError,
+  PUBLIC_BIRTH_DATE_RANGE_POLICY,
 } from '../src/services/chart-engine.ts';
 
 const projectRoot = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
@@ -172,6 +173,7 @@ test('P5-A4b4 紫微普通农历日期按真实农历日数校验，不误用 Gr
     calendar: 'lunar',
     birthTime: '12:00',
     isLeapMonth: false,
+    birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
     gender: 'male',
   });
 });

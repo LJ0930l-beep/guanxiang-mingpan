@@ -1,6 +1,25 @@
 export { GOLDEN_CASE_REGISTRY } from '@/domains/golden/registry';
 export { HKO_PUBLISHED_REFERENCE_GOLDEN_CASES } from '@/domains/golden/published-references';
 export {
+  OWNER_DECISION_RESOLUTION_CONTRACT_VERSION,
+  OWNER_DECISION_RESOLUTION_STATUS,
+  OWNER_DECISION_RESOLUTION_TARGET_BATCH,
+  OWNER_DECISION_RESOLUTION_AUDIT_CASE_IDS,
+  PUBLIC_BIRTH_DATE_RANGE_DECISION_ID,
+  P5_A5A_OWNER_DECISION_RESOLUTION_CASES,
+  getOwnerDecisionResolutionValidationErrors,
+  getOwnerDecisionResolutionRegistryValidationErrors,
+  getOwnerDecisionResolutionVersionedValidationErrors,
+  getOwnerDecisionResolutionVersionedRegistryValidationErrors,
+  validateOwnerDecisionResolution,
+  validateOwnerDecisionResolutionRegistry,
+  validateOwnerDecisionResolutionVersioned,
+  validateOwnerDecisionResolutionVersionedRegistry,
+  type OwnerDecisionResolution,
+  type OwnerDecisionResolutionAuditCaseId,
+  type OwnerDecisionResolutionVersioned,
+} from '@/domains/golden/owner-decision-resolution';
+export {
   BOUNDARY_INPUT_AUDIT_CONTRACT_VERSION,
   BOUNDARY_AUDIT_CATEGORIES,
   BOUNDARY_AUDIT_MODULES,

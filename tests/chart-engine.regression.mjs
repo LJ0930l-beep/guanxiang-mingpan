@@ -9,6 +9,7 @@ import {
   calculateBaziView,
   calculateLiuyaoView,
   calculateZiweiView,
+  PUBLIC_BIRTH_DATE_RANGE_POLICY,
 } from '../src/services/chart-engine.ts';
 import { resolveCityCoordinates } from '../src/data/china-cities.ts';
 
@@ -51,12 +52,14 @@ test('八字固定样例保持四柱与关系证据稳定', () => {
     timeKnown: true,
     birthCity: '广东省深圳市',
     calendar: 'solar',
+    birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
     gender: 'male',
     latitude: 22.5431,
     longitude: 114.0579,
   });
   assert.deepEqual(result.calculationSettings, {
     timezone: 'Asia/Shanghai',
+    birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
     dayBoundary: 'midnight',
     trueSolarTime: false,
     solarTimeModel: 'none',
@@ -93,7 +96,10 @@ test('紫微固定样例保持十二宫、命身主与四化稳定', () => {
 
   assert.equal(result.generatedAt, generatedAt);
   assert.equal(result.engineVersion, 'iztro@2.5.8');
-  assert.deepEqual(result.calculationSettings, { timezone: 'Asia/Shanghai' });
+  assert.deepEqual(result.calculationSettings, {
+    timezone: 'Asia/Shanghai',
+    birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
+  });
   assert.equal(result.solarDate, '2001-9-8');
   assert.equal(result.lunarDate, '二〇〇一年七月廿一');
   assert.equal(result.soul, '戌');
@@ -118,7 +124,10 @@ test('西方星盘固定样例保持精确模式、角点和标准十星', () =>
 
   assert.equal(result.generatedAt, generatedAt);
   assert.equal(result.engineVersion, 'circular-natal-horoscope-js@1.1.0');
-  assert.deepEqual(result.calculationSettings, { timezone: 'Asia/Shanghai' });
+  assert.deepEqual(result.calculationSettings, {
+    timezone: 'Asia/Shanghai',
+    birthDateRangePolicy: PUBLIC_BIRTH_DATE_RANGE_POLICY,
+  });
   assert.equal(result.calculationMode, 'exact');
   assert.equal(result.sunSign, '处女座');
   assert.equal(result.moonSign, '金牛座');
