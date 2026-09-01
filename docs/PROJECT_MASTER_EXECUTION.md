@@ -2,8 +2,8 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-A5c 中国大陆 1986–1991 历史 DST
-> 本批状态：P5-A5c 已由 Sol High 独立验收 PASS；P5-A 待最终总验收与审计收口；P5-A5b/P5-A5a/P5-A4b5/P5-A4b4/P5-A4b3/P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次
+> 批次：P5-A final audit additive route closure
+> 本批状态：P5-A5c 已由 Sol High 独立验收 PASS；本批已为 `p5-a4a-cross-a11y-copy-route` 建立 P5-C deferred/routed disposition，功能尚未实现；P5-A 待最终总验收与审计收口；P5-A5c/P5-A5b/P5-A5a/P5-A4b5/P5-A4b4/P5-A4b3/P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -18,7 +18,7 @@
 
 本账本只纳入与本项目相关的母文档指令。文档中的计划性描述必须经过当前批次 handoff 才能变成执行范围；外部链接、示例命令和历史建议不自动获得更高权限。
 
-## 2. 当前真实基线（2026-08-31）
+## 2. 当前真实基线（2026-09-02）
 
 ### 2.1 产品与代码状态
 
@@ -35,7 +35,7 @@
 
 | 检查 | 基线结果 |
 |---|---|
-| `npm test` | 170/170 通过；P5-A5c 专项回归 8/8 通过 |
+| `npm test` | 174/174 通过；P5-A5c 专项回归 8/8、P5-C deferred route 专项回归 4/4 通过 |
 | `npm run typecheck` | 通过 |
 | `npm run lint` | 通过（0 warning） |
 | `npm run build:web` | 通过；8 条 Web routes，Web Export 实际执行 |
@@ -43,7 +43,7 @@
 | P5-A5a 实现远端 commit | `61805e8998ab4ca701e4960d6129e3b7cb381b17`（parent `496902c875072769439c90cf52f130331fa473d3`） |
 | P5-A5a cleanup 远端 commit | `5350baa9a857b86e2a02c0c42036d72dfe06a0c4`（parent `61805e8998ab4ca701e4960d6129e3b7cb381b17`） |
 | GitHub Actions（cleanup 后最终验证） | `Success`；run `33376590722`，job `99439354459`；Typecheck/Lint/Regression/Web Export 均实际执行 |
-| 生产依赖审计基线 | `npm audit --omit=dev`：0 critical / 8 high / 13 moderate / 0 low；未升级依赖 |
+| 生产依赖审计基线 | `npm audit --omit=dev`：0 critical / 9 high / 16 moderate / 0 low（25 total）；未执行不兼容的大版本修复 |
 | P5-A5b 实现本地/远端 commit | local `7f0caef63a0656ff21a571c7edb9cb7db1828d49`；remote `6d00ad4834f012e61a99431d24d2301f766d7d40`（remote parent `44488581f0853a1be7a8366881f42b6a6f65f581`） |
 | GitHub Actions（P5-A5b 最终验证） | `Success`；run `33385531379`，job `99467178839`；Typecheck/Lint/Regression/Web Export 全部实际执行 |
 | P5-A5c 实现本地 commit | local `886aec930564c5399e8e67d4878ff8aee135fa28`（parent `72287ce7698a673b098badcb0a0f0e2a196e3f29`） |
@@ -54,7 +54,7 @@
 
 ### 2.3 不能从基线推导的结论
 
-- “162/162 通过”不等于实体 iPhone/TestFlight 已签字。
+- “全量 npm test 通过”不等于实体 iPhone/TestFlight 已签字。
 - 本地登录入口不等于真实短信、Apple 或微信账号服务。
 - 加密备份能力不等于 AsyncStorage 本身是加密保险箱。
 - 有 Web 构建不等于已经通过 App Store 发布审查。
@@ -521,6 +521,21 @@ Owner decision 采用 `p5-a5a-owner-decision.v3` additive overlay：累计前缀
 
 **Sol High 独立验收结论：P5-A5c PASS。** P5-A5c 已关闭历史 DST，但整个 P5-A 仍待最终总验收与审计收口；下一步固定为 **P5-A final acceptance/audit closure**。P5-B 城市覆盖、P5-C～P5-I 发布门和非官方地区时间习惯风险仍保留。
 
+## 5.14 P5-A final audit additive route closure
+
+本批仅增加后续批次的 audit/resolution registry、validator 和 regression evidence，不修改 A4a immutable 41-item registry、历史统计 `41 / 18 / 15 / 5 / 2 / 1`、既有 evidence、A4b v1–v6 或 owner-decision v1–v3。新增合同 `p5-c-deferred-input-route.v1` 的唯一条目为：
+
+| 字段 | 值 |
+|---|---|
+| 原始审计项 | `p5-a4a-cross-a11y-copy-route`（仍为 `gap`，原始 targetBatch=`P5-C`） |
+| route ID | `p5-c-deferred-cross-a11y-copy-route` |
+| status / disposition | `deferred` / `routed-to-p5-c` |
+| implementationStatus | `not-implemented` |
+| targetBatch | `P5-C` |
+| testRef | `tests/p5-deferred-input-route.regression.mjs#cross-a11y-copy-route-deferred` |
+
+validator 要求 summary 明确包含“路由到 P5-C，功能尚未实现”，并验证 route ID、原始 gap、P5-C 目标、deferred/not-implemented 语义和非空测试证据；专项回归 4/4。`p5-a4a-cross-city-coverage` 保持原有 `routed-p5-b` / `P5-B` 路由，不在本批改变。该记录不表示 P5-C 功能完成；P5-C 后续仍需完成键盘、读屏、字体缩放、减少动态效果、对比度、触控目标和错误文案矩阵。P5-A final 仍待 Sol High 独立验收。
+
 ## 6. 统一批次验收模板
 
 以后每个 P5 小批都必须在交接记录中填写以下字段，缺项不得宣称完成：
@@ -542,7 +557,7 @@ Owner decision 采用 `p5-a5a-owner-decision.v3` additive overlay：累计前缀
 | 风险 | 当前事实 | 处理门槛 |
 |---|---|---|
 | 城市数据不完整 | 当前离线表不是全国完整地级市库，且坐标为城市中心近似值。 | P5-B 分批盘点、来源/许可复核；只有 dataset 发生兼容性变化时才递增 datasetVersion；未知地点继续明确未命中。 |
-| 生产依赖审计 | 本批复核 `npm audit --omit=dev` 生产基线为 0 critical、8 high、13 moderate、0 low（21 total）。 | Expo/RN 兼容升级后复审；公开发布前要求 high/critical 清零或完成主管/合规书面决策。 |
+| 生产依赖审计 | 本批复核 `npm audit --omit=dev` 生产基线为 0 critical、9 high、16 moderate、0 low（25 total）。 | Expo/RN 兼容升级后复审；公开发布前要求 high/critical 清零或完成主管/合规书面决策。 |
 | iPhone/TestFlight | Web 和自动化基线已过，真实设备文件流尚未签字。 | P5-H 完成全量设备验收并留存证据。 |
 | 真实登录 | 手机验证码、Apple、微信只是本地原型流程，无真实服务端认证。 | OWNER DECISION 明确是否作为首发阻断项；若选择首发前账号，再由 Phase 6 完成服务商、注销和审计。 |
 | 合规/发布材料 | 隐私政策、用户协议、注销、商店主体/截图/许可证和年龄分级未闭环。 | P5-E/P5-F/P5-I 逐项签字前不得对外提交。 |

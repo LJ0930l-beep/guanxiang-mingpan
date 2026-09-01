@@ -128,6 +128,22 @@ export {
   validateGoldenCaseRegistry,
 } from '@/domains/golden/validator';
 export {
+  P5_C_DEFERRED_INPUT_ROUTE_CASES,
+  P5_C_DEFERRED_INPUT_ROUTE_CONTRACT_VERSION,
+  P5_C_DEFERRED_INPUT_ROUTE_STATUS,
+  P5_C_DEFERRED_INPUT_ROUTE_DISPOSITION,
+  P5_C_DEFERRED_INPUT_ROUTE_IMPLEMENTATION_STATUS,
+  P5_C_DEFERRED_INPUT_ROUTE_TARGET_BATCH,
+  P5_C_DEFERRED_INPUT_ROUTE_ID,
+  P5_C_DEFERRED_INPUT_ROUTE_AUDIT_CASE_IDS,
+  getP5CDeferredInputRouteValidationErrors,
+  validateP5CDeferredInputRoute,
+  getP5CDeferredInputRouteRegistryValidationErrors,
+  validateP5CDeferredInputRouteRegistry,
+  type P5CDeferredInputRoute,
+  type P5CDeferredInputRouteAuditCaseId,
+} from '@/domains/golden/boundary-input-deferred-route';
+export {
   GOLDEN_CASE_CONTRACT_VERSION,
   GOLDEN_MODULES,
   GOLDEN_SOURCE_TYPES,

@@ -1,14 +1,14 @@
-# P5-A4a / P5-A5a / P5-A5b / P5-A5c · 四术边界与输入策略审计矩阵
+# P5-A4a / P5-A5a / P5-A5b / P5-A5c / P5-A final · 四术边界与输入策略审计矩阵
 
-状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b 与 P5-A5c 已由 Sol High 独立验收 PASS（2026-08-31）
+状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b 与 P5-A5c 已由 Sol High 独立验收 PASS（2026-08-31）；P5-A final 新增 P5-C deferred/routed disposition，功能尚未实现，仍待最终总验收
 
 本文件只说明机器可检查审计合同的范围和当前事实，不把项目回归测试、第三方库返回或 CI 通过提升为四术专业真值，也不表示整个 P5-A 或 Phase 5 已完成。
 
 ## 1. 单一事实源与合同
 
-- 合同实现：`src/domains/golden/boundary-input-contract.ts`
+- 合同实现：`src/domains/golden/boundary-input-contract.ts`（A4a immutable）与 `src/domains/golden/boundary-input-deferred-route.ts`（P5-C additive disposition）
 - Golden index 导出：`src/domains/golden/index.ts`
-- 审计回归：`tests/p5-boundary-input-audit.regression.mjs`
+- 审计回归：`tests/p5-boundary-input-audit.regression.mjs`；P5-C route 回归：`tests/p5-deferred-input-route.regression.mjs`
 - 合同版本：`p5-a4a-boundary-input.v1`
 - 每项必填：`id`、`module`、`category`、`input`/`fixture`、`risk`、`currentBehavior`、`expectedPolicy`、`status`、`validationClass`、`evidenceRefs`、`targetBatch`、`ownerDecisionRequired`、`notes`。
 
@@ -215,3 +215,19 @@ Sol High 独立验收结论：**P5-A5a PASS**。本批只关闭三项日期 deci
 实现 local `886aec930564c5399e8e67d4878ff8aee135fa28`（parent `72287ce7698a673b098badcb0a0f0e2a196e3f29`），remote `43def88793c189313c20c959f9a23712cd2fd811`（parent `fa40f8a389f64b214d672e6f3dc45c3f6341ee54`），实现 16 paths；GitHub Actions [run 33401047517](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33401047517) / job `99517136945` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。
 
 Sol High 独立验收结论：**P5-A5c PASS**。A4a immutable matrix 仍是 5 个 decision-required，只是现在五项均有 additive accepted overlay；这不表示整个 P5-A 或 Phase 5 完成。下一步固定为 **P5-A final acceptance/audit closure**；P5-B 城市覆盖及非官方地区时间习惯风险继续保留。
+
+## 16. P5-A final：P5-C deferred/routed disposition
+
+本次 final-audit 收口只增加后续批次的机器可检查路由，不修改 A4a immutable registry 的 41 项、历史统计 `41 / 18 / 15 / 5 / 2 / 1`、既有 evidence、A4b v1–v6 或 owner-decision v1–v3。新增合同为 `p5-c-deferred-input-route.v1`，具体记录为：
+
+| 字段 | 值 |
+|---|---|
+| 原始审计项 | `p5-a4a-cross-a11y-copy-route`（原始 status=`gap`，targetBatch=`P5-C`） |
+| route ID | `p5-c-deferred-cross-a11y-copy-route` |
+| status / disposition | `deferred` / `routed-to-p5-c` |
+| implementationStatus | `not-implemented` |
+| targetBatch | `P5-C` |
+| 可执行 testRef | `tests/p5-deferred-input-route.regression.mjs#cross-a11y-copy-route-deferred` |
+
+route summary 明确为“路由到 P5-C，功能尚未实现”，validator 同时要求 route ID、原始 gap、P5-C 目标、deferred/not-implemented 语义及非空测试证据；专项回归目前为 4/4。该记录不是功能关闭证明：P5-C 后续仍需完成键盘、读屏、字体缩放、减少动态效果、对比度、触控目标和错误文案矩阵。`p5-a4a-cross-city-coverage` 不在本次变更内，继续保持原有 `routed-p5-b` / `P5-B` 路由；P5-A final 是否封板仍待 Sol High 独立验收。
+本次质量收口同步重新执行 `npm audit --omit=dev`：当前生产依赖基线为 **0 critical / 9 high / 16 moderate / 0 low（25 total）**。该基线只反映当前依赖树，不代表 P5-E 风险已关闭。
