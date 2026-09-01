@@ -1,6 +1,6 @@
 # P5-A4a / P5-A5a / P5-A5b / P5-A5c / P5-A final · 四术边界与输入策略审计矩阵
 
-状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b 与 P5-A5c 已由 Sol High 独立验收 PASS（2026-08-31）；P5-A final 新增 P5-C deferred/routed disposition，功能尚未实现，仍待最终总验收
+状态：P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b、P5-A5c 及 P5-A final 已由 Sol High/主管独立验收 PASS（2026-09-02）；P5-A final 仅登记 P5-C deferred/routed disposition，功能尚未实现；`p5-a4a-cross-city-coverage` 继续路由 P5-B；下一批为 P5-B1 合同/来源/许可审计
 
 本文件只说明机器可检查审计合同的范围和当前事实，不把项目回归测试、第三方库返回或 CI 通过提升为四术专业真值，也不表示整个 P5-A 或 Phase 5 已完成。
 
@@ -56,7 +56,7 @@ runtime validator 会检查纯 JSON（拒绝函数、`Date`、循环引用、NaN
 
 普通无效公历日期在紫微/占星的拒绝属于安全的 P5-A4b 输入 gap（`ziwei-invalid-gregorian-date`、`astrology-invalid-gregorian-date`），不占用 owner decision；第三方错误分类和中文文案另行 route P5-A4b/P5-C。
 
-`ownerDecisionRequired` 标记 5 个 contract cases，归并为上述 4 个 owner decisions（八字日期范围 1 项、紫微/占星日期范围 2 项、历史 DST 1 项、占星缺时辰近似 1 项）；城市完整覆盖不是本批决策，已 route 到 P5-B；失败文案与无障碍呈现 route 到 P5-C。P5-A5a 后续以独立 `p5-a5a-owner-decision.v1` overlay 解析三项日期范围 case，不改写本 immutable snapshot；历史 DST 与占星缺时辰近似仍待后续决策/实现。
+`ownerDecisionRequired` 标记 5 个 contract cases，归并为上述 4 个 owner decisions（八字日期范围 1 项、紫微/占星日期范围 2 项、历史 DST 1 项、占星缺时辰近似 1 项）；城市完整覆盖不是本批决策，已 route 到 P5-B；失败文案与无障碍呈现 route 到 P5-C。以下是 A4a immutable snapshot 形成时的历史处置记录：当时 P5-A5a 尚未建立，历史 DST 与占星缺时辰近似仍待后续决策/实现；随后已由 P5-A5a/P5-A5b/P5-A5c additive overlays 分别收口，P5-A final 已完成最终验收，不改写本 immutable snapshot。
 
 ## 6. 验收证据
 
@@ -67,7 +67,7 @@ runtime validator 会检查纯 JSON（拒绝函数、`Date`、循环引用、NaN
 
 ## 7. 结论与边界
 
-P5-A4a 已完成“盘点 + 合同 + 机器门禁 + 只读 probes”的实现，并通过 Sol High 独立验收 **PASS**。该结论只覆盖审计合同、机器门禁和已登记的工程现状，不把项目回归、第三方库返回或 CI 通过提升为四术专业真值。P5-A 不能因此关闭：真实 gap 尚未修复，决策项尚未批准，P5-A4b/P5-B/P5-C 仍需单独 handoff；整个 P5-A 与 Phase 5 仍未完成。任何对外文案只能说当前输入边界和工程回归已被记录，不能说四术结论已经获得专业验证。
+P5-A4a 已完成“盘点 + 合同 + 机器门禁 + 只读 probes”的实现，并通过 Sol High 独立验收 **PASS**。该结论只覆盖 A4a 阶段的审计合同、机器门禁和已登记工程现状，不把项目回归、第三方库返回或 CI 通过提升为四术专业真值；当时的“P5-A 不能因此关闭”是该阶段历史结论。随后 P5-A4b、P5-A5a、P5-A5b、P5-A5c 与 P5-A final 已分别完成独立验收，P5-A 已完成；P5-B/P5-C 仍需单独 handoff，整个 Phase 5 仍未完成。任何对外文案只能说当前输入边界和工程回归已被记录，不能说四术结论已经获得专业验证。
 
 ## 8. P5-A4b1 resolution overlay（Sol High 独立验收 PASS）
 
@@ -214,7 +214,7 @@ Sol High 独立验收结论：**P5-A5a PASS**。本批只关闭三项日期 deci
 
 实现 local `886aec930564c5399e8e67d4878ff8aee135fa28`（parent `72287ce7698a673b098badcb0a0f0e2a196e3f29`），remote `43def88793c189313c20c959f9a23712cd2fd811`（parent `fa40f8a389f64b214d672e6f3dc45c3f6341ee54`），实现 16 paths；GitHub Actions [run 33401047517](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33401047517) / job `99517136945` 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。
 
-Sol High 独立验收结论：**P5-A5c PASS**。A4a immutable matrix 仍是 5 个 decision-required，只是现在五项均有 additive accepted overlay；这不表示整个 P5-A 或 Phase 5 完成。下一步固定为 **P5-A final acceptance/audit closure**；P5-B 城市覆盖及非官方地区时间习惯风险继续保留。
+Sol High 独立验收结论：**P5-A5c PASS**。A4a immutable matrix 仍是 5 个 decision-required，只是现在五项均有 additive accepted overlay。（历史记录：当时下一步为 P5-A final acceptance/audit closure。）P5-A final 随后已完成最终验收；P5-B 城市覆盖及非官方地区时间习惯风险继续保留。
 
 ## 16. P5-A final：P5-C deferred/routed disposition
 
@@ -229,5 +229,17 @@ Sol High 独立验收结论：**P5-A5c PASS**。A4a immutable matrix 仍是 5 �
 | targetBatch | `P5-C` |
 | 可执行 testRef | `tests/p5-deferred-input-route.regression.mjs#cross-a11y-copy-route-deferred` |
 
-route summary 明确为“路由到 P5-C，功能尚未实现”，validator 同时要求 route ID、原始 gap、P5-C 目标、deferred/not-implemented 语义及非空测试证据；专项回归目前为 4/4。该记录不是功能关闭证明：P5-C 后续仍需完成键盘、读屏、字体缩放、减少动态效果、对比度、触控目标和错误文案矩阵。`p5-a4a-cross-city-coverage` 不在本次变更内，继续保持原有 `routed-p5-b` / `P5-B` 路由；P5-A final 是否封板仍待 Sol High 独立验收。
+route summary 明确为“路由到 P5-C，功能尚未实现”，validator 同时要求 route ID、原始 gap、P5-C 目标、deferred/not-implemented 语义及非空测试证据；专项回归目前为 4/4。该记录不是功能关闭证明：P5-C 后续仍需完成键盘、读屏、字体缩放、减少动态效果、对比度、触控目标和错误文案矩阵。`p5-a4a-cross-city-coverage` 不在本次变更内，继续保持原有 `routed-p5-b` / `P5-B` 路由。
 本次质量收口同步重新执行 `npm audit --omit=dev`：当前生产依赖基线为 **0 critical / 9 high / 16 moderate / 0 low（25 total）**。该基线只反映当前依赖树，不代表 P5-E 风险已关闭。
+
+### 16.1 Final supervisor acceptance evidence
+
+基于已确认的远端实现 `f1ec6cd40a3c265941cac95e246cbc92d8aac202`（parent `92b7f31aca256c62532d1cc718a725f1a46f6785`），Sol High/主管最终验收 **PASS**。GitHub Actions run `33538870655` / job `99959852381` 为全绿 `Success`；Typecheck、Lint、Regression tests 与 Web Export 均实际执行，Web Export 非 skip。
+
+- `npm test`：174/174；P5-A final deferred route 专项：4/4。
+- Web Export：8 routes，实际执行并成功。
+- `npm audit --omit=dev`：0 critical / 9 high / 16 moderate / 0 low（25 total）；该基线不表示 P5-E 已关闭。
+- A4a immutable 41 项 registry、历史统计 `41 / 18 / 15 / 5 / 2 / 1`、既有 evidence、A4b v1–v6 与 owner-decision v1–v3 均保持不变。
+- `p5-a4a-cross-a11y-copy-route` 仅为正式 additive deferred/routed 到 P5-C，`implementationStatus=not-implemented`；`p5-a4a-cross-city-coverage` 继续保持 `routed-p5-b` / P5-B。
+
+**P5-A 已完成。下一批唯一授权入口为 P5-B1：城市数据合同、来源与许可审计；P5-C 功能本身仍未实现，整个 Phase 5 和 Level A 发布门仍未完成。**

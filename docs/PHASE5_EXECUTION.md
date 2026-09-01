@@ -1,10 +1,10 @@
 # Phase 5 · P5-A1～P5-A5c 四术可信度、输入边界与 P5-A final audit
 
 更新日期：2026-09-02
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b、P5-A5c 已由 Sol High 独立验收 PASS；本次已建立 `p5-c-deferred-input-route.v1`，将 `p5-a4a-cross-a11y-copy-route` 正式标记为 P5-C deferred/routed，但功能尚未实现；P5-A3 子里程碑已完成；P5-A 仅待最终总验收与审计收口，整个 Phase 5 仍未完成
+批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b、P5-A5c 及 P5-A final 已由 Sol High/主管独立验收 PASS；`p5-c-deferred-input-route.v1` 将 `p5-a4a-cross-a11y-copy-route` 正式标记为 P5-C deferred/routed，但功能尚未实现；`p5-a4a-cross-city-coverage` 继续路由 P5-B；P5-A3 子里程碑已完成；下一批为 P5-B1 合同/来源/许可审计，整个 Phase 5 仍未完成
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay、P5-A4b4 紫微农历/闰月输入校验与 cumulative resolution overlay、P5-A4b5 四模块 engine failures 与跨模块失败契约、P5-A5a 统一公开出生日期政策与 owner-decision overlay、P5-A5b Astrology 日级近似与缺坐标 fail-closed、P5-A5c 中国大陆 1986–1991 历史 DST 规则与快照复现，以及 P5-A final audit 的 P5-C deferred route 登记
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现及 Sol High 独立验收 PASS，第 15 节记录 P5-A4b4 紫微农历/闰月输入校验与 v4 overlay 实现及 Sol High 独立验收 PASS，第 16 节记录 P5-A4b5 四模块 engine failures 与 v5 overlay 实现及 Sol High 独立验收 PASS，第 17 节记录 P5-A5a 统一公开出生日期政策与独立 owner-decision overlay 实现及 Sol High 独立验收 PASS，第 18 节记录 P5-A5b Astrology 日级近似/地点安全策略与 additive overlays 实现及 Sol High 独立验收 PASS，第 19 节记录 P5-A5c 中国大陆 1986–1991 历史 DST 与 owner-decision v3 实现及 Sol High 独立验收 PASS，第 20 节记录本次 P5-A final audit 的 P5-C deferred route；不表示整个 P5-A 或 Phase 5 完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现及 Sol High 独立验收 PASS，第 15 节记录 P5-A4b4 紫微农历/闰月输入校验与 v4 overlay 实现及 Sol High 独立验收 PASS，第 16 节记录 P5-A4b5 四模块 engine failures 与 v5 overlay 实现及 Sol High 独立验收 PASS，第 17 节记录 P5-A5a 统一公开出生日期政策与独立 owner-decision overlay 实现及 Sol High 独立验收 PASS，第 18 节记录 P5-A5b Astrology 日级近似/地点安全策略与 additive overlays 实现及 Sol High 独立验收 PASS，第 19 节记录 P5-A5c 中国大陆 1986–1991 历史 DST 与 owner-decision v3 实现及 Sol High 独立验收 PASS，第 20 节记录 P5-A final audit 的 P5-C deferred route 及最终 supervisor acceptance；P5-C 功能仍未实现，整个 Phase 5 仍未完成。
 
 ## 1. Scope 与明确不做
 
@@ -541,7 +541,7 @@ A4a immutable registry、`41 / 18 / 15 / 5 / 2 / 1` 统计及历史 Astrology `0
 
 实现本地 `886aec930564c5399e8e67d4878ff8aee135fa28`（parent `72287ce7698a673b098badcb0a0f0e2a196e3f29`），远端 `43def88793c189313c20c959f9a23712cd2fd811`（remote parent `fa40f8a389f64b214d672e6f3dc45c3f6341ee54`），实现批次 16 paths。GitHub Actions [run 33401047517](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33401047517) / job `99517136945` 为 `completed/success`；Typecheck、Lint、Regression tests 与 Web Export 均实际执行并成功。
 
-Sol High 独立验收结论：**P5-A5c PASS**。本批已关闭历史 DST，P5-A 仍待最终总验收与审计收口；下一步固定为 **P5-A final acceptance/audit closure**。P5-B 城市覆盖、P5-C～P5-I 发布门及非官方地区时间习惯风险仍 pending。
+Sol High 独立验收结论：**P5-A5c PASS**。（历史记录：当时下一步为 P5-A final acceptance/audit closure。）P5-A final 随后已完成最终总验收与审计收口；P5-B 城市覆盖、P5-C～P5-I 发布门及非官方地区时间习惯风险仍 pending。
 
 ## 20. P5-A final audit：P5-C deferred/routed disposition
 
@@ -556,5 +556,17 @@ Sol High 独立验收结论：**P5-A5c PASS**。本批已关闭历史 DST，P5-A
 | targetBatch | `P5-C` |
 | testRef | `tests/p5-deferred-input-route.regression.mjs#cross-a11y-copy-route-deferred` |
 
-route validator 要求 summary 包含“路由到 P5-C，功能尚未实现”，并要求非空可执行测试证据；专项回归 4/4 同时锁定 route ID、原始 gap、P5-C 目标、deferred/not-implemented 语义和累计 overlay 单调性。`p5-a4a-cross-city-coverage` 仍保持既有 `routed-p5-b` / `P5-B` 归属。P5-C 后续仍需完成键盘、读屏、字体缩放、减少动态效果、对比度、触控目标和错误文案矩阵；P5-A final acceptance 仍待 Sol High 独立验收。
+route validator 要求 summary 包含“路由到 P5-C，功能尚未实现”，并要求非空可执行测试证据；专项回归 4/4 同时锁定 route ID、原始 gap、P5-C 目标、deferred/not-implemented 语义和累计 overlay 单调性。`p5-a4a-cross-city-coverage` 仍保持既有 `routed-p5-b` / `P5-B` 归属。P5-C 后续仍需完成键盘、读屏、字体缩放、减少动态效果、对比度、触控目标和错误文案矩阵。
 本次重新执行 `npm audit --omit=dev`，当前生产依赖基线为 **0 critical / 9 high / 16 moderate / 0 low（25 total）**；未执行会引入 Expo 大版本变化的自动修复。该审计结果仅更新当前基线，不关闭 P5-E Release Security 风险。
+
+### 20.1 Final supervisor acceptance
+
+基于已确认的远端实现 `f1ec6cd40a3c265941cac95e246cbc92d8aac202`（parent `92b7f31aca256c62532d1cc718a725f1a46f6785`），Sol High/主管最终验收 **PASS**。GitHub Actions run `33538870655` / job `99959852381` 为全绿 `Success`；Typecheck、Lint、Regression tests 与 Web Export 均实际执行，Web Export 非 skip。
+
+- `npm test`：174/174；P5-A final deferred route 专项：4/4。
+- Web Export：8 routes，实际执行并成功。
+- `npm audit --omit=dev`：0 critical / 9 high / 16 moderate / 0 low（25 total）；该基线不表示 P5-E 已关闭。
+- A4a immutable 41 项 registry、历史统计 `41 / 18 / 15 / 5 / 2 / 1`、既有 evidence、A4b v1–v6 与 owner-decision v1–v3 均保持不变。
+- `p5-a4a-cross-a11y-copy-route` 仅为正式 additive deferred/routed 到 P5-C，`implementationStatus=not-implemented`；`p5-a4a-cross-city-coverage` 继续保持 `routed-p5-b` / P5-B。
+
+**P5-A 已完成。下一批唯一授权入口为 P5-B1：城市数据合同、来源与许可审计；P5-C 功能本身仍未实现，整个 Phase 5 和 Level A 发布门仍未完成。**
