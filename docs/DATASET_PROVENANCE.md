@@ -2,6 +2,8 @@
 
 ## P5-B1 审计状态（2026-09-02）
 
+P5-B1 已由主管基于本地/远端提交和质量证据独立验收 **PASS**：远端实现 `89b2d6d4a991f08f075408cbe2b82cfe476bdcfb`（parent `4f660e1fdc29b63a63711f4a96aa7b3ff04788ee`），Actions run `33629823749` / job `100246237118` 全部 Success，Web Export 实际执行且非 skip；专项 8/8、统一 `npm test` 182/182、生产依赖审计 0 critical / 9 high / 16 moderate / 0 low。该 PASS 只确认合同/审计/发布阻断门落地，不代表全国覆盖或离线再分发许可已完成。
+
 当前生产 resolver 仍使用 `china-cities-p1f-mainland-v1`，包含 35 条人工编排的中国大陆城市记录：直辖市、省会/自治区首府，以及原型已经使用的少量常见地级市。现有 35 个 `locationId` 唯一，共 101 个 canonical name/alias token。P5-B1 新增的独立审计合同为 `p5-b1-city-dataset-audit.v1`，审计快照与 registry 位于 `src/data/city-dataset-contract.ts`。
 
 快照的 `status=partial`，每条当前记录标记为 `status=prototype`，`releaseEligibility=blocked`。这是对当前事实的审计，不是全国覆盖声明，也不代表现有 resolver 已经获得新的来源或许可。当前快照明确记录以下阻断：

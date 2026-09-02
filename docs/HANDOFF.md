@@ -382,7 +382,7 @@ summary 明确写为“路由到 P5-C，功能尚未实现”；P5-C 后续仍�
 
 ## 21. P5-B1 当前交接：城市数据合同、来源/许可审计与发布阻断
 
-**状态：实现完成，待 Sol High 独立验收与远端 CI 证据。**
+**状态：主管独立验收 PASS。**
 
 本批严格限制为 additive 城市数据合同、现状审计快照、来源/许可审计和 release eligibility validator。新增 `src/data/city-dataset-contract.ts` 与 `src/data/index.ts`，不改 `src/data/china-cities.ts`、resolver、Storage Schema、历史数据、备份/replay、引擎、UI 或依赖。没有使用 Expo API。新增 `tests/p5-city-dataset-contract.regression.mjs` 已接入 `package.json` 统一测试。
 
@@ -390,4 +390,4 @@ summary 明确写为“路由到 P5-C，功能尚未实现”；P5-C 后续仍�
 
 validator fail-closed 覆盖重复 locationId/adminCode、canonical/alias 冲突、非法经纬度、非 `Asia/Shanghai`、缺逐行 provenance/license、release-ready 残留 unknown/restricted/blocked license 或缺字段、locationId/adminCode 身份混淆及缺 `supersedes`/`replacedBy` 的破坏性替换。深圳精确命中、未知城市未命中、历史 locationId/坐标/datasetVersion 与 `p5-a4a-cross-city-coverage` 的 P5-B 路由均有回归锁定。候选来源与许可状态详见 `docs/DATASET_PROVENANCE.md`；民政部为官方核对候选但离线商业许可 UNKNOWN，GeoNames CC BY 4.0 为非官方坐标候选，OSM ODbL 暂阻断，Natural Earth 仅地图候选，天地图/国家基础地理平台无书面许可前阻断。
 
-本地已通过专项 **8/8**、`npm test` **182/182**、`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，实际执行）和 `git diff --check`；`npm audit --omit=dev` 与最终远端 CI 结果待本批收口时登记。下一批只允许进入 **P5-B2 行政区划名称/代码与历史变更审计**，在来源/许可决策前不扩充生产城市数据。
+本地已通过专项 **8/8**、`npm test` **182/182**、`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，实际执行）和 `git diff --check`；`npm audit --omit=dev` 为 **0 critical / 9 high / 16 moderate / 0 low（25 total）**。本地 commit `58e8f1ce3eb617dbb773ad1a00d2a32193efe687`（parent `f8fed07ab9d13572e9ee8a41334c41617f17699f`）已映射为远端 `89b2d6d4a991f08f075408cbe2b82cfe476bdcfb`（parent `4f660e1fdc29b63a63711f4a96aa7b3ff04788ee`）；Actions run `33629823749` / job `100246237118` 全部 Success，Typecheck、Lint、Regression tests、Web export 均实际执行且 Web export 非 skip。主管据此独立验收 **P5-B1 PASS**。下一批只允许进入 **P5-B2 行政区划名称/代码与历史变更审计**；全国覆盖、来源/许可证据仍 blocked，在许可决策前不扩充生产城市数据。

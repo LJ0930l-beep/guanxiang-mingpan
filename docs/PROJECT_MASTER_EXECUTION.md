@@ -3,7 +3,7 @@
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
 > 批次：P5-B1 city dataset contract / provenance / release gate
-> 本批状态：P5-B1 已建立 additive `p5-b1-city-dataset-audit.v1` 合同、当前 35 条生产城市的审计快照与 fail-closed runtime validator；当前数据仍为 `status=partial`、`releaseEligibility=blocked`，没有扩充生产数据或关闭 `p5-a4a-cross-city-coverage`。P5-A final 及 P5-A5c/P5-A5b/P5-A5a/P5-A4b5/P5-A4b4/P5-A4b3/P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次
+> 本批状态：P5-B1 已建立 additive `p5-b1-city-dataset-audit.v1` 合同、当前 35 条生产城市的审计快照与 fail-closed runtime validator，并经主管独立验收 PASS；当前数据仍为 `status=partial`、`releaseEligibility=blocked`，没有扩充生产数据或关闭 `p5-a4a-cross-city-coverage`。P5-A final 及 P5-A5c/P5-A5b/P5-A5a/P5-A4b5/P5-A4b4/P5-A4b3/P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -568,7 +568,7 @@ validator fail-closed 拒绝重复 locationId/adminCode、canonical name 与跨�
 
 ### 回归、DoD 与下一批
 
-新增 `tests/p5-city-dataset-contract.regression.mjs` 并接入统一 `npm test`，专项 8/8，统一测试 182/182；覆盖 35/35/101、深圳精确匹配/未知城市未命中、纯 JSON、validator 负例、发布门、身份映射和 P5-B 路由。`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，实际执行）和 `git diff --check` 均 PASS；`npm audit --omit=dev` 结果待最终质量记录确认。P5-B1 只有在审计快照仍 blocked、生产表/resolver/storage 未改写且远端 Actions 全部 Success（含实际 Web Export）后接受。下一批唯一入口为 P5-B2 行政区划名称/代码与历史变更审计；在来源/许可决策前不得扩充生产城市数据。
+新增 `tests/p5-city-dataset-contract.regression.mjs` 并接入统一 `npm test`，专项 8/8，统一测试 182/182；覆盖 35/35/101、深圳精确匹配/未知城市未命中、纯 JSON、validator 负例、发布门、身份映射和 P5-B 路由。`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，实际执行）和 `git diff --check` 均 PASS；`npm audit --omit=dev` 为 **0 critical / 9 high / 16 moderate / 0 low（25 total）**。本地实现 commit `58e8f1ce3eb617dbb773ad1a00d2a32193efe687`（parent `f8fed07ab9d13572e9ee8a41334c41617f17699f`）映射到远端 commit `89b2d6d4a991f08f075408cbe2b82cfe476bdcfb`（parent `4f660e1fdc29b63a63711f4a96aa7b3ff04788ee`）；Actions run `33629823749` / job `100246237118` 全部 Success，Typecheck、Lint、Regression tests、Web export 均实际执行且 Web export 非 skip。主管据此独立验收 **P5-B1 PASS**。审计快照仍 blocked，生产表/resolver/storage 未改写，`p5-a4a-cross-city-coverage` 仍保持 P5-B 路由。下一批唯一入口为 P5-B2 行政区划名称/代码与历史变更审计；在来源/许可决策前不得扩充生产城市数据。
 
 ## 6. 统一批次验收模板
 
