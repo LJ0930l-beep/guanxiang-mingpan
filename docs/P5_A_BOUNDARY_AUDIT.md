@@ -253,3 +253,10 @@ P5-B1 仅新增城市数据审计/发布资格边界，不回写本文件前文�
 合同 validator 现在对重复 locationId/adminCode、canonical/alias 冲突、非法/非有限经纬度、非 Asia/Shanghai、缺逐行 provenance/license、release-ready 的 unknown/restricted/blocked license 或缺字段、locationId/adminCode 静默替换和缺 `supersedes`/`replacedBy` 的身份替换 fail closed。城市中心坐标只允许近似语义；冲突别名须省份限定或显式候选选择。来源候选和许可状态见 `docs/DATASET_PROVENANCE.md`：民政部国家地名信息库（官方名称/代码核对，离线商业再分发 UNKNOWN）、GeoNames CC BY 4.0（非官方坐标候选）、OSM ODbL（合规复杂，阻断复核）、Natural Earth（public domain 但不保证地级覆盖，仅地图候选），天地图/国家基础地理信息平台（无书面许可，阻断）。
 
 专项 `tests/p5-city-dataset-contract.regression.mjs` 为 **8/8**，锁定当前数据事实、resolver 行为、纯 JSON/负例/release gate 和 P5-B 路由；统一 `npm test` 为 **182/182**。本地 `58e8f1ce3eb617dbb773ad1a00d2a32193efe687`（parent `f8fed07ab9d13572e9ee8a41334c41617f17699f`）映射到远端 `89b2d6d4a991f08f075408cbe2b82cfe476bdcfb`（parent `4f660e1fdc29b63a63711f4a96aa7b3ff04788ee`）；Actions run `33629823749` / job `100246237118` 全部 Success，Web export 实际执行且非 skip，`npm audit --omit=dev` 为 0 critical / 9 high / 16 moderate / 0 low。主管据此独立验收 **P5-B1 PASS**。本节不把审计快照的 blocked 状态解释成全国覆盖完成；下一批为 P5-B2 行政区划名称/代码与历史变更审计。
+## P5-B2 来源审计边界记录
+
+P5-B2 的来源决策合同 `p5-b2-city-source-decision.v1` 只记录官方行政名称/代码/历史核验、候选坐标/别名来源、URL/version/hash/retrievedAt、license/attribution 和十维矩阵，不改写本文件的 A4a immutable registry、`41 / 18 / 15 / 5 / 2 / 1` 统计、Astrology `0,0` 历史 probe、A4b v1–v6、owner-decision v1–v3 或已登记的 `p5-a4a-cross-city-coverage` / `p5-a4a-cross-a11y-copy-route` 路由。
+
+审计结论是 fail-closed：民政部页面/API可作人工名称/六位代码/年度变更核验，但未证明商业离线复制；GeoNames CC BY 4.0 只作坐标/别名候选；GitHub 仓库 MIT/WTFPL/GPL 不自动覆盖 NBS/MCA 上游数据；OSM ODbL ShareAlike/通知边界未批准；Natural Earth 仅地图层。没有书面授权或法务结论，不导入城市数据、不宣称覆盖完成，也不将 A4a 的跨城市 gap 误标为已关闭。完整证据矩阵、unknown 和授权清单见 [DATASET_PROVENANCE.md](DATASET_PROVENANCE.md)。
+
+P5-C 可在该数据阻断期间独立推进；任何 UI/可访问性实现仍须遵守本文件既有 boundary/no-guessing 规则。

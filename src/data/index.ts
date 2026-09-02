@@ -1,4 +1,5 @@
 export * from '@/data/china-cities';
 export * from '@/data/city-dataset-contract';
+export * from '@/data/city-source-decision';
 export * from '@/data/dataset-meta';
 export * from '@/data/modules';

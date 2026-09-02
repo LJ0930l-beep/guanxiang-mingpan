@@ -50,3 +50,44 @@ runtime validator 会 fail closed 检查：重复 `locationId`/`adminCode`、can
 只有当每条记录的行政身份、名称/别名、坐标、版本、取数时间、归因、许可证和变更链均有可回查证据，且覆盖目标、冲突处理和离线分发条款通过独立审查，才可以把数据集标记为 `status=complete`、`releaseEligibility=release-ready`。validator 对任何缺字段、unknown/restricted/blocked license 或残留 blocker 都拒绝 release-ready。
 
 下一批固定为 **P5-B2 行政区划名称/代码与历史变更审计**：先核对官方版本、地级行政层级与 `adminCode` 映射，继续保持新记录 + 显式 `supersedes`/`replacedBy`，在完成来源/许可决策前不扩充生产城市表。坐标候选筛选、别名补全和全国覆盖仍需独立批次，不得由本批快照推断已完成。
+
+## P5-B2 来源决策审计（2026-09-02）
+
+P5-B2 已完成一手网页/GitHub 证据收敛，但没有证明任何单一来源同时满足“中国大陆地级行政区权威名称、六位代码、坐标、别名、历史变更”和“合法商业离线再分发”。因此本批采取 **fail-closed**：新增 `src/data/city-source-decision.ts` 中的纯 JSON `p5-b2-city-source-decision.v1` 快照和 runtime validator，`releaseDecision=BLOCKED`；不导入生产城市表，不关闭 `p5-a4a-cross-city-coverage`。
+
+审计快照 `china-cities-p5-b2-source-audit-2026-09-02` 的每条证据固定 `URL`、`sourceVersion`、`sha256` 内容哈希和 `retrievedAt=2026-09-02T21:36:30.1129972+08:00`。证据哈希是本次只读响应的记录，不代表上游授予许可；遗留行政沿革页面以 `http-legacy` 显式标记。
+
+### 来源矩阵
+
+矩阵顺序为 `authority / completeness / freshness / stableCodes / coordinates / aliases / history / licenseClarity / redistributionFit / operationalCost`；`strong`、`partial`、`weak`、`unknown`、`blocked` 的逐项事实、URL、版本、哈希位于 source-decision 合同，表格只给决策摘要。
+
+| 来源 | 覆盖层级/版本与上游 | 维度摘要（按上述顺序） | 坐标/别名/历史 | 数据文件许可与商业离线再分发 | 决策 |
+|---|---|---|---|---|---|
+| [民政部行政区划版本页](https://dmfw.mca.gov.cn/XzqhVersionPublish.html) / [只读 API](https://dmfw.mca.gov.cn/xzqh/getList?code=0&trimCode=true&maxLevel=3) / [年度变更入口](http://xzqh.mca.gov.cn/description?dcpid=1) | 省/地/县/乡四级；`Xzqh20251231`，数据截止 2025-12-31；上游为民政部 | strong / partial / strong / strong / blocked / unknown / strong / unknown / unknown / partial | 当前树可作名称/代码核验；未提供已许可逐行坐标/别名文件；年度页 2021–2026 可人工核验沿革 | 页面/API/规章未见商业离线复制条款；无明确数据文件 license/ShareAlike 条款 | `UNKNOWN`；只人工核验 |
+| [GB/T 2260-2007](https://openstd.samr.gov.cn/bzgk/std/newGbInfo?hcno=C9C488FD717AFDCD52157F41C3302C6D) | 国家标准代码形态参考；发布 2007-11-14、实施 2008-02-01；上游为国家标准平台 | strong / weak / weak / strong / blocked / blocked / blocked / unknown / unknown / partial | 仅代码标准/文本，不是当前城市数据，不含坐标、别名、历史 | 标准平台有版权声明，未证明标准表格可商业离线复制 | `UNKNOWN`；仅内部参考 |
+| [GeoNames Export](https://www.geonames.org/export/index.html) / [Readme](https://download.geonames.org/export/dump/readme.txt) | 全球地名；daily extract；上游为 GeoNames 聚合来源 | weak / partial / strong / weak / strong / strong / partial / strong / partial / partial | WGS84 经纬度；`alternateNamesV2` 有语言/首选/历史及 from/to；不提供中国官方六位码 | [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) 明确允许商业使用/分享，需归因和修改说明；聚合第三方权利仍待逐行审查；无 ShareAlike | `CANDIDATE`；仅坐标/别名候选 |
+| [modood 仓库](https://github.com/modood/Administrative-divisions-of-China) / [README](https://raw.githubusercontent.com/modood/Administrative-divisions-of-China/master/README.md) | 省/市/区县/乡镇/村五级；NBS 统计代码截止 2023-06-30；仓库最新 commit `c49d495`（2025-12-27） | partial / partial / blocked / partial / blocked / blocked / blocked / weak / blocked / weak | 名称/统计码与 SQLite；无坐标、别名、历史映射 | [WTFPL](https://raw.githubusercontent.com/modood/Administrative-divisions-of-China/master/LICENSE) 仅是仓库许可，不能推断 NBS 数据文件权利 | `BLOCKED` |
+| [kk-418/cn-division](https://github.com/kk-418/cn-division) / [MIT](https://raw.githubusercontent.com/kk-418/cn-division/main/LICENSE) | README 标注 2026.0.0/342 地级城市，大陆范围；上游自述为民政部 REST；commit `cc9c0c4`（2026-04-26） | partial / strong / strong / strong / blocked / blocked / blocked / weak / unknown / partial | 代码层级/六位形态候选；无坐标、别名、历史；README `/9095` 接口观测与当前根路径存在差异 | MIT 只覆盖仓库作品；未证明 MCA API 响应/衍生数据授权 | `UNKNOWN`；待书面授权 |
+| [adyliu/china_area](https://github.com/adyliu/china_area) / [GPL-3.0](https://raw.githubusercontent.com/adyliu/china_area/master/LICENSE) | 五级、多年 2010–2024 快照；源为 NBS 2023 统计代码；最新 commit `eea7df7`（2023-12-23） | partial / strong / blocked / partial / blocked / blocked / partial / weak / blocked / weak | 历史快照可比较；无坐标/逐行别名/法定沿革语义 | GPL-3.0 数据库传播风险与 NBS 上游权利不明叠加，不能用于首发商业包 | `BLOCKED` |
+| [OpenStreetMap copyright](https://www.openstreetmap.org/copyright) / [ODbL 1.0](https://opendatacommons.org/licenses/odbl/1-0/) | 全球地图/地点；持续更新；上游为 contributors/OSMF | weak / partial / strong / weak / strong / partial / partial / strong / blocked / weak | 可提供地图坐标/标签/编辑历史，但不等于中国行政代码沿革 | ODbL 允许有条件商业利用但有归因、通知、衍生数据库 ShareAlike；组合传播边界未设计 | `BLOCKED`；不混入首发包 |
+| [Natural Earth Terms](https://www.naturalearthdata.com/about/terms-of-use/) | 全球制图底图；项目条款版本由页面确定；上游为 Natural Earth | weak / partial / unknown / blocked / partial / weak / blocked / strong / strong / partial | 地图几何可视化；不提供六位代码、逐行别名或沿革 | 项目 raster/vector 数据声明 public domain、可商业电子传播；第三方例外须分离核查 | `CANDIDATE`；仅地图层 |
+
+### 已确认事实、unknown 与授权清单
+
+- 已确认：民政部版本页声明全国省、地、县、乡四级行政区划代码，当前数据截止 2025-12-31；行政区划代码管理办法（[司法部页面](https://www.moj.gov.cn/pub/sfbgw/flfggz/flfggzbmgz/202512/t20251204_528920.html)）规定代码唯一、撤销不复用、年度发布和变更赋码；GB/T 2260 可作代码形态参考。
+- 已确认：GeoNames 官方导出/Readme/CC BY 4.0 明确商业使用、归因、WGS84、alternate names 和历史日期字段；OSM 官方页面/ODbL 明确数据库传播与 ShareAlike 义务；Natural Earth 条款对项目数据给出 public-domain 口径。
+- 已确认：modood README 明确 2023 截止且不再更新；kk-418 README 提供较新 MCA 候选但仓库 MIT 不覆盖已证明的上游数据权利；adyliu 有历史快照但 GPL-3.0 且陈旧。
+- Unknown：民政部页面/API、GB/T 表格和两个 GitHub 仓库中的上游数据，是否允许本 App 复制、打包、离线商业再分发；民政部名称/代码与 GeoNames/OSM 坐标别名逐行对应关系；历史代码废止/换码与稳定 `locationId` 的完整映射；第三方聚合数据的权利链和商标/人格权例外。
+
+首发前必须取得或留档：
+
+1. 民政部/权利人书面确认名称、六位代码、年度历史变更页面/API 响应可被复制进离线商业 App，并允许保存版本、哈希和归因；或者法务书面结论明确许可依据和边界。
+2. 每个坐标/别名记录的来源、版本、哈希、取数时间、精度（仅 `city-center-approximate`）、归因和许可；冲突别名不首条猜测。
+3. GeoNames 需要随包 CC BY 链接、来源/修改说明和第三方来源审查；OSM 需要单独 ODbL 兼容数据库/通知方案；GPL 候选不得混入未审计的首发数据库。
+4. 法务确认数据库组合是否触发 ODbL ShareAlike、GPL 传播、标准文本版权或其他上游限制；确认应用稳定 `locationId` 与 `adminCode` 分离、历史 `supersedes/replacedBy` 不会构成绕过许可。
+
+### 组合方案与下一最小实现批
+
+推荐组合为“官方页面仅人工核验 + 明确许可的数据包 + app 稳定 `locationId`”：民政部只用于人工确认当前名称/代码/公告，GeoNames 只能在 CC BY 归因和逐行核验后作为坐标/别名候选，`locationId` 永不被 `adminCode` 静默替换。当前没有合法再分发证明，主管决策应为 **fail closed**。
+
+下一最小实现批只允许 source-decision/audit tooling：固定 manifest 的 URL/version/hash/retrievedAt/license/attribution，校验逐行血缘、代码/坐标/别名/历史链和数据库许可证风险；不导入未获授权数据。来源许可充分后，另立 pilot import 批，必须先定义 source/version/hash/schema/test/DoD、审查归因和回滚，再允许生产路径；当前 P5-C 可独立继续，不能将本快照误标为城市覆盖完成。

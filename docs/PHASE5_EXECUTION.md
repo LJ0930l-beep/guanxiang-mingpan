@@ -592,3 +592,12 @@ validator/回归拒绝重复 `locationId`/`adminCode`、canonical name 冲突、
 ### 21.4 回归与 DoD
 
 新增 `tests/p5-city-dataset-contract.regression.mjs`，接入统一 npm test；专项 8/8，覆盖当前 35/35/101、深圳与未知城市行为、纯 JSON、validator 负例、release-ready fail-closed、历史 identity/坐标/version 锁定和 `p5-a4a-cross-city-coverage` 的 P5-B 路由。`git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`（182/182）和 `npm run build:web`（8 routes，Web Export 实际执行）均通过；`npm audit --omit=dev` 已复核生产基线为 **0 critical / 9 high / 16 moderate / 0 low（25 total）**，已知风险仍由 P5-E 单独处置，不把该基线记为漏洞清零。本地 `58e8f1ce3eb617dbb773ad1a00d2a32193efe687`（parent `f8fed07ab9d13572e9ee8a41334c41617f17699f`）映射到远端 `89b2d6d4a991f08f075408cbe2b82cfe476bdcfb`（parent `4f660e1fdc29b63a63711f4a96aa7b3ff04788ee`）；Actions run `33629823749` / job `100246237118` 的 Install dependencies、Typecheck、Lint、Regression tests、Web export 和收尾步骤全部 Success，Web export 非 skip。主管独立验收 **P5-B1 PASS**。P5-B1 不宣称全国覆盖完成；许可证、adminCode/行政层级和逐行来源证据仍 blocked，`p5-a4a-cross-city-coverage` 未关闭；下一批唯一入口为 P5-B2 行政区划名称/代码与历史变更审计。
+## 22. P5-B2 来源决策审计与 fail-closed 门
+
+本批只完成来源证据与发布门，不导入生产城市数据，不改 `src/data/china-cities.ts`、resolver、Storage Schema、历史快照/备份/replay、引擎、UI、依赖或 `p5-a4a-cross-city-coverage` 路由。新增 `src/data/city-source-decision.ts` 与 `tests/p5-city-source-decision.regression.mjs`，合同版本为 `p5-b2-city-source-decision.v1`，并由 `src/data/index.ts` 导出。
+
+合同逐条核查民政部版本/API/年度变更、GB/T 2260、GeoNames、modood、kk-418、adyliu、OpenStreetMap/ODbL、Natural Earth；每条证据固定 URL、`sourceVersion`、sha256 `contentHash`、`retrievedAt`、license 和 attribution，并覆盖十个矩阵维度：authority、completeness、freshness、stableCodes、coordinates、aliases、history、licenseClarity、redistributionFit、operationalCost。GitHub MIT/WTFPL/GPL 仅记录仓库作品许可，不能自动推断上游数据许可。
+
+结论固定为 `releaseDecision=BLOCKED`：民政部可作官方人工名称/代码/历史核验但离线商业许可 UNKNOWN；GeoNames CC BY 4.0 是坐标/别名候选且需归因和第三方审查；kk-418 代码候选上游许可 UNKNOWN；modood/adyliu 陈旧或传播风险 BLOCKED；OSM ODbL ShareAlike/通知风险 BLOCKED；Natural Earth 仅地图层。组合方案是“官方页面仅人工核验 + 明确许可数据打包 + 稳定 `locationId` 与独立 `adminCode`”，冲突别名不首条猜测，沿革必须显式 `validFrom/validTo` 和 `supersedes/replacedBy`。完整一手链接、哈希、unknown 和书面授权清单见 [DATASET_PROVENANCE.md](DATASET_PROVENANCE.md)。
+
+专项回归为 `tests/p5-city-source-decision.regression.mjs` 8/8（来源、证据哈希/legacy HTTP、许可边界、上游权利、十维矩阵、组合方案、fail-closed/数据库风险、validator 负例）。数据库传播风险登记为 high；没有书面授权或法务结论，不得把权威页面/API复制进离线包。下一最小批仅是 audit tooling；许可充分后另立 pilot import 批并冻结 source/version/hash/schema/test/DoD。P5-C 可在该数据阻断期间独立推进。

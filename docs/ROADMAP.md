@@ -106,3 +106,4 @@ P5-A～P5-I 是 Level A 发布质量前置项。完成 Phase 5 后必须经过 O
 - 确定短信、微信、Apple 登录服务商
 - 确定支付、AI 模型及内容审核供应商
 - App Store 正式 Bundle ID、商标和上线主体
+- [x] **P5-B2 来源决策审计 microbatch（fail-closed）**：新增纯 JSON `p5-b2-city-source-decision.v1` source-decision/audit contract 与 8 项回归；一手核查民政部行政区划版本/API/年度变更、GB/T 2260、GeoNames CC BY 4.0、modood、kk-418、adyliu、OSM/ODbL、Natural Earth。每条证据固定 URL、sourceVersion、sha256 hash、retrievedAt、license、attribution，并覆盖十维 authority/completeness/freshness/stableCodes/coordinates/aliases/history/licenseClarity/redistributionFit/operationalCost。因权威 MCA 数据商业离线再分发许可未证明，快照 `releaseDecision=BLOCKED`；不导入生产数据、不关闭 `p5-a4a-cross-city-coverage`。P5-C 可独立推进；本条不表示 P5-B 全国覆盖完成。

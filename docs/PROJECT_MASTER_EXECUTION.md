@@ -613,3 +613,13 @@ validator fail-closed 拒绝重复 locationId/adminCode、canonical name 与跨�
 - P5-A2 已给出 scope、DoD、测试、SHA、CI 和风险记录，并经 Sol High 独立验收 PASS；P5-A3a 已按方案 A 完成实现与最小兼容修复，并经 Sol High 独立验收 PASS。P5-A3b 的记录页显式复核/UI 展示不是新的 owner 决策门，已按主管授权完成实现并经 Sol High 独立验收 PASS，范围为历史证据展示与显式“按当前规则复核”。
 
 P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b、P5-A5c 及 P5-A final 已经 Sol High/主管独立验收通过；P5-A3 子里程碑已完成。P5-A4b5 仅以 v5 overlay 关闭四个真实 engine-error/cross-copy gap，P5-A5a 以独立 `p5-a5a-owner-decision.v1` overlay 关闭三项公开日期范围决策，P5-A5b 以 owner-decision v2 新增一项缺时辰决策并以 A4b v6 关闭两个原始 Astrology 安全 gap，P5-A5c 以 owner-decision v3 关闭中国大陆 1986–1991 历史 DST；P5-A final 仅确认既有 route 的审计收口，不把 P5-C 功能伪装为完成。A4a immutable audit、A4b v1-v6 overlays 和 P5-B/P5-C 路由不代表算法已修复。日级近似仍明确为 partial，不能当作精确星盘；P5-B 城市数据完整覆盖、UI/a11y 和其他发布门仍未完成。下一步固定为 **P5-B1 合同/来源/许可审计**。P5-A 已完成，但 Phase 5 和 Level A 发布门仍未完成；任何 Level B 工作暂不进入实现。
+
+## 9. P5-B2 来源决策审计（fail-closed）
+
+P5-B2 已完成一手来源收敛，但未证明任何来源可以合法商业离线再分发权威中国大陆地级行政区数据。新增 `src/data/city-source-decision.ts` 的 `p5-b2-city-source-decision.v1` 纯 JSON 合同与 validator，并由 `src/data/index.ts` 导出；没有导入生产城市数据，没有改写 `src/data/china-cities.ts`、resolver、Storage Schema、历史快照/备份/replay，也没有关闭 `p5-a4a-cross-city-coverage`。
+
+合同审计了民政部行政区划版本/API及年度变更、GB/T 2260、GeoNames CC BY 4.0、modood/Administrative-divisions-of-China、kk-418/cn-division、adyliu/china_area、OpenStreetMap/ODbL 和 Natural Earth。每条证据固定 URL、sourceVersion、sha256 contentHash、retrievedAt、license、attribution；矩阵完整记录 authority、completeness、freshness、stableCodes、coordinates、aliases、history、licenseClarity、redistributionFit、operationalCost。GitHub 仓库 MIT/WTFPL/GPL 只记录仓库作品许可，不能自动推断民政部/NBS 上游数据许可。
+
+结论为：民政部是名称/代码/历史的权威人工核验入口但离线许可 UNKNOWN；GeoNames 是明确 CC BY、WGS84、别名/历史字段的坐标候选但非中国行政权威；kk-418 是较新代码候选但上游许可 UNKNOWN；modood/adyliu 因陈旧或传播/上游权利风险 BLOCKED；OSM 因 ODbL ShareAlike/组合传播风险 BLOCKED；Natural Earth 仅 public-domain 地图层候选。组合方案固定为“官方页面仅人工核验 + 明确许可数据打包 + 稳定 `locationId` 与独立 `adminCode`”，首发无书面许可/法务结论时 fail closed。完整矩阵、URL、哈希、unknown 和书面授权清单见 [DATASET_PROVENANCE.md](DATASET_PROVENANCE.md)。
+
+P5-B2 最小实现批的 DoD 是 source-decision/audit tooling、逐行血缘与数据库许可传播风险门禁；不导入未获授权数据。若后续许可充分，另立 pilot import 批并先冻结 source/version/hash/schema/test/DoD；当前不宣称 P5-B 完成。根据一次性总授权，P5-C 可在城市数据阻断期间独立推进；本节不把 P5-C 功能冒充已完成。

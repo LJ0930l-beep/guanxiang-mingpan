@@ -391,3 +391,20 @@ summary 明确写为“路由到 P5-C，功能尚未实现”；P5-C 后续仍�
 validator fail-closed 覆盖重复 locationId/adminCode、canonical/alias 冲突、非法经纬度、非 `Asia/Shanghai`、缺逐行 provenance/license、release-ready 残留 unknown/restricted/blocked license 或缺字段、locationId/adminCode 身份混淆及缺 `supersedes`/`replacedBy` 的破坏性替换。深圳精确命中、未知城市未命中、历史 locationId/坐标/datasetVersion 与 `p5-a4a-cross-city-coverage` 的 P5-B 路由均有回归锁定。候选来源与许可状态详见 `docs/DATASET_PROVENANCE.md`；民政部为官方核对候选但离线商业许可 UNKNOWN，GeoNames CC BY 4.0 为非官方坐标候选，OSM ODbL 暂阻断，Natural Earth 仅地图候选，天地图/国家基础地理平台无书面许可前阻断。
 
 本地已通过专项 **8/8**、`npm test` **182/182**、`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，实际执行）和 `git diff --check`；`npm audit --omit=dev` 为 **0 critical / 9 high / 16 moderate / 0 low（25 total）**。本地 commit `58e8f1ce3eb617dbb773ad1a00d2a32193efe687`（parent `f8fed07ab9d13572e9ee8a41334c41617f17699f`）已映射为远端 `89b2d6d4a991f08f075408cbe2b82cfe476bdcfb`（parent `4f660e1fdc29b63a63711f4a96aa7b3ff04788ee`）；Actions run `33629823749` / job `100246237118` 全部 Success，Typecheck、Lint、Regression tests、Web export 均实际执行且 Web export 非 skip。主管据此独立验收 **P5-B1 PASS**。下一批只允许进入 **P5-B2 行政区划名称/代码与历史变更审计**；全国覆盖、来源/许可证据仍 blocked，在许可决策前不扩充生产城市数据。
+## 22. P5-B2 来源决策审计交接
+
+### 22.1 里程碑、范围与实现
+
+P5-B2 当前交接范围是来源收敛和 fail-closed source-decision contract，不是生产数据导入。新增 `src/data/city-source-decision.ts`、`src/data/index.ts` 导出和 `tests/p5-city-source-decision.regression.mjs`；没有改 `src/data/china-cities.ts`、resolver、Storage Schema、历史快照/备份/replay、引擎、UI、依赖或 `p5-a4a-cross-city-coverage`。合同 `p5-b2-city-source-decision.v1` 为纯 JSON，快照 ID `china-cities-p5-b2-source-audit-2026-09-02`。
+
+审计对象包括民政部行政区划版本/API和 2021–2026 年度变更、GB/T 2260、GeoNames CC BY 4.0、modood、kk-418/cn-division、adyliu/china_area、OpenStreetMap/ODbL、Natural Earth。每条证据固定 URL、版本、sha256 hash、retrievedAt、license 和 attribution；十维矩阵覆盖 authority、completeness、freshness、stableCodes、coordinates、aliases、history、licenseClarity、redistributionFit、operationalCost。
+
+### 22.2 主管决策与不可越过的门
+
+当前 `releaseDecision=BLOCKED`。民政部是名称/六位代码/历史人工核验权威，但没有发现商业离线复制授权；GeoNames 可作明确 CC BY 的坐标/别名候选而非中国行政权威；kk-418 代码候选仍缺上游数据授权；modood/adyliu 因陈旧、GPL/WTFPL 上游权利不明等阻断；OSM 的 ODbL ShareAlike/通知义务不适合当前组合；Natural Earth 仅地图层候选。仓库 MIT/WTFPL/GPL 不得被解释为上游数据许可。
+
+建议组合为“官方页面仅人工核验 + 明确许可数据打包 + 稳定 app `locationId` 与独立 `adminCode`”。冲突别名不首条猜测；行政身份变化以 `validFrom/validTo`、`supersedes/replacedBy` 显式记录。没有权利人书面许可或法务结论、逐行 source/version/hash/retrievedAt/license/attribution、坐标精度与别名/历史映射证据，不得导入或标记 release-ready。完整一手链接、hash、unknown 与授权清单见 `docs/DATASET_PROVENANCE.md`。
+
+### 22.3 测试与下一步
+
+专项 `tests/p5-city-source-decision.regression.mjs` 为 8/8，覆盖证据固定、许可边界、GitHub 许可证与上游权利分离、十维矩阵、组合边界、数据库传播风险和 validator 负例。下一最小批仍是 audit tooling；若许可充分，另立 pilot import，先冻结 source/version/hash/schema/test/DoD 和回滚；当前 P5-C 可以独立继续。P5-B2 未宣称全国覆盖完成，`p5-a4a-cross-city-coverage` 继续保持 P5-B 路由。
