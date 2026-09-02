@@ -74,14 +74,14 @@ function ModuleScaffold({ module, children }: { module: ModuleDefinition; childr
   return (
     <SafeAreaView style={styles.safeArea}>
       <Atmosphere accent={module.accent} focus="center" />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={[styles.container, desktop && styles.containerDesktop]}>
           <Pressable
             accessibilityLabel="返回观象首页"
             accessibilityRole="button"
             onPress={() => router.back()}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
-            <MaterialCommunityIcons color={palette.brass} name="arrow-left" size={18} />
+            <MaterialCommunityIcons accessibilityElementsHidden color={palette.brass} importantForAccessibility="no-hide-descendants" name="arrow-left" size={18} />
             <Text style={styles.backText}>返回观象</Text>
           </Pressable>
 
@@ -95,7 +95,7 @@ function ModuleScaffold({ module, children }: { module: ModuleDefinition; childr
                 <Text accessibilityRole="header" style={[styles.heroTitle, desktop && styles.heroTitleDesktop]}>{module.title}</Text>
                 <Text style={styles.heroDescription}>{module.description}</Text>
                 <View style={styles.localBadge}>
-                  <MaterialCommunityIcons color={palette.patina} name="cellphone-lock" size={15} />
+                  <MaterialCommunityIcons accessibilityElementsHidden color={palette.patina} importantForAccessibility="no-hide-descendants" name="cellphone-lock" size={15} />
                   <Text style={styles.localBadgeText}>本机计算 · 不调用 AI · 自动保存记录</Text>
                 </View>
               </View>
@@ -143,9 +143,11 @@ function GenderSelector({ value, onChange }: { value: Gender; onChange: (value: 
   return (
     <View style={styles.fieldBlock}>
       <Text style={styles.fieldLabel}>本次排盘性别</Text>
-      <View style={styles.segment}>
+      <View accessibilityLabel="本次排盘性别" accessibilityRole="radiogroup" style={styles.segment}>
         {(['female', 'male'] as const).map((item) => (
           <Pressable
+            accessibilityHint={value === item ? '当前选项' : '选择此选项'}
+            accessibilityLabel={item === 'female' ? '女' : '男'}
             accessibilityRole="radio"
             accessibilityState={{ selected: value === item }}
             key={item}
@@ -164,12 +166,14 @@ function BaziDayBoundarySelector({ value, onChange }: { value: BaziDayBoundary; 
   return (
     <View style={styles.fieldBlock}>
       <Text style={styles.fieldLabel}>日界线规则</Text>
-      <View style={styles.segment}>
+      <View accessibilityLabel="日界线规则" accessibilityRole="radiogroup" style={styles.segment}>
         {([
           ['midnight', '午夜换日'],
           ['ziEarly', '子初换日'],
         ] as const).map(([item, label]) => (
           <Pressable
+            accessibilityHint={value === item ? '当前选项' : '选择此换日规则'}
+            accessibilityLabel={label}
             accessibilityRole="radio"
             accessibilityState={{ selected: value === item }}
             key={item}
@@ -202,9 +206,11 @@ function BaziTrueSolarSelector({
   return (
     <View style={styles.fieldBlock}>
       <Text style={styles.fieldLabel}>真太阳时修正</Text>
-      <View style={styles.segment}>
+      <View accessibilityLabel="真太阳时修正" accessibilityRole="radiogroup" style={styles.segment}>
         {([['off', '关闭'], ['on', '启用']] as const).map(([item, label]) => (
           <Pressable
+            accessibilityHint={enabled === (item === 'on') ? '当前选项' : '选择此修正状态'}
+            accessibilityLabel={`真太阳时${label}`}
             accessibilityRole="radio"
             accessibilityState={{ selected: enabled === (item === 'on') }}
             key={item}
@@ -215,12 +221,12 @@ function BaziTrueSolarSelector({
         ))}
       </View>
       {enabled && (
-        <View style={styles.chipRow}>
+        <View accessibilityLabel="真太阳时模型" accessibilityRole="radiogroup" style={styles.chipRow}>
           {([
             ['localMeanSolarTime', '地方平太阳时'],
             ['apparentSolarTime', '视太阳时'],
           ] as const).map(([item, label]) => (
-            <Pressable accessibilityRole="radio" accessibilityState={{ selected: model === item }} key={item} onPress={() => onModelChange(item)} style={[styles.choiceChip, model === item && styles.choiceChipActive]}>
+            <Pressable accessibilityHint={model === item ? '当前选项' : '选择此模型'} accessibilityLabel={label} accessibilityRole="radio" accessibilityState={{ selected: model === item }} key={item} onPress={() => onModelChange(item)} style={[styles.choiceChip, model === item && styles.choiceChipActive]}>
               <Text style={[styles.choiceChipText, model === item && styles.choiceChipTextActive]}>{label}</Text>
             </Pressable>
           ))}
@@ -241,11 +247,11 @@ function WorkspacePanel({ children }: { children: React.ReactNode }) {
 
 function ErrorNotice({ message }: { message: string }) {
   if (!message) return null;
-  return <View accessibilityLiveRegion="polite" style={styles.errorNotice}><MaterialCommunityIcons color="#D88978" name="alert-circle-outline" size={18} /><Text style={styles.errorText}>{message}</Text></View>;
+  return <View accessibilityLabel={`错误：${message}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.errorNotice}><MaterialCommunityIcons accessibilityElementsHidden color="#D88978" importantForAccessibility="no-hide-descendants" name="alert-circle-outline" size={18} /><Text style={styles.errorText}>{message}</Text></View>;
 }
 
 function SavedNotice() {
-  return <View accessibilityLiveRegion="polite" style={styles.savedNotice}><MaterialCommunityIcons color={palette.patina} name="check-circle-outline" size={17} /><Text style={styles.savedText}>本次结果已保存到本地记录</Text></View>;
+  return <View accessibilityLabel="本次结果已保存到本地记录" accessibilityLiveRegion="polite" accessibilityRole="text" style={styles.savedNotice}><MaterialCommunityIcons accessibilityElementsHidden color={palette.patina} importantForAccessibility="no-hide-descendants" name="check-circle-outline" size={17} /><Text style={styles.savedText}>本次结果已保存到本地记录</Text></View>;
 }
 
 function Caveats({ items }: { items: string[] }) {
@@ -519,7 +525,7 @@ function LiuyaoWorkspace({ profile }: { profile: BirthProfile }) {
         value={question}
       />
       <Text style={styles.fieldLabel}>用神方向</Text>
-      <View style={styles.chipRow}>{liuyaoTargets.map((item) => <Pressable accessibilityRole="radio" accessibilityState={{ selected: target === item }} key={item} onPress={() => setTarget(item)} style={[styles.choiceChip, target === item && styles.choiceChipActive]}><Text style={[styles.choiceChipText, target === item && styles.choiceChipTextActive]}>{item}</Text></Pressable>)}</View>
+      <View accessibilityLabel="六爻用神方向" accessibilityRole="radiogroup" style={styles.chipRow}>{liuyaoTargets.map((item) => <Pressable accessibilityHint={target === item ? '当前选项' : '选择此用神方向'} accessibilityLabel={item} accessibilityRole="radio" accessibilityState={{ selected: target === item }} key={item} onPress={() => setTarget(item)} style={[styles.choiceChip, target === item && styles.choiceChipActive]}><Text style={[styles.choiceChipText, target === item && styles.choiceChipTextActive]}>{item}</Text></Pressable>)}</View>
       <Text style={styles.fieldHint}>不确定时可先选“父母”用于文书、方案与信息；起卦后仍应在复盘中核对取用。</Text>
       <ErrorNotice message={error} />
       <ActionButton accessibilityLabel="摇动铜钱起六爻卦" loading={loading} onPress={run}>{result ? '重新起卦' : '摇钱成卦'}</ActionButton>
@@ -732,7 +738,7 @@ const styles = StyleSheet.create({
   fieldLabel: { marginTop: spacing.x4, marginBottom: spacing.x2, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 13 },
   fieldHint: { marginTop: spacing.x2, marginBottom: spacing.x4, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   segment: { flexDirection: 'row', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, padding: 3, backgroundColor: palette.obsidian },
-  segmentItem: { flex: 1, minHeight: 42, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
+  segmentItem: { flex: 1, minHeight: layout.minTouch, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
   segmentItemActive: { backgroundColor: palette.jadeMist },
   segmentText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 13 },
   segmentTextActive: { color: palette.ricePaper },
@@ -802,7 +808,7 @@ const styles = StyleSheet.create({
   evidenceReferenceType: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
   evidenceReferenceCounter: { color: '#D88978' },
   evidenceReferenceLabel: { flex: 1, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
-  evidenceReferenceAction: { minHeight: 28, justifyContent: 'center' },
+  evidenceReferenceAction: { minHeight: layout.minTouch, justifyContent: 'center', paddingHorizontal: spacing.x2 },
   evidenceReferenceActionText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 9 },
   rawEvidence: { marginTop: spacing.x2, borderLeftWidth: 1, borderLeftColor: palette.patina, backgroundColor: 'rgba(93,143,128,0.06)', padding: spacing.x3 },
   rawEvidenceId: { color: palette.brass, fontFamily: fontFamilies.data, fontSize: 8, lineHeight: 13 },

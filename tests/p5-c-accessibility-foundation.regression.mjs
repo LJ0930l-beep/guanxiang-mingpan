@@ -62,3 +62,14 @@ test('P5-C 品牌印记为装饰元素，不抢占页面读屏顺序', () => {
   assert.match(brandMark, /accessibilityElementsHidden/);
   assert.match(brandMark, /importantForAccessibility="no-hide-descendants"/);
 });
+
+test('P5-C 四术工作区为选择器和错误/成功状态提供一致语义', () => {
+  const moduleWorkspace = source('src/screens/module-workspace.tsx');
+
+  assert.match(moduleWorkspace, /accessibilityRole="radiogroup"/);
+  assert.match(moduleWorkspace, /accessibilityLabel="六爻用神方向"/);
+  assert.match(moduleWorkspace, /accessibilityRole="radio"/);
+  assert.match(moduleWorkspace, /accessibilityRole="alert"/);
+  assert.match(moduleWorkspace, /accessibilityRole="text"/);
+  assert.match(moduleWorkspace, /evidenceReferenceAction: \{ minHeight: layout\.minTouch/);
+});
