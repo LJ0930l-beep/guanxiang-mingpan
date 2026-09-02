@@ -410,3 +410,11 @@ P5-B2 当前交接范围是来源收敛和 fail-closed source-decision contract�
 专项 `tests/p5-city-source-decision.regression.mjs` 为 8/8，覆盖证据固定、许可边界、GitHub 许可证与上游权利分离、十维矩阵、组合边界、数据库传播风险和 validator 负例。下一最小批仍是 audit tooling；若许可充分，另立 pilot import，先冻结 source/version/hash/schema/test/DoD 和回滚；当前 P5-C 可以独立继续。P5-B2 未宣称全国覆盖完成，`p5-a4a-cross-city-coverage` 继续保持 P5-B 路由。
 
 实际交付证据：本地 `a58ca0b`（parent `6fe3f81`）；远端 `57d87c706ca8e9501cefe0c5f11c9dd618ccd692`（parent `65b6bb7e6fcc94d1e324f86918263fcd2b100f9c`）。`git diff --check`、typecheck、lint、统一 `npm test` 190/190、Web Export 8 routes 和生产 audit 0 critical/9 high/16 moderate/0 low 均完成；GitHub Actions [run 33639738697](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697) / [validate job 100279504893](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697/job/100279504893) completed/success，Web Export 非 skip。
+
+## P5-C 共享可访问性基础微批（2026-09-02）
+
+本微批只落地共享层语义和减少动态效果基础：`ActionButton` 统一暴露 `busy/disabled` 状态并隐藏重复 loading 指示器；`AnimatedReveal` 监听系统 `reduceMotionChanged`，切换时停止/完成动画并在卸载时清理；`LoadingScreen` 使用 `progressbar`/polite live region；`BrandMark` 作为装饰元素不抢读屏顺序；`BottomDock` 标注主导航 `tablist`、tab 状态与稳定 testID，并避免当前页重复跳转；`ArchiveFilterBar` 区分 action/checkbox/radio，筛选控件最小高度统一为 `layout.minTouch`（44）。保持 Web/iPhone 同一组件与现有深色玉石/brass 视觉，不修改四术算法、数据、存储、路由或外部服务。
+
+新增 `tests/p5-c-accessibility-foundation.regression.mjs` 并接入统一测试，专项 **6/6**；统一 `npm test` **196/196**，`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，Web Export 实际执行）及 `git diff --check` 均 PASS。`npm audit --omit=dev` 仍为 0 critical / 9 high / 16 moderate / 0 low（25 total），未做会改变 Expo 57 依赖树的自动修复。
+
+代码交付：本地 `b66421c`（parent `6d05bc2`），远端 `a30309ce1e556b3f99b661d6e2b3d17c0776e750`（remote parent `26b5969150dc0f93efe5b3fb9aeeb71fd7dc91c8`）；GitHub Actions [run 33642154569](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33642154569) / [validate job 100287662596](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33642154569/job/100287662596) completed/success，Regression、Typecheck、Lint 和 Web Export 均实际执行且 Web Export 非 skip。该微批只完成 P5-C 共享基础，`p5-a4a-cross-a11y-copy-route` 仍未关闭；下一批继续页面级状态/copy matrix 与 Web/iPhone viewport 验证。
