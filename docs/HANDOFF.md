@@ -408,3 +408,5 @@ P5-B2 当前交接范围是来源收敛和 fail-closed source-decision contract�
 ### 22.3 测试与下一步
 
 专项 `tests/p5-city-source-decision.regression.mjs` 为 8/8，覆盖证据固定、许可边界、GitHub 许可证与上游权利分离、十维矩阵、组合边界、数据库传播风险和 validator 负例。下一最小批仍是 audit tooling；若许可充分，另立 pilot import，先冻结 source/version/hash/schema/test/DoD 和回滚；当前 P5-C 可以独立继续。P5-B2 未宣称全国覆盖完成，`p5-a4a-cross-city-coverage` 继续保持 P5-B 路由。
+
+实际交付证据：本地 `a58ca0b`（parent `6fe3f81`）；远端 `57d87c706ca8e9501cefe0c5f11c9dd618ccd692`（parent `65b6bb7e6fcc94d1e324f86918263fcd2b100f9c`）。`git diff --check`、typecheck、lint、统一 `npm test` 190/190、Web Export 8 routes 和生产 audit 0 critical/9 high/16 moderate/0 low 均完成；GitHub Actions [run 33639738697](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697) / [validate job 100279504893](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697/job/100279504893) completed/success，Web Export 非 skip。

@@ -260,3 +260,5 @@ P5-B2 的来源决策合同 `p5-b2-city-source-decision.v1` 只记录官方行�
 审计结论是 fail-closed：民政部页面/API可作人工名称/六位代码/年度变更核验，但未证明商业离线复制；GeoNames CC BY 4.0 只作坐标/别名候选；GitHub 仓库 MIT/WTFPL/GPL 不自动覆盖 NBS/MCA 上游数据；OSM ODbL ShareAlike/通知边界未批准；Natural Earth 仅地图层。没有书面授权或法务结论，不导入城市数据、不宣称覆盖完成，也不将 A4a 的跨城市 gap 误标为已关闭。完整证据矩阵、unknown 和授权清单见 [DATASET_PROVENANCE.md](DATASET_PROVENANCE.md)。
 
 P5-C 可在该数据阻断期间独立推进；任何 UI/可访问性实现仍须遵守本文件既有 boundary/no-guessing 规则。
+
+P5-B2 交付质量证据：本地 `a58ca0b`（parent `6fe3f81`），远端 `57d87c706ca8e9501cefe0c5f11c9dd618ccd692`（parent `65b6bb7e6fcc94d1e324f86918263fcd2b100f9c`）；source-decision 专项 8/8、统一回归 190/190、typecheck、lint、git diff check 和 Web Export 8 routes 均 PASS，生产 audit 保持 0 critical/9 high/16 moderate/0 low。GitHub Actions [run 33639738697](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697) / [job 100279504893](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697/job/100279504893) completed/success；Web Export 实际执行且非 skip。
