@@ -633,3 +633,11 @@ P5-B2 最小实现批的 DoD 是 source-decision/audit tooling、逐行血缘与
 新增 `tests/p5-c-accessibility-foundation.regression.mjs` 并接入统一测试，专项 **6/6**；统一 `npm test` **196/196**，`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，Web Export 实际执行）及 `git diff --check` 均 PASS。`npm audit --omit=dev` 仍为 0 critical / 9 high / 16 moderate / 0 low（25 total），未做会改变 Expo 57 依赖树的自动修复。
 
 代码交付：本地 `b66421c`（parent `6d05bc2`），远端 `a30309ce1e556b3f99b661d6e2b3d17c0776e750`（remote parent `26b5969150dc0f93efe5b3fb9aeeb71fd7dc91c8`）；GitHub Actions [run 33642154569](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33642154569) / [validate job 100287662596](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33642154569/job/100287662596) completed/success，Regression、Typecheck、Lint 和 Web Export 均实际执行且 Web Export 非 skip。该微批只完成 P5-C 共享基础，`p5-a4a-cross-a11y-copy-route` 仍未关闭；下一批继续页面级状态/copy matrix 与 Web/iPhone viewport 验证。
+
+## P5-C 四术工作区可访问性微批（2026-09-02）
+
+本微批继续页面级四术工作区：ScrollView 支持键盘交互；返回/本机徽标图标设为装饰；性别、日界线、真太阳时和六爻用神选择器增加 radiogroup/radio、当前状态与操作提示；错误公告使用 alert/live region，保存提示使用 polite 文本状态；证据展开动作统一 44pt 触控高度。既有 no-guessing、证据链、保存快照和四术算法保持不变。
+
+专项 `tests/p5-c-accessibility-foundation.regression.mjs` **7/7**；统一 `npm test` **197/197**，`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，Web Export 实际执行）及 `git diff --check` 均 PASS。`npm audit --omit=dev` 仍为 0 critical / 9 high / 16 moderate / 0 low（25 total）。
+
+代码交付：本地 `a14fa7c`（parent `1ea5f60`），远端 `8ef2e3a6c79c013987779dcba37acddf9655a94c`（remote parent `57319d6b25193269dd6c480b9e091be1b0bcfcb5`）；GitHub Actions [run 33644163905](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33644163905) / [validate job 100294474488](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33644163905/job/100294474488) completed/success，Regression、Typecheck、Lint 和 Web Export 均实际执行且 Web Export 非 skip。该微批完成四术工作区语义补强，P5-C deferred route 仍未关闭；下一批继续命主/登录/记录页状态、焦点、字体缩放与 viewport 验证。
