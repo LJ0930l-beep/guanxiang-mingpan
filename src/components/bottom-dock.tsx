@@ -22,16 +22,20 @@ export function BottomDock() {
 
   return (
     <View style={[styles.wrap, isDesktopRail && styles.wrapDesktop]}>
-      <View accessibilityRole="tablist" style={[styles.dock, isDesktopRail && styles.dockDesktop]}>
+      <View accessibilityLabel="主导航" accessibilityRole="tablist" style={[styles.dock, isDesktopRail && styles.dockDesktop]}>
         {items.map((item) => {
           const active = pathname === item.href;
           return (
             <Pressable
               accessibilityLabel={`前往${item.label}`}
+              accessibilityHint={active ? '当前页面' : `打开${item.label}页面`}
               accessibilityRole="tab"
               accessibilityState={{ selected: active }}
+              testID={`bottom-dock-${item.label}`}
               key={item.label}
-              onPress={() => router.replace(item.href)}
+              onPress={() => {
+                if (!active) router.replace(item.href);
+              }}
               style={({ pressed }) => [styles.item, pressed && styles.pressed]}>
               <View style={[styles.marker, active && styles.markerActive]} />
               <MaterialCommunityIcons

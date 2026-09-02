@@ -23,12 +23,28 @@ function toggleValue<T extends string>(values: T[], value: T): T[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
-function Chip({ active, label, onPress, accessibilityLabel }: { active: boolean; label: string; onPress: () => void; accessibilityLabel?: string }) {
+function Chip({
+  active,
+  label,
+  onPress,
+  accessibilityLabel,
+  selectionMode = 'multiple',
+}: {
+  active: boolean;
+  label: string;
+  onPress: () => void;
+  accessibilityLabel?: string;
+  selectionMode?: 'action' | 'multiple' | 'single';
+}) {
+  const isAction = selectionMode === 'action';
+  const isSingle = selectionMode === 'single';
+
   return (
     <Pressable
       accessibilityLabel={accessibilityLabel ?? label}
-      accessibilityRole="button"
-      accessibilityState={{ selected: active }}
+      accessibilityHint={isAction ? '清除当前筛选条件' : isSingle ? (active ? '当前选项' : '选择此选项') : (active ? '取消此筛选' : '加入此筛选')}
+      accessibilityRole={isAction ? 'button' : isSingle ? 'radio' : 'checkbox'}
+      accessibilityState={isAction ? undefined : isSingle ? { selected: active } : { checked: active }}
       onPress={onPress}
       style={({ pressed }) => [styles.chip, active && styles.chipActive, pressed && styles.pressed]}>
       <Text style={[styles.chipText, active && styles.chipTextActive]}>{label}</Text>
@@ -63,7 +79,7 @@ export function ArchiveFilterBar({ filter, profiles, onChange, onClear }: Archiv
           style={styles.searchInput}
           value={filter.query}
         />
-        {hasFilters && <Chip label="清除筛选" onPress={onClear} active={false} />}
+        {hasFilters && <Chip label="清除筛选" onPress={onClear} active={false} selectionMode="action" />}
       </View>
       <Text style={styles.filterLabel}>模块</Text>
       <View style={styles.chipRow}>
@@ -86,7 +102,7 @@ export function ArchiveFilterBar({ filter, profiles, onChange, onClear }: Archiv
           <Text style={styles.filterLabel}>时间</Text>
           <View style={styles.chipRow}>
             {(['7d', '30d', 'all'] as ArchiveDateRange[]).map((range) => (
-              <Chip key={range} active={filter.dateRange === range} label={range === 'all' ? '全部' : `近 ${range.slice(0, -1)} 天`} onPress={() => setDateRange(range)} />
+              <Chip key={range} active={filter.dateRange === range} label={range === 'all' ? '全部' : `近 ${range.slice(0, -1)} 天`} onPress={() => setDateRange(range)} selectionMode="single" />
             ))}
           </View>
         </View>
@@ -94,7 +110,7 @@ export function ArchiveFilterBar({ filter, profiles, onChange, onClear }: Archiv
           <Text style={styles.filterLabel}>分组</Text>
           <View style={styles.chipRow}>
             {(['none', 'profile', 'date'] as ArchiveGroupBy[]).map((groupBy) => (
-              <Chip key={groupBy} active={filter.groupBy === groupBy} label={groupBy === 'none' ? '不分组' : groupBy === 'profile' ? '按命主' : '按日期'} onPress={() => setGroupBy(groupBy)} />
+              <Chip key={groupBy} active={filter.groupBy === groupBy} label={groupBy === 'none' ? '不分组' : groupBy === 'profile' ? '按命主' : '按日期'} onPress={() => setGroupBy(groupBy)} selectionMode="single" />
             ))}
           </View>
         </View>
@@ -118,7 +134,7 @@ const styles = StyleSheet.create({
   filterColumn: { minWidth: 210, flex: 1 },
   filterLabel: { marginTop: spacing.x3, marginBottom: spacing.x1, color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9, letterSpacing: 1 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x1 },
-  chip: { minHeight: 30, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x2 },
+  chip: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   chipActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },
   chipText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
   chipTextActive: { color: palette.paleBrass },

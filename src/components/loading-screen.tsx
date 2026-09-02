@@ -6,10 +6,12 @@ import { fontFamilies, palette, spacing } from '@/constants/guanxiang';
 
 export function LoadingScreen() {
   return (
-    <View style={styles.root}>
+    <View accessibilityLabel="正在校准观象仪" accessibilityLiveRegion="polite" accessibilityRole="progressbar" style={styles.root}>
       <Atmosphere />
-      <BrandMark size={62} />
-      <ActivityIndicator color={palette.brass} style={styles.spinner} />
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <BrandMark size={62} />
+        <ActivityIndicator color={palette.brass} style={styles.spinner} />
+      </View>
       <Text style={styles.label}>正在校准观象仪</Text>
     </View>
   );
@@ -33,4 +35,3 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
 });
-

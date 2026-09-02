@@ -9,7 +9,10 @@ interface BrandMarkProps {
 
 export function BrandMark({ size = 52, compact = false }: BrandMarkProps) {
   return (
-    <View style={[styles.root, { width: size, height: size, borderRadius: size / 2 }]}>
+    <View
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[styles.root, { width: size, height: size, borderRadius: size / 2 }]}>
       <View style={[styles.inner, { borderRadius: (size - 10) / 2 }]}>
         <Text style={[styles.glyph, { fontSize: size * 0.42 }]}>观</Text>
       </View>
@@ -51,4 +54,3 @@ const styles = StyleSheet.create({
     backgroundColor: palette.paleBrass,
   },
 });
-

@@ -22,22 +22,36 @@ export function ActionButton({
   loading = false,
   disabled,
   style,
+  accessibilityState,
   ...props
 }: ActionButtonProps) {
+  const isDisabled = Boolean(disabled || loading);
+
   return (
     <Pressable
       accessibilityRole="button"
-      disabled={disabled || loading}
+      accessibilityState={{
+        ...accessibilityState,
+        busy: loading || accessibilityState?.busy,
+        disabled: isDisabled || accessibilityState?.disabled,
+      }}
+      disabled={isDisabled}
       style={(state) => [
         styles.base,
         styles[variant],
-        (disabled || loading) && styles.disabled,
+        isDisabled && styles.disabled,
         state.pressed && styles.pressed,
         typeof style === 'function' ? style(state) : style,
       ]}
       {...props}>
       <View style={styles.content}>
-        {loading && <ActivityIndicator color={variant === 'primary' ? palette.obsidian : palette.brass} />}
+        {loading && (
+          <ActivityIndicator
+            accessibilityElementsHidden
+            color={variant === 'primary' ? palette.obsidian : palette.brass}
+            importantForAccessibility="no-hide-descendants"
+          />
+        )}
         <Text style={[styles.label, styles[`${variant}Label`]]}>{children}</Text>
       </View>
     </Pressable>

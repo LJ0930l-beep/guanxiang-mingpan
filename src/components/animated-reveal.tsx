@@ -13,23 +13,37 @@ export function AnimatedReveal({ children, delay = 0, distance = 12, style }: An
 
   useEffect(() => {
     let active = true;
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+    let animation: Animated.CompositeAnimation | undefined;
+
+    const applyMotionPreference = (enabled: boolean) => {
       if (!active) return;
       setReduceMotion(enabled);
+      animation?.stop();
       if (enabled) {
         progress.setValue(1);
         return;
       }
-      Animated.timing(progress, {
+
+      animation = Animated.timing(progress, {
         toValue: 1,
         duration: 360,
         delay,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: Platform.OS !== 'web',
-      }).start();
+      });
+      animation.start();
+    };
+
+    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      applyMotionPreference(enabled);
     });
+
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', applyMotionPreference);
+
     return () => {
       active = false;
+      subscription.remove();
+      animation?.stop();
       progress.stopAnimation();
     };
   }, [delay, progress]);
