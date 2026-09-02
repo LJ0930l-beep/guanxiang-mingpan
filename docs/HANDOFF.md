@@ -379,3 +379,15 @@ summary 明确写为“路由到 P5-C，功能尚未实现”；P5-C 后续仍�
 ---
 
 **交接判断**：当前代码适合继续做“排盘可信度 + 本地档案体验”的开发和内部试用；任何正式发布、真实登录、付费、AI 或将出生数据上云的决策，都应在本文件第 8 节的 P0 项完成并单独评审后执行。
+
+## 21. P5-B1 当前交接：城市数据合同、来源/许可审计与发布阻断
+
+**状态：实现完成，待 Sol High 独立验收与远端 CI 证据。**
+
+本批严格限制为 additive 城市数据合同、现状审计快照、来源/许可审计和 release eligibility validator。新增 `src/data/city-dataset-contract.ts` 与 `src/data/index.ts`，不改 `src/data/china-cities.ts`、resolver、Storage Schema、历史数据、备份/replay、引擎、UI 或依赖。没有使用 Expo API。新增 `tests/p5-city-dataset-contract.regression.mjs` 已接入 `package.json` 统一测试。
+
+合同版本为 `p5-b1-city-dataset-audit.v1`，将稳定 app `locationId` 与未来 `adminCode` 分离，保留行政层级、canonical name/aliases、`Asia/Shanghai`、lat/lon、`city-center-approximate`、source/version/retrievedAt、逐行 coordinate/alias/administrative/license evidence、许可证、行政变更映射、datasetVersion、releaseEligibility 和 blockers。当前 35 条生产数据审计为 35 个唯一 ID、101 个名称/别名 token；每行 `status=prototype`，数据集 `status=partial`、`releaseEligibility=blocked`。缺 adminCode、行政层级、逐行坐标/别名来源和离线商业再分发许可均显式保留为未知/阻断，不伪造来源，不宣称全国覆盖。
+
+validator fail-closed 覆盖重复 locationId/adminCode、canonical/alias 冲突、非法经纬度、非 `Asia/Shanghai`、缺逐行 provenance/license、release-ready 残留 unknown/restricted/blocked license 或缺字段、locationId/adminCode 身份混淆及缺 `supersedes`/`replacedBy` 的破坏性替换。深圳精确命中、未知城市未命中、历史 locationId/坐标/datasetVersion 与 `p5-a4a-cross-city-coverage` 的 P5-B 路由均有回归锁定。候选来源与许可状态详见 `docs/DATASET_PROVENANCE.md`；民政部为官方核对候选但离线商业许可 UNKNOWN，GeoNames CC BY 4.0 为非官方坐标候选，OSM ODbL 暂阻断，Natural Earth 仅地图候选，天地图/国家基础地理平台无书面许可前阻断。
+
+本地已通过专项 **8/8**、`npm test` **182/182**、`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，实际执行）和 `git diff --check`；`npm audit --omit=dev` 与最终远端 CI 结果待本批收口时登记。下一批只允许进入 **P5-B2 行政区划名称/代码与历史变更审计**，在来源/许可决策前不扩充生产城市数据。

@@ -570,3 +570,25 @@ route validator 要求 summary 包含“路由到 P5-C，功能尚未实现”�
 - `p5-a4a-cross-a11y-copy-route` 仅为正式 additive deferred/routed 到 P5-C，`implementationStatus=not-implemented`；`p5-a4a-cross-city-coverage` 继续保持 `routed-p5-b` / P5-B。
 
 **P5-A 已完成。下一批唯一授权入口为 P5-B1：城市数据合同、来源与许可审计；P5-C 功能本身仍未实现，整个 Phase 5 和 Level A 发布门仍未完成。**
+
+## 21. P5-B1 城市数据合同、来源/许可审计与发布资格阻断门
+
+### 21.1 Scope 与不变边界
+
+本批只建立城市数据合同、当前生产表审计快照、来源/许可 registry 和 release eligibility 阻断门。不得扩充或改写 `src/data/china-cities.ts` 的 35 条记录，不改变 `resolveCityCoordinates`、Storage Schema、历史快照/备份/replay、引擎、UI、依赖或 lockfile，不关闭 `p5-a4a-cross-city-coverage`。本批没有使用 Expo API；Expo SDK 57 exact docs 约束不触发实现修改。
+
+### 21.2 Additive contract 与当前审计
+
+新增 `src/data/city-dataset-contract.ts`，并由 `src/data/index.ts` 导出 `p5-b1-city-dataset-audit.v1`。合同是纯 JSON、版本化且独立于既有 `CityCoordinate` 生产形状，字段包含稳定 app `locationId`、可空未来 `adminCode`、覆盖范围/行政层级、canonical name/aliases、timezone、lat/lon、`centerType`、source/version/retrievedAt、licenseStatus/licenseUrl/attribution、coordinate/alias/administrative/license 四类 row-level evidence、validFrom/validTo、supersedes/replacedBy、datasetVersion、releaseEligibility 和 blockers。
+
+当前 35 条生产记录被 additive 映射为 35 条 `status=prototype` 审计记录，数据集 `status=partial`、`releaseEligibility=blocked`。35 个 `locationId` 唯一、101 个名称/别名 token、坐标、别名、`Asia/Shanghai` 和 `datasetVersion` 与生产表深度保持；缺失的 adminCode、行政层级、逐行坐标/别名来源、取数时间和商业离线再分发许可证均明确标为未知/阻断，没有虚构证据。城市中心坐标只允许近似语义，不能当作精确出生地或真太阳时精确坐标。
+
+### 21.3 Runtime validator 与发布门
+
+validator/回归拒绝重复 `locationId`/`adminCode`、canonical name 冲突、跨记录 alias 冲突、非法/非有限经纬度、非 `Asia/Shanghai`、缺逐行 provenance/license、release-ready 仍有 unknown/restricted/blocked license 或缺字段、把 `locationId` 静默替换成 adminCode，以及没有 `supersedes`/`replacedBy` 的破坏性身份替换。冲突别名要求省份限定或显式候选选择；行政变更必须新记录 + 显式历史映射。
+
+来源候选与许可状态详见 `docs/DATASET_PROVENANCE.md`：民政部国家地名信息库用于官方名称/代码核对但离线商业再分发许可 UNKNOWN；GeoNames CC BY 4.0 为非官方 WGS84 坐标候选；OSM ODbL 暂 BLOCKED_PENDING_REVIEW；Natural Earth public domain 仅作地图候选且不保证完整；天地图/国家基础地理信息平台在无书面许可前 BLOCKED。候选来源均不等于本批生产来源或已授权。
+
+### 21.4 回归与 DoD
+
+新增 `tests/p5-city-dataset-contract.regression.mjs`，接入统一 npm test；专项 8/8，覆盖当前 35/35/101、深圳与未知城市行为、纯 JSON、validator 负例、release-ready fail-closed、历史 identity/坐标/version 锁定和 `p5-a4a-cross-city-coverage` 的 P5-B 路由。实现后必须通过 `git diff --check`、`npm run typecheck`、`npm run lint`、`npm test`、`npm run build:web`（8 routes，Web Export 实际执行）和 `npm audit --omit=dev`，并取得远端 Actions 全部 Success。P5-B1 不宣称全国覆盖完成；下一批唯一入口为 P5-B2 行政区划名称/代码与历史变更审计。
