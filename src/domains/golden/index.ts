@@ -144,6 +144,17 @@ export {
   type P5CDeferredInputRouteAuditCaseId,
 } from '@/domains/golden/boundary-input-deferred-route';
 export {
+  P5_C_CROSS_A11Y_COPY_RESOLUTION,
+  P5_C_CROSS_A11Y_COPY_RESOLUTION_AUDIT_CASE_ID,
+  P5_C_CROSS_A11Y_COPY_RESOLUTION_CONTRACT_VERSION,
+  P5_C_CROSS_A11Y_COPY_RESOLUTION_IMPLEMENTATION_STATUS,
+  P5_C_CROSS_A11Y_COPY_RESOLUTION_STATUS,
+  P5_C_CROSS_A11Y_COPY_RESOLUTION_TARGET_BATCH,
+  getP5CCrossA11yCopyResolutionValidationErrors,
+  validateP5CCrossA11yCopyResolution,
+  type P5CCrossA11yCopyResolution,
+} from '@/domains/golden/cross-a11y-copy-resolution';
+export {
   GOLDEN_CASE_CONTRACT_VERSION,
   GOLDEN_MODULES,
   GOLDEN_SOURCE_TYPES,

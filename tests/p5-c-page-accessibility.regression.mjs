@@ -117,3 +117,14 @@ test('P5-C 四术工作区具备真实生成、保存、失败恢复和部分状
   assert.match(moduleWorkspace, /StatePanel[\s\S]*state="partial"/);
   assert.match(moduleWorkspace, /testID="astrology-unknown-state"/);
 });
+
+test('P5-C 页面级实现以 additive resolution 记录，不改写历史 deferred route', () => {
+  const resolution = source('src/domains/golden/cross-a11y-copy-resolution.ts');
+  assert.match(resolution, /P5_C_CROSS_A11Y_COPY_RESOLUTION_CONTRACT_VERSION/);
+  assert.match(resolution, /P5_C_DEFERRED_INPUT_ROUTE_ID/);
+  assert.match(resolution, /implementationStatus: P5_C_CROSS_A11Y_COPY_RESOLUTION_IMPLEMENTATION_STATUS/);
+  assert.match(resolution, /routes: \['\/home', '\/profiles', '\/records', '\/settings', '\/module\/\[slug\]'\]/);
+  assert.match(resolution, /states: \[\.\.\.REQUIRED_STATES\]/);
+  const deferred = source('src/domains/golden/boundary-input-deferred-route.ts');
+  assert.match(deferred, /P5_C_DEFERRED_INPUT_ROUTE_IMPLEMENTATION_STATUS = 'not-implemented'/);
+});
