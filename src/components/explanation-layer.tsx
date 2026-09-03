@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedReveal } from '@/components/animated-reveal';
-import { fontFamilies, palette, radii, spacing } from '@/constants/guanxiang';
+import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
+import { UI_STATE_COPY } from '@/constants/ui-copy';
 import type { ExplanationSnapshot, GlossaryTerm } from '@/domains/explanation/types';
 
 export interface ExplanationEvidenceNode {
@@ -39,9 +40,9 @@ export function ExplanationLayer({ snapshot, evidenceNodes, glossaryTerms }: Exp
 
   if (!snapshot) {
     return (
-      <View style={styles.emptyPanel}>
+      <View accessibilityLabel={UI_STATE_COPY.unknown.announcement} accessibilityRole="text" style={styles.emptyPanel}>
         <Text style={styles.kicker}>EXPLANATION LAYER</Text>
-        <Text style={styles.emptyTitle}>旧记录未保存解释快照</Text>
+        <Text accessibilityRole="header" style={styles.emptyTitle}>旧记录未保存解释快照</Text>
         <Text style={styles.emptyText}>本次只展示保存时存在的解释，不会用当前版本静默补写历史内容。</Text>
       </View>
     );
@@ -53,7 +54,7 @@ export function ExplanationLayer({ snapshot, evidenceNodes, glossaryTerms }: Exp
       <View style={styles.heading}>
         <View style={styles.headingCopy}>
           <Text style={styles.kicker}>EXPLANATION LAYER</Text>
-          <Text style={styles.title}>先看懂，再回到依据</Text>
+          <Text accessibilityRole="header" style={styles.title}>先看懂，再回到依据</Text>
           <Text style={styles.subtitle}>默认显示人话说明；点击卡片可查看为什么、反证和术语。</Text>
         </View>
         <Text style={styles.version}>{snapshot.explanationVersion}</Text>
@@ -68,6 +69,7 @@ export function ExplanationLayer({ snapshot, evidenceNodes, glossaryTerms }: Exp
           return (
             <AnimatedReveal delay={100 + index * 50} key={block.id} style={styles.card}>
               <Pressable
+                accessibilityHint="展开后查看说明、术语、依据与边界。"
                 accessibilityLabel={`${expanded ? '收起' : '展开'}${block.title}解释`}
                 accessibilityRole="button"
                 accessibilityState={{ expanded }}
@@ -95,14 +97,14 @@ export function ExplanationLayer({ snapshot, evidenceNodes, glossaryTerms }: Exp
                           if (!term) return null;
                           const selected = glossaryId === ref;
                           return (
-                            <Pressable accessibilityRole="button" key={ref} onPress={() => setGlossaryId((current) => current === ref ? null : ref)} style={[styles.glossaryChip, selected && styles.glossaryChipActive]}>
+                            <Pressable accessibilityHint="查看或收起术语释义与边界。" accessibilityLabel={`${selected ? '收起' : '查看'}术语${term.term}`} accessibilityRole="button" accessibilityState={{ expanded: selected }} key={ref} onPress={() => setGlossaryId((current) => current === ref ? null : ref)} style={[styles.glossaryChip, selected && styles.glossaryChipActive]}>
                               <Text style={[styles.glossaryChipText, selected && styles.glossaryChipTextActive]}>{term.term}</Text>
                             </Pressable>
                           );
                         })}
                       </View>
                       {glossaryId && block.glossaryRefs.includes(glossaryId) && glossaryById.get(glossaryId) && (
-                        <View style={styles.glossaryDetail}>
+                        <View accessibilityLiveRegion="polite" accessibilityRole="text" style={styles.glossaryDetail}>
                           <Text style={styles.glossaryDefinition}>{glossaryById.get(glossaryId)?.shortDefinition}</Text>
                           {!!glossaryById.get(glossaryId)?.caution && <Text style={styles.glossaryCaution}>边界：{glossaryById.get(glossaryId)?.caution}</Text>}
                         </View>
@@ -122,10 +124,10 @@ export function ExplanationLayer({ snapshot, evidenceNodes, glossaryTerms }: Exp
                               <Text style={[styles.evidenceKind, counter && styles.evidenceCounter]}>{counter ? '反证' : '依据'}</Text>
                               <Text style={styles.evidenceLabel}>{node.label}</Text>
                             </View>
-                            <Pressable accessibilityLabel={`${rawOpen ? '收起' : '展开'}${ref}原始证据`} accessibilityRole="button" onPress={() => setRawEvidenceId((current) => current === ref ? null : ref)} style={styles.evidenceAction}>
+                            <Pressable accessibilityHint="展开后查看原始事实字段、规则版本和来源。" accessibilityLabel={`${rawOpen ? '收起' : '展开'}${ref}原始证据`} accessibilityRole="button" accessibilityState={{ expanded: rawOpen }} onPress={() => setRawEvidenceId((current) => current === ref ? null : ref)} style={styles.evidenceAction}>
                               <Text style={styles.evidenceActionText}>{rawOpen ? '收起' : '原始'}</Text>
                             </Pressable>
-                            {rawOpen && <View style={styles.rawEvidence}><Text style={styles.rawText}>{formatFacts(node.facts)}</Text><Text style={styles.rawMeta}>{node.ruleVersion ?? '未记录规则版本'} · {node.source ?? '未记录来源'}</Text></View>}
+                            {rawOpen && <View accessibilityRole="text" style={styles.rawEvidence}><Text style={styles.rawText}>{formatFacts(node.facts)}</Text><Text style={styles.rawMeta}>{node.ruleVersion ?? '未记录规则版本'} · {node.source ?? '未记录来源'}</Text></View>}
                           </View>
                         );
                       })}
@@ -139,7 +141,7 @@ export function ExplanationLayer({ snapshot, evidenceNodes, glossaryTerms }: Exp
         })}
       </View>
       {snapshot.blocks.length > 6 && (
-        <Pressable accessibilityRole="button" onPress={() => setShowAll((current) => !current)} style={({ pressed }) => [styles.moreButton, pressed && styles.pressed]}>
+        <Pressable accessibilityHint="切换显示其余解释卡片。" accessibilityLabel={showAll ? '收起其余解释' : `查看其余 ${snapshot.blocks.length - 6} 个解释`} accessibilityRole="button" accessibilityState={{ expanded: showAll }} onPress={() => setShowAll((current) => !current)} style={({ pressed }) => [styles.moreButton, pressed && styles.pressed]}>
           <Text style={styles.moreButtonText}>{showAll ? '收起其余解释' : `查看其余 ${snapshot.blocks.length - 6} 个解释`}</Text>
         </Pressable>
       )}
@@ -160,7 +162,7 @@ const styles = StyleSheet.create({
   emptyText: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   blockList: { marginTop: spacing.x4, gap: spacing.x2 },
   card: { borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, backgroundColor: 'rgba(255,255,255,0.015)', overflow: 'hidden' },
-  cardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.x3, padding: spacing.x3 },
+  cardHeader: { minHeight: layout.minTouch, flexDirection: 'row', alignItems: 'center', gap: spacing.x3, padding: spacing.x3 },
   cardCopy: { flex: 1 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.x2 },
   cardTitle: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 14 },
@@ -173,7 +175,7 @@ const styles = StyleSheet.create({
   paragraph: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 19, marginTop: spacing.x1 },
   glossarySection: { marginTop: spacing.x3 },
   glossaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x1 },
-  glossaryChip: { borderWidth: 1, borderColor: palette.hairline, borderRadius: 999, paddingHorizontal: spacing.x2, paddingVertical: spacing.x1 },
+  glossaryChip: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: 999, paddingHorizontal: spacing.x3 },
   glossaryChipActive: { borderColor: palette.patina, backgroundColor: 'rgba(93,143,128,0.12)' },
   glossaryChipText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 10 },
   glossaryChipTextActive: { color: palette.ricePaper },
@@ -186,13 +188,13 @@ const styles = StyleSheet.create({
   evidenceKind: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
   evidenceCounter: { color: '#D7A071' },
   evidenceLabel: { flex: 1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
-  evidenceAction: { alignSelf: 'flex-start', marginTop: spacing.x1 },
+  evidenceAction: { minHeight: layout.minTouch, alignSelf: 'flex-start', justifyContent: 'center', marginTop: spacing.x1, paddingHorizontal: spacing.x3 },
   evidenceActionText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 9 },
   rawEvidence: { marginTop: spacing.x2, borderLeftWidth: 1, borderLeftColor: palette.patina, backgroundColor: 'rgba(93,143,128,0.06)', padding: spacing.x2 },
   rawText: { color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9, lineHeight: 15 },
   rawMeta: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 9 },
   caveat: { marginTop: spacing.x2, color: '#C8A38E', fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
-  moreButton: { marginTop: spacing.x3, alignItems: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingVertical: spacing.x2 },
+  moreButton: { minHeight: layout.minTouch, marginTop: spacing.x3, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingVertical: spacing.x2 },
   moreButtonText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 10 },
   pressed: { opacity: 0.72 },
 });

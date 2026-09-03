@@ -5,6 +5,7 @@ import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 import { ActionButton } from '@/components/action-button';
 import { LoadingScreen } from '@/components/loading-screen';
 import { fontFamilies, palette, spacing } from '@/constants/guanxiang';
+import { UI_STATE_COPY } from '@/constants/ui-copy';
 import { useRequireAuth } from '@/hooks/use-require-auth';
 import { QuietScreen } from '@/screens/quiet-screen';
 import { exportBackupFile, pickBackupFile } from '@/services/local-backup-io';
@@ -41,7 +42,7 @@ export default function SettingsRoute() {
         await restore(mode);
         Alert.alert('恢复完成', successMessage);
       } catch (operationError) {
-        setError(operationError instanceof Error ? operationError.message : '备份版本不兼容，无法恢复。');
+        setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
       } finally {
         setBackupBusy(false);
       }
@@ -64,7 +65,7 @@ export default function SettingsRoute() {
       const mode = await exportBackupFile(createLocalBackup());
       Alert.alert(mode === 'downloaded' ? '备份已下载' : '备份已准备好', mode === 'downloaded' ? '请将下载的 JSON 文件保存在安全位置。' : '请在系统分享面板中选择保存到“文件”或发送到你的私人设备。');
     } catch (operationError) {
-      setError(operationError instanceof Error ? operationError.message : '导出备份失败，请稍后重试。');
+      setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
     } finally {
       setBackupBusy(false);
     }
@@ -78,7 +79,7 @@ export default function SettingsRoute() {
       const mode = await exportBackupFile(text, { encrypted: true });
       Alert.alert(mode === 'downloaded' ? '加密备份已下载' : '加密备份已准备好', '请将文件与备份密码分开保存；应用不会替你找回密码。');
     } catch (operationError) {
-      setError(operationError instanceof Error ? operationError.message : '导出加密备份失败，请稍后重试。');
+      setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
     } finally {
       setBackupBusy(false);
     }
@@ -96,7 +97,7 @@ export default function SettingsRoute() {
       const preview = previewLocalBackup(raw, 'merge');
       presentImportPreview(preview, (mode) => restoreLocalBackup(raw, mode), '本机资料已经恢复。');
     } catch (operationError) {
-      setError(operationError instanceof Error ? operationError.message : '选择备份文件失败，请稍后重试。');
+      setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
       setBackupBusy(false);
     }
   };
@@ -113,7 +114,7 @@ export default function SettingsRoute() {
       const preview = await previewEncryptedLocalBackup(raw, backupPassword, 'merge');
       presentImportPreview(preview, (mode) => restoreEncryptedLocalBackup(raw, backupPassword, mode), '加密备份中的本机资料已经恢复。');
     } catch (operationError) {
-      setError(operationError instanceof Error ? operationError.message : '选择加密备份文件失败，请稍后重试。');
+      setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
       setBackupBusy(false);
     }
   };
@@ -132,7 +133,7 @@ export default function SettingsRoute() {
               await clearLocalData();
               router.replace('/');
             } catch (operationError) {
-              setError(operationError instanceof Error ? operationError.message : '当前数据版本不兼容，无法安全清除。');
+              setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
             }
           },
         },
@@ -151,20 +152,21 @@ export default function SettingsRoute() {
       }}
       title="我的观象台"
     >
-      <View style={styles.dataPanel}>
-        <Text style={styles.dataTitle}>本机数据</Text>
+      <View accessibilityLabel="本机数据与备份" style={styles.dataPanel} testID="settings-data-panel">
+        <Text accessibilityRole="header" style={styles.dataTitle}>本机数据</Text>
         <Text style={styles.dataText}>命主 {profiles.length} 位 · 排盘记录 {readings.length} 条</Text>
         <Text style={styles.dataHint}>当前版本默认只保存在设备本地。清除前请先完成你需要的备份。</Text>
-        {clearBlocked && <Text style={styles.error}>检测到更新版本写入的数据，当前只读，清除操作已锁定。</Text>}
-        {!!error && <Text style={styles.error}>{error}</Text>}
+        {clearBlocked && <Text accessibilityLabel={UI_STATE_COPY.blocked.announcement} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>检测到更新版本写入的数据，当前只读，清除操作已锁定。</Text>}
+        {!!error && <Text accessibilityLabel={`错误：${error}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{error}</Text>}
         <View style={styles.backupPanel}>
-          <Text style={styles.backupTitle}>本机备份</Text>
+          <Text accessibilityRole="header" style={styles.backupTitle}>本机备份</Text>
           <Text style={styles.backupHint}>普通 JSON 便于检查；加密备份使用本机密码保护。密码不会上传，也无法找回。</Text>
           <View style={styles.backupActions}>
             <ActionButton accessibilityLabel="导出本机备份文件" disabled={clearBlocked || backupBusy} loading={backupBusy} onPress={exportBackup} style={styles.backupButton}>导出备份</ActionButton>
             <ActionButton accessibilityLabel="导入本机备份文件" disabled={clearBlocked || backupBusy} onPress={importBackup} style={styles.backupButton} variant="quiet">导入备份</ActionButton>
           </View>
-          <TextInput accessibilityLabel="加密备份密码" autoCapitalize="none" autoCorrect={false} onChangeText={setBackupPassword} placeholder="加密备份密码（至少 8 位）" placeholderTextColor="#65736D" secureTextEntry style={styles.passwordInput} value={backupPassword} />
+          <Text style={styles.passwordLabel}>加密备份密码</Text>
+          <TextInput accessibilityLabel="加密备份密码" autoCapitalize="none" autoComplete="password" autoCorrect={false} onChangeText={setBackupPassword} placeholder="至少 8 位；文件与密码分开保管" placeholderTextColor="#65736D" secureTextEntry style={styles.passwordInput} textContentType="password" value={backupPassword} />
           <View style={styles.backupActions}>
             <ActionButton accessibilityLabel="导出加密本机备份文件" disabled={clearBlocked || backupBusy} loading={backupBusy} onPress={exportEncryptedBackup} style={styles.backupButton}>导出加密备份</ActionButton>
             <ActionButton accessibilityLabel="导入加密本机备份文件" disabled={clearBlocked || backupBusy} onPress={importEncryptedBackup} style={styles.backupButton} variant="quiet">导入加密备份</ActionButton>
@@ -188,7 +190,8 @@ const styles = StyleSheet.create({
   backupHint: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18, textAlign: 'center' },
   backupActions: { flexDirection: 'row', gap: spacing.x3, marginTop: spacing.x4 },
   backupButton: { flex: 1, paddingHorizontal: spacing.x2 },
-  passwordInput: { minHeight: 44, marginTop: spacing.x4, borderWidth: 1, borderColor: palette.hairline, borderRadius: 10, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 12, paddingHorizontal: spacing.x3 },
+  passwordLabel: { marginTop: spacing.x4, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 11 },
+  passwordInput: { minHeight: 44, marginTop: spacing.x2, borderWidth: 1, borderColor: palette.hairline, borderRadius: 10, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 12, paddingHorizontal: spacing.x3 },
   backupWarning: { marginTop: spacing.x3, color: '#C8A38E', fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16, textAlign: 'center' },
   error: { marginTop: spacing.x3, color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18, textAlign: 'center' },
 });

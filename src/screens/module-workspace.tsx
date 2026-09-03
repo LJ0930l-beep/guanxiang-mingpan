@@ -18,7 +18,9 @@ import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
 import { ExplanationLayer } from '@/components/explanation-layer';
 import { ModuleSigil } from '@/components/module-sigil';
+import { StatePanel } from '@/components/state-panel';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
+import { UI_STATE_COPY } from '@/constants/ui-copy';
 import { moduleBySlug, type ModuleDefinition } from '@/data/modules';
 import { buildBaziTrueSolarEvidenceDisplay } from '@/domains/bazi/true-solar-presentation';
 import {
@@ -112,11 +114,14 @@ function ModuleScaffold({ module, children }: { module: ModuleDefinition; childr
 function NoProfile() {
   const router = useRouter();
   return (
-    <View style={styles.noProfile}>
-      <Text style={styles.panelTitle}>先建立一位命主</Text>
-      <Text style={styles.panelDescription}>出生资料只保存在当前设备。六爻记录也会归档到所选命主，方便之后反馈复盘。</Text>
-      <ActionButton accessibilityLabel="前往建立命主" onPress={() => router.push('/profiles')} style={styles.compactButton}>建立命主</ActionButton>
-    </View>
+    <StatePanel
+      actionLabel="建立命主"
+      body="出生资料只保存在当前设备。六爻记录也会归档到所选命主，方便之后反馈复盘。"
+      onAction={() => router.push('/profiles')}
+      state="empty"
+      testID="module-empty-profile"
+      title="先建立一位命主"
+    />
   );
 }
 
@@ -245,12 +250,21 @@ function WorkspacePanel({ children }: { children: React.ReactNode }) {
   return <AnimatedReveal delay={120} style={styles.workspacePanel}>{children}</AnimatedReveal>;
 }
 
-function ErrorNotice({ message }: { message: string }) {
+function ErrorNotice({ message, onRetry }: { message: string; onRetry?: () => void }) {
   if (!message) return null;
-  return <View accessibilityLabel={`错误：${message}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.errorNotice}><MaterialCommunityIcons accessibilityElementsHidden color="#D88978" importantForAccessibility="no-hide-descendants" name="alert-circle-outline" size={18} /><Text style={styles.errorText}>{message}</Text></View>;
+  return (
+    <StatePanel
+      body={message}
+      onAction={onRetry}
+      state="failure"
+      testID="module-failure"
+      title="这次没有完成"
+    />
+  );
 }
 
-function SavedNotice() {
+function SavedNotice({ saved }: { saved: boolean }) {
+  if (!saved) return null;
   return <View accessibilityLabel="本次结果已保存到本地记录" accessibilityLiveRegion="polite" accessibilityRole="text" style={styles.savedNotice}><MaterialCommunityIcons accessibilityElementsHidden color={palette.patina} importantForAccessibility="no-hide-descendants" name="check-circle-outline" size={17} /><Text style={styles.savedText}>本次结果已保存到本地记录</Text></View>;
 }
 
@@ -419,14 +433,21 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
   const [solarTimeModel, setSolarTimeModel] = useState<BaziSolarTimeModel>('apparentSolarTime');
   const [result, setResult] = useState<BaziChartView | null>(null);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
   const run = async () => {
+    setBusy(true);
     try {
       setError('');
       const next = calculateBaziView(profile, gender, { bazi: { dayBoundary, trueSolarTime, solarTimeModel: trueSolarTime ? solarTimeModel : 'none' } });
       setResult(next);
+      setSaved(false);
       await saveReading({ profile, payload: next, title: `${next.dayMaster}日主 · 四柱命盘`, summary: next.focus[0] });
+      setSaved(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '排盘失败，请检查出生资料。');
+    } finally {
+      setBusy(false);
     }
   };
   return (
@@ -436,9 +457,10 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
       <BaziDayBoundarySelector onChange={setDayBoundary} value={dayBoundary} />
       <BaziTrueSolarSelector enabled={trueSolarTime} locationKnown={profile.longitude != null} model={solarTimeModel} onEnabledChange={setTrueSolarTime} onModelChange={setSolarTimeModel} />
       <Text style={styles.workspaceDescription}>以保存的历法、日期与时辰排出天干地支、十神、藏干、纳音及柱间关系。</Text>
-      <ErrorNotice message={error} />
-      <ActionButton accessibilityLabel="排出八字四柱" onPress={run}>{result ? '重新排盘' : '排出四柱'}</ActionButton>
+      <ErrorNotice message={error} onRetry={run} />
+      <ActionButton accessibilityLabel="排出八字四柱" loading={busy} onPress={run}>{result ? '重新排盘' : '排出四柱'}</ActionButton>
       {result && <BaziResult key={result.generatedAt} result={result} />}
+      <SavedNotice saved={saved} />
     </WorkspacePanel>
   );
 }
@@ -480,7 +502,6 @@ function BaziResult({ result }: { result: BaziChartView }) {
       {!!result.relations.length && <View style={styles.tagWrap}>{result.relations.map((item, index) => <Text key={`${item}-${index}`} style={styles.evidenceTag}>{item}</Text>)}</View>}
       <FocusList items={result.focus} />
       <Caveats items={result.caveats} />
-      <SavedNotice />
     </View>
   );
 }
@@ -493,15 +514,18 @@ function LiuyaoWorkspace({ profile }: { profile: BirthProfile }) {
   const [target, setTarget] = useState<(typeof liuyaoTargets)[number]>('父母');
   const [result, setResult] = useState<LiuyaoChartView | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
   const run = async () => {
     if (question.trim().length < 4) return setError('请写下一个具体问题，至少 4 个字。');
     setLoading(true);
     setError('');
+    setSaved(false);
     try {
       const next = await calculateLiuyaoView(question.trim(), target);
       setResult(next);
       await saveReading({ profile, payload: next, title: `${next.hexagramName}${next.changedHexagramName ? ` → ${next.changedHexagramName}` : ''}`, summary: next.question });
+      setSaved(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '起卦失败，请稍后重试。');
     } finally {
@@ -527,9 +551,11 @@ function LiuyaoWorkspace({ profile }: { profile: BirthProfile }) {
       <Text style={styles.fieldLabel}>用神方向</Text>
       <View accessibilityLabel="六爻用神方向" accessibilityRole="radiogroup" style={styles.chipRow}>{liuyaoTargets.map((item) => <Pressable accessibilityHint={target === item ? '当前选项' : '选择此用神方向'} accessibilityLabel={item} accessibilityRole="radio" accessibilityState={{ selected: target === item }} key={item} onPress={() => setTarget(item)} style={[styles.choiceChip, target === item && styles.choiceChipActive]}><Text style={[styles.choiceChipText, target === item && styles.choiceChipTextActive]}>{item}</Text></Pressable>)}</View>
       <Text style={styles.fieldHint}>不确定时可先选“父母”用于文书、方案与信息；起卦后仍应在复盘中核对取用。</Text>
-      <ErrorNotice message={error} />
+      <ErrorNotice message={error} onRetry={run} />
+      {loading && <Text accessibilityLiveRegion="polite" accessibilityRole="text" style={styles.loadingText}>{UI_STATE_COPY.loading.announcement}</Text>}
       <ActionButton accessibilityLabel="摇动铜钱起六爻卦" loading={loading} onPress={run}>{result ? '重新起卦' : '摇钱成卦'}</ActionButton>
       {result && <LiuyaoResult key={result.generatedAt} result={result} />}
+      <SavedNotice saved={saved} />
     </WorkspacePanel>
   );
 }
@@ -563,7 +589,6 @@ function LiuyaoResult({ result }: { result: LiuyaoChartView }) {
       />
       <FocusList items={result.focus} />
       <Caveats items={result.caveats} />
-      <SavedNotice />
     </View>
   );
 }
@@ -573,14 +598,21 @@ function ZiweiWorkspace({ profile }: { profile: BirthProfile }) {
   const [gender, setGender] = useState<Gender>(profile.gender ?? 'female');
   const [result, setResult] = useState<ZiweiChartView | null>(null);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
   const run = async () => {
+    setBusy(true);
     try {
       setError('');
       const next = calculateZiweiView(profile, gender);
       setResult(next);
+      setSaved(false);
       await saveReading({ profile, payload: next, title: `${next.fiveElement} · 十二宫命盘`, summary: next.focus[0] });
+      setSaved(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '排盘失败，请检查出生资料。');
+    } finally {
+      setBusy(false);
     }
   };
   return (
@@ -588,9 +620,10 @@ function ZiweiWorkspace({ profile }: { profile: BirthProfile }) {
       <View style={styles.workspaceHeading}><View><Text style={styles.workspaceKicker}>TWELVE PALACES</Text><Text style={styles.workspaceTitle}>以命宫为轴，十二宫展开</Text></View><Text style={styles.workspaceMeta}>命 · 身 · 四化</Text></View>
       {!profile.gender && <GenderSelector onChange={setGender} value={gender} />}
       <Text style={styles.workspaceDescription}>依据出生年月日时安命身宫、主星辅星与生年四化。不同流派差异会随算法版本一同记录。</Text>
-      <ErrorNotice message={error} />
-      <ActionButton accessibilityLabel="生成紫微斗数十二宫命盘" onPress={run}>{result ? '重新启盘' : '开启十二宫'}</ActionButton>
+      <ErrorNotice message={error} onRetry={run} />
+      <ActionButton accessibilityLabel="生成紫微斗数十二宫命盘" loading={busy} onPress={run}>{result ? '重新启盘' : '开启十二宫'}</ActionButton>
       {result && <ZiweiResult key={result.generatedAt} result={result} />}
+      <SavedNotice saved={saved} />
     </WorkspacePanel>
   );
 }
@@ -623,7 +656,6 @@ function ZiweiResult({ result }: { result: ZiweiChartView }) {
       <View style={styles.mutagenRow}>{result.mutagens.map((item, index) => <Text key={`${item}-${index}`} style={styles.mutagenTag}>{item}</Text>)}</View>
       <FocusList items={result.focus} />
       <Caveats items={result.caveats} />
-      <SavedNotice />
     </View>
   );
 }
@@ -632,23 +664,31 @@ function AstrologyWorkspace({ profile }: { profile: BirthProfile }) {
   const { saveReading } = useApp();
   const [result, setResult] = useState<AstrologyChartView | null>(null);
   const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
   const run = async () => {
+    setBusy(true);
     try {
       setError('');
       const next = calculateAstrologyView(profile);
       setResult(next);
+      setSaved(false);
       await saveReading({ profile, payload: next, title: `${next.sunSign} · 本命星盘`, summary: next.focus[0] });
+      setSaved(true);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : '星盘计算失败，请检查出生资料。');
+    } finally {
+      setBusy(false);
     }
   };
   return (
     <WorkspacePanel>
       <View style={styles.workspaceHeading}><View><Text style={styles.workspaceKicker}>TROPICAL ZODIAC</Text><Text style={styles.workspaceTitle}>校准黄道、宫位与相位</Text></View><Text style={styles.workspaceMeta}>行星 · 宫位 · 相位</Text></View>
       <Text style={styles.workspaceDescription}>准确时刻用于判断宫位与上升。未提供时辰不会猜测；内置城市可本地匹配，未匹配时只生成近似盘，并明确隐藏上升与宫位。</Text>
-      <ErrorNotice message={error} />
-      <ActionButton accessibilityLabel="生成西方占星本命盘" onPress={run}>{result ? '重新校准' : '生成本命星盘'}</ActionButton>
+      <ErrorNotice message={error} onRetry={run} />
+      <ActionButton accessibilityLabel="生成西方占星本命盘" loading={busy} onPress={run}>{result ? '重新校准' : '生成本命星盘'}</ActionButton>
       {result && <AstrologyResult key={result.generatedAt} result={result} />}
+      <SavedNotice saved={saved} />
     </WorkspacePanel>
   );
 }
@@ -682,6 +722,22 @@ function AstrologyResult({ result }: { result: AstrologyChartView }) {
           <Text style={[styles.modeTag, result.calculationMode === 'approximate' && styles.modeTagPartial]}>{result.calculationMode === 'exact' ? '完整盘' : '近似盘'}</Text>
         </View>
       </View>
+      {result.calculationMode === 'approximate' && (
+        <StatePanel
+          body="出生时辰未提供；只展示全天稳定的日期级落座，宫位、上升与相位保持隐藏。"
+          state="partial"
+          testID="astrology-partial-state"
+          title="日期级近似盘"
+        />
+      )}
+      {!result.sunSign || result.sunSign === '全天跨越星座，未显示' ? (
+        <StatePanel
+          body="当天跨越星座，当前没有足够依据展示太阳落座。"
+          state="unknown"
+          testID="astrology-unknown-state"
+          title="太阳落座暂不可用"
+        />
+      ) : null}
       <ExplanationLayer
         snapshot={result.explanation}
         evidenceNodes={result.evidenceGraph.nodes}
@@ -693,7 +749,6 @@ function AstrologyResult({ result }: { result: AstrologyChartView }) {
       <View style={styles.aspectList}>{result.aspects.slice(0, 8).map((aspect) => <View key={`${aspect.from}-${aspect.to}-${aspect.label}`} style={styles.aspectRow}><Text style={styles.aspectBodies}>{aspect.from} — {aspect.to}</Text><Text style={styles.aspectType}>{aspect.label} · {aspect.orb}</Text></View>)}</View>
       <FocusList items={result.focus} />
       <Caveats items={result.caveats} />
-      <SavedNotice />
     </View>
   );
 }
@@ -753,6 +808,7 @@ const styles = StyleSheet.create({
   errorText: { flex: 1, color: '#DCA091', fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 19 },
   savedNotice: { marginTop: spacing.x4, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.x2 },
   savedText: { color: palette.patina, fontFamily: fontFamilies.body, fontSize: 11 },
+  loadingText: { marginTop: spacing.x3, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18, textAlign: 'center' },
   resultArea: { marginTop: spacing.x8, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x6 },
   resultHeading: { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', gap: spacing.x4 },
   resultEyebrow: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 9, letterSpacing: 2 },

@@ -21,13 +21,13 @@ export function QuietScreen({ kicker, title, description, actionLabel, onAction,
   useScrollToTopOnMount();
   const router = useRouter();
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} testID="quiet-screen">
       <Atmosphere />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <Pressable accessibilityLabel="返回观象首页" accessibilityRole="button" onPress={() => router.replace('/home')} style={styles.backButton}>
           <Text style={styles.backText}>返回观象</Text>
         </Pressable>
-        <View style={styles.content}>
+        <View accessibilityLabel={`${title}页面`} style={styles.content}>
           <Text style={styles.kicker}>{kicker}</Text>
           <Text accessibilityRole="header" style={styles.title}>{title}</Text>
           <Text style={styles.description}>{description}</Text>

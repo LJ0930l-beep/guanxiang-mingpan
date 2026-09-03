@@ -3,6 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import './p5-c-page-accessibility.regression.mjs';
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const source = (relativePath) => readFileSync(join(testDirectory, '..', relativePath), 'utf8');
@@ -32,7 +33,7 @@ test('P5-C 加载页拥有 progressbar/liveRegion 语义，装饰图形不重复
   assert.match(loadingScreen, /accessibilityRole="progressbar"/);
   assert.match(loadingScreen, /accessibilityLiveRegion="polite"/);
   assert.match(loadingScreen, /accessibilityElementsHidden/);
-  assert.match(loadingScreen, /正在校准观象仪/);
+  assert.match(loadingScreen, /UI_STATE_COPY\.loading/);
 });
 
 test('P5-C 主导航提供 tablist/tab 语义与可识别 testID，并避免重复跳转当前页面', () => {
@@ -65,11 +66,14 @@ test('P5-C 品牌印记为装饰元素，不抢占页面读屏顺序', () => {
 
 test('P5-C 四术工作区为选择器和错误/成功状态提供一致语义', () => {
   const moduleWorkspace = source('src/screens/module-workspace.tsx');
+  const statePanel = source('src/components/state-panel.tsx');
 
   assert.match(moduleWorkspace, /accessibilityRole="radiogroup"/);
   assert.match(moduleWorkspace, /accessibilityLabel="六爻用神方向"/);
   assert.match(moduleWorkspace, /accessibilityRole="radio"/);
-  assert.match(moduleWorkspace, /accessibilityRole="alert"/);
   assert.match(moduleWorkspace, /accessibilityRole="text"/);
+  assert.match(moduleWorkspace, /<StatePanel/);
+  assert.match(statePanel, /accessibilityRole={isAlert \? 'alert' : 'text'}/);
+  assert.match(statePanel, /accessibilityLiveRegion={isAlert \? 'assertive' : 'polite'}/);
   assert.match(moduleWorkspace, /evidenceReferenceAction: \{ minHeight: layout\.minTouch/);
 });

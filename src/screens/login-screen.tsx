@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -16,6 +16,7 @@ import { ActionButton } from '@/components/action-button';
 import { Atmosphere } from '@/components/atmosphere';
 import { BrandMark } from '@/components/brand-mark';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
+import { UI_STATE_COPY } from '@/constants/ui-copy';
 import { useApp } from '@/state/app-context';
 
 export function LoginScreen() {
@@ -24,14 +25,20 @@ export function LoginScreen() {
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
+  const [messageTone, setMessageTone] = useState<'info' | 'error'>('info');
   const [loading, setLoading] = useState(false);
+  const phoneInputRef = useRef<TextInput | null>(null);
+  const codeInputRef = useRef<TextInput | null>(null);
   const isWide = width >= 820;
 
   const submit = async () => {
     setLoading(true);
     setMessage('');
     const result = await signInWithPhone(phone, code);
-    if (!result.ok) setMessage(result.message ?? '登录信息有误。');
+    if (!result.ok) {
+      setMessageTone('error');
+      setMessage(result.message ?? UI_STATE_COPY.failure.body);
+    }
     setLoading(false);
   };
 
@@ -57,11 +64,14 @@ export function LoginScreen() {
             </Text>
           </View>
 
-          <View style={[styles.loginPanel, isWide && styles.loginPanelWide]}>
+          <View
+            accessibilityLabel="账户登录表单"
+            style={[styles.loginPanel, isWide && styles.loginPanelWide]}
+            testID="login-panel">
             <Text style={styles.panelKicker}>进入观象台</Text>
-            <Text style={styles.panelTitle}>登录你的账户</Text>
+            <Text accessibilityRole="header" style={styles.panelTitle}>登录你的账户</Text>
             <Text style={styles.panelDescription}>
-              首版命盘仅保存在当前设备，账户用于身份识别与未来跨平台权益。
+              首版仅在当前设备保存命盘；手机号、Apple、微信入口目前均为本地原型，不连接真实服务。
             </Text>
 
             <Text style={styles.inputLabel}>手机号</Text>
@@ -75,9 +85,13 @@ export function LoginScreen() {
                 keyboardType="phone-pad"
                 maxLength={11}
                 onChangeText={setPhone}
+                onSubmitEditing={() => codeInputRef.current?.focus()}
                 placeholder="请输入 11 位手机号"
                 placeholderTextColor="#65736D"
+                ref={phoneInputRef}
+                returnKeyType="next"
                 style={[styles.input, styles.phoneInput]}
+                textContentType="telephoneNumber"
                 value={phone}
               />
             </View>
@@ -89,24 +103,41 @@ export function LoginScreen() {
                 keyboardType="number-pad"
                 maxLength={6}
                 onChangeText={setCode}
+                onSubmitEditing={() => void submit()}
                 placeholder="6 位验证码"
                 placeholderTextColor="#65736D"
+                ref={codeInputRef}
+                returnKeyType="done"
                 style={[styles.input, styles.codeInput]}
                 value={code}
               />
               <Pressable
                 accessibilityLabel="获取验证码"
+                accessibilityHint="当前为本地原型，不会发送短信；输入任意 6 位数字即可继续。"
                 accessibilityRole="button"
-                onPress={() => setMessage('当前为本地原型，请输入任意 6 位数字。')}
+                onPress={() => {
+                  setMessageTone('info');
+                  setMessage('当前为本地原型，不会发送短信；请输入任意 6 位数字。');
+                  codeInputRef.current?.focus();
+                }}
                 style={({ pressed }) => [styles.codeButton, pressed && styles.pressed]}>
                 <Text style={styles.codeButtonText}>获取验证码</Text>
               </Pressable>
             </View>
 
-            {!!message && <Text style={styles.helperText}>{message}</Text>}
+            {!!message && (
+              <Text
+                accessibilityLabel={messageTone === 'error' ? `错误：${message}` : message}
+                accessibilityLiveRegion="polite"
+                accessibilityRole={messageTone === 'error' ? 'alert' : 'text'}
+                style={[styles.helperText, messageTone === 'error' && styles.errorText]}>
+                {message}
+              </Text>
+            )}
 
             <ActionButton
-              accessibilityLabel="使用手机号进入观象"
+              accessibilityLabel={loading ? '正在使用手机号进入观象' : '使用手机号进入观象'}
+              accessibilityHint="本地原型会在当前设备保存身份信息。"
               loading={loading}
               onPress={submit}
               style={styles.primaryButton}>
@@ -122,6 +153,7 @@ export function LoginScreen() {
             <View style={styles.providerRow}>
               <ActionButton
                 accessibilityLabel="使用 Apple 登录"
+                accessibilityHint="当前为本地原型，不连接 Apple 服务。"
                 onPress={() => signInWithProvider('apple')}
                 style={styles.providerButton}
                 variant="secondary">
@@ -129,6 +161,7 @@ export function LoginScreen() {
               </ActionButton>
               <ActionButton
                 accessibilityLabel="使用微信登录"
+                accessibilityHint="当前为本地原型，不连接微信服务。"
                 onPress={() => signInWithProvider('wechat')}
                 style={styles.providerButton}
                 variant="secondary">
@@ -287,6 +320,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
+  errorText: { color: '#E4A89A' },
   primaryButton: { marginTop: spacing.x5 },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.x3, marginVertical: spacing.x6 },
   divider: { flex: 1, height: 1, backgroundColor: palette.hairline },

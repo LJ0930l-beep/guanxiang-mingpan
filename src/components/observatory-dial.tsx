@@ -30,10 +30,13 @@ export function ObservatoryDial({ size = 286 }: ObservatoryDialProps) {
     let active = true;
     let animation: Animated.CompositeAnimation | undefined;
 
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+    const applyMotionPreference = (enabled: boolean) => {
       if (!active) return;
+      animation?.stop();
+      animation = undefined;
       setReduceMotion(enabled);
       if (!enabled) {
+        rotation.setValue(0);
         animation = Animated.timing(rotation, {
           toValue: 1,
           duration: 18000,
@@ -42,11 +45,15 @@ export function ObservatoryDial({ size = 286 }: ObservatoryDialProps) {
         });
         animation.start();
       }
-    });
+    };
+
+    AccessibilityInfo.isReduceMotionEnabled().then(applyMotionPreference);
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', applyMotionPreference);
 
     return () => {
       active = false;
       animation?.stop();
+      subscription.remove();
     };
   }, [rotation]);
 

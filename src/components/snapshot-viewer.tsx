@@ -5,7 +5,7 @@ import type { BaziInterpretationDiff } from '@/domains/bazi/interpretation/histo
 import { buildBaziTrueSolarEvidenceDisplay } from '@/domains/bazi/true-solar-presentation';
 import { listGlossaryTerms } from '@/domains/explanation/glossary';
 import { buildSnapshotViewerModel } from '@/domains/archive/types';
-import { fontFamilies, palette, radii, spacing } from '@/constants/guanxiang';
+import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
 import type { SavedReading } from '@/types/domain';
 
 interface SnapshotViewerProps {
@@ -32,7 +32,7 @@ function Row({ label, value }: { label: string; value: string }) {
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionLabel}>{label}</Text>
+      <Text accessibilityRole="header" style={styles.sectionLabel}>{label}</Text>
       {children}
     </View>
   );
@@ -161,7 +161,7 @@ export function SnapshotViewer({ reading, diff, onRunBaziDiff }: SnapshotViewerP
                 </View>
               ))}
               {onRunBaziDiff && (
-                <Pressable accessibilityLabel={`按当前规则复核${reading.title}`} accessibilityRole="button" onPress={() => onRunBaziDiff(reading.id)} style={({ pressed }) => [styles.diffButton, pressed && styles.pressed]}>
+                <Pressable accessibilityHint="只读运行当前规则并显示与历史快照的差异，不修改历史记录。" accessibilityLabel={`按当前规则复核${reading.title}`} accessibilityRole="button" onPress={() => onRunBaziDiff(reading.id)} style={({ pressed }) => [styles.diffButton, pressed && styles.pressed]}>
                   <Text style={styles.diffButtonText}>按当前规则复核并生成 Diff</Text>
                 </Pressable>
               )}
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   deepConclusion: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   deepRefs: { marginTop: spacing.x1, color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
   missing: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
-  diffButton: { minHeight: 36, alignSelf: 'flex-start', marginTop: spacing.x3, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
+  diffButton: { minHeight: layout.minTouch, alignSelf: 'flex-start', marginTop: spacing.x3, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   diffButtonText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10 },
   diffBox: { marginTop: spacing.x3, borderLeftWidth: 2, borderLeftColor: palette.brass, paddingLeft: spacing.x3 },
   diffTitle: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 13 },

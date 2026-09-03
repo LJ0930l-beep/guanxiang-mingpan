@@ -31,6 +31,7 @@ export function Atmosphere({ accent, focus = 'top' }: AtmosphereProps) {
 const styles = StyleSheet.create({
   noPointer: {
     pointerEvents: 'none',
+    overflow: 'hidden',
   },
   orb: {
     position: 'absolute',

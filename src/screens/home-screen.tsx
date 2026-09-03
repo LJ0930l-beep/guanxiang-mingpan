@@ -22,7 +22,7 @@ export function HomeScreen() {
   const dialSize = width < 390 ? 238 : isDesktop ? 310 : 272;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} testID="home-screen">
       <Atmosphere />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -37,7 +37,8 @@ export function HomeScreen() {
               </View>
             </View>
             <Pressable
-              accessibilityLabel="切换命主"
+              accessibilityHint={selectedProfile ? '打开命主管理，切换当前用于排盘的命主。' : '打开命主管理，建立第一位命主。'}
+              accessibilityLabel={selectedProfile ? `切换命主，当前为${selectedProfile.name}` : '切换命主，尚未建立命主'}
               accessibilityRole="button"
               onPress={() => router.push('/profiles')}
               style={({ pressed }) => [styles.profileChip, pressed && styles.pressed]}>
@@ -82,7 +83,7 @@ export function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionKicker}>选择观测方式</Text>
-              <Text style={styles.sectionTitle}>四术入口</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>四术入口</Text>
             </View>
             <Text style={styles.sectionMeta}>基础排盘永久免费</Text>
           </View>
@@ -117,7 +118,7 @@ export function HomeScreen() {
           <View style={styles.profileSection}>
             <View style={styles.profileSectionCopy}>
               <Text style={styles.sectionKicker}>本机命主</Text>
-              <Text style={styles.sectionTitle}>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>
                 {profiles.length ? `已保存 ${profiles.length} 位命主` : '先建立一位命主'}
               </Text>
               <Text style={styles.profileDescription}>
@@ -128,6 +129,7 @@ export function HomeScreen() {
             </View>
             <Pressable
               accessibilityLabel={profiles.length ? '管理命主' : '建立命主'}
+              accessibilityHint={profiles.length ? '查看、编辑或切换本机命主。' : '填写出生资料，建立第一位本机命主。'}
               accessibilityRole="button"
               onPress={() => router.push('/profiles')}
               style={({ pressed }) => [styles.profileAction, pressed && styles.pressed]}>

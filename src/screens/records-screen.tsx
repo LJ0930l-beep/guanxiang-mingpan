@@ -10,6 +10,7 @@ import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
 import { SnapshotViewer } from '@/components/snapshot-viewer';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
+import { UI_STATE_COPY } from '@/constants/ui-copy';
 import { moduleBySlug } from '@/data/modules';
 import {
   compareArchiveReadings,
@@ -83,7 +84,7 @@ export function RecordsScreen() {
       if (!left || !right) return [readingId];
       const result = compareArchiveReadings(left, right);
       if (!result.allowed) {
-        setCompareError(result.reason ?? '这两条记录暂时不能对比。');
+        setCompareError(result.reason ?? UI_STATE_COPY.failure.body);
         return current;
       }
       return [current[0], readingId];
@@ -132,7 +133,7 @@ export function RecordsScreen() {
       setFeedbackLinkedEvidenceIds('');
       setFeedbackError('');
     } catch (operationError) {
-      setFeedbackError(operationError instanceof Error ? operationError.message : '保存反馈失败，请稍后重试。');
+      setFeedbackError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
     }
   };
 
@@ -173,7 +174,7 @@ export function RecordsScreen() {
       setDiffByReadingId((currentDiffs) => ({ ...currentDiffs, [readingId]: diff }));
       setDiffError('');
     } catch (operationError) {
-      setDiffError(operationError instanceof Error ? operationError.message : '复核失败，请检查命主资料和快照。');
+      setDiffError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
     }
   };
 
@@ -238,9 +239,9 @@ export function RecordsScreen() {
     );
   };
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} testID="records-screen">
       <Atmosphere focus="bottom" />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
             <View style={styles.headerCopy}>
@@ -249,12 +250,12 @@ export function RecordsScreen() {
             </View>
             <View style={styles.headerActions}>
               {readings.length > 0 && (
-                <Pressable accessibilityLabel={archiveFilter.favoritesOnly ? '显示全部观象记录' : '只看收藏记录'} accessibilityRole="button" onPress={() => updateArchiveFilter({ favoritesOnly: !archiveFilter.favoritesOnly })} style={({ pressed }) => [styles.filterButton, archiveFilter.favoritesOnly && styles.filterButtonActive, pressed && styles.pressed]}>
+                <Pressable accessibilityHint="切换是否只显示已收藏的记录。" accessibilityLabel={archiveFilter.favoritesOnly ? '显示全部观象记录' : '只看收藏记录'} accessibilityRole="checkbox" accessibilityState={{ checked: archiveFilter.favoritesOnly }} onPress={() => updateArchiveFilter({ favoritesOnly: !archiveFilter.favoritesOnly })} style={({ pressed }) => [styles.filterButton, archiveFilter.favoritesOnly && styles.filterButtonActive, pressed && styles.pressed]}>
                   <Text style={styles.filterButtonText}>{archiveFilter.favoritesOnly ? '全部记录' : '只看收藏'}</Text>
                 </Pressable>
               )}
               {readings.length > 0 && (
-                <Pressable accessibilityLabel="清空全部观象记录" accessibilityRole="button" disabled={recordsReadOnly} onPress={confirmClear} style={({ pressed }) => [styles.clearButton, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
+                <Pressable accessibilityHint="删除本机保存的全部排盘记录，操作无法撤销。" accessibilityLabel="清空全部观象记录" accessibilityRole="button" disabled={recordsReadOnly} onPress={confirmClear} style={({ pressed }) => [styles.clearButton, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
                   <Text style={styles.clearButtonText}>{recordsReadOnly ? '记录只读' : '清空记录'}</Text>
                 </Pressable>
               )}
@@ -263,7 +264,7 @@ export function RecordsScreen() {
           <Text style={styles.description}>每次排盘都会保存算法版本、基础观察和边界说明，方便之后按事实反馈复盘。</Text>
         </View>
         {recordsReadOnly && (
-          <View style={styles.readOnlyBanner}>
+            <View accessibilityLabel={UI_STATE_COPY.blocked.announcement} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.readOnlyBanner}>
             <Text style={styles.readOnlyTitle}>记录数据只读</Text>
             <Text style={styles.readOnlyText}>这份数据由更新版本写入，当前版本不会覆盖它。请先升级应用后再删除或清空。</Text>
           </View>
@@ -280,7 +281,7 @@ export function RecordsScreen() {
                 <Text style={styles.compareClearText}>清除</Text>
               </Pressable>
             </View>
-            {!!compareError && <Text style={styles.compareError}>{compareError}</Text>}
+            {!!compareError && <Text accessibilityLabel={`错误：${compareError}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.compareError}>{compareError}</Text>}
             {compareResult?.allowed && (
               <View style={styles.compareFields}>
                 {compareResult.fields.length === 0 ? (
@@ -299,8 +300,8 @@ export function RecordsScreen() {
           </View>
         )}
         {readings.length === 0 || visibleReadings.length === 0 ? (
-          <View style={styles.empty}>
-            <MaterialCommunityIcons color={palette.brass} name="archive-clock-outline" size={34} />
+          <View accessibilityLabel={`${UI_STATE_COPY.empty.announcement} ${readings.length === 0 ? '完成一次排盘后，结果会留在本机记录中。' : '可以清除筛选后重新查看。'}`} accessibilityRole="text" style={styles.empty}>
+            <MaterialCommunityIcons accessibilityElementsHidden color={palette.brass} importantForAccessibility="no-hide-descendants" name="archive-clock-outline" size={34} />
             <Text style={styles.emptyTitle}>{readings.length === 0 ? '还没有排盘记录' : '没有符合筛选的记录'}</Text>
             <Text style={styles.emptyText}>{readings.length === 0 ? '从首页进入任一体系完成排盘后，结果会自动保存在这里。' : '试试清除筛选，或换一个关键词、时间范围和反馈状态。'}</Text>
           </View>
@@ -308,94 +309,98 @@ export function RecordsScreen() {
           <View style={styles.list}>
             {readingGroups.map((group, groupIndex) => (
               <View key={group.key} style={styles.group}>
-                {!!group.label && <Text style={styles.groupLabel}>{group.label}</Text>}
+                {!!group.label && <Text accessibilityRole="header" style={styles.groupLabel}>{group.label}</Text>}
                 {group.readings.map((reading, index) => {
                   const module = moduleBySlug[reading.module];
                   const expanded = reading.id === expandedId;
                   const feedbackList = reading.feedback ?? [];
                   const compareSelected = compareIds.includes(reading.id);
                   return (
-                  <AnimatedReveal delay={Math.min(groupIndex * 3 + index, 6) * 55} key={reading.id}>
-                  <Pressable
-                    accessibilityLabel={`${expanded ? '收起' : '展开'}${reading.title}排盘记录`}
-                    accessibilityRole="button"
-                    onPress={() => setExpandedId(expanded ? null : reading.id)}
-                    style={({ pressed }) => [styles.card, expanded && styles.cardExpanded, pressed && styles.pressed]}>
-                    <View style={[styles.moduleMark, { borderColor: module.accent }]}><Text style={[styles.moduleGlyph, { color: module.accent }]}>{module.glyph}</Text></View>
-                    <View style={styles.cardCopy}>
-                      <View style={styles.cardTop}><Text style={styles.moduleName}>{module.title} · {reading.profileName}</Text><View style={styles.cardMeta}><Text style={styles.date}>{new Date(reading.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Text><Pressable accessibilityLabel={compareSelected ? `取消对比${reading.title}` : `选择${reading.title}进行对比`} accessibilityRole="button" onPress={(event) => { event.stopPropagation(); toggleCompare(reading.id); }} style={({ pressed }) => [styles.compareToggle, compareSelected && styles.compareToggleActive, pressed && styles.pressed]}><Text style={[styles.compareToggleText, compareSelected && styles.compareToggleTextActive]}>{compareSelected ? '已选' : '对比'}</Text></Pressable></View></View>
-                      <Text style={styles.cardTitle}>{reading.title}</Text>
-                      <Text style={styles.cardSummary}>{reading.summary}</Text>
-                      {expanded && (
-                        <View style={styles.detail}>
-                          <SnapshotViewer reading={reading} diff={diffByReadingId[reading.id]} onRunBaziDiff={runBaziDiff} />
-                          {!!diffError && <Text style={styles.feedbackError}>{diffError}</Text>}
+                    <AnimatedReveal delay={Math.min(groupIndex * 3 + index, 6) * 55} key={reading.id}>
+                      <View style={[styles.card, expanded && styles.cardExpanded]}>
+                        <Pressable
+                          accessibilityHint="查看或收起这条记录的输入、结果、解释和复盘反馈。"
+                          accessibilityLabel={`${expanded ? '收起' : '展开'}${reading.title}排盘记录`}
+                          accessibilityRole="button"
+                          accessibilityState={{ expanded }}
+                          onPress={() => setExpandedId(expanded ? null : reading.id)}
+                          style={({ pressed }) => [styles.cardHeader, pressed && styles.pressed]}>
+                          <View style={[styles.moduleMark, { borderColor: module.accent }]}><Text style={[styles.moduleGlyph, { color: module.accent }]}>{module.glyph}</Text></View>
+                          <View style={styles.cardCopy}>
+                            <View style={styles.cardTop}><Text style={styles.moduleName}>{module.title} · {reading.profileName}</Text><View style={styles.cardMeta}><Text style={styles.date}>{new Date(reading.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Text><Pressable accessibilityHint="选择两条同命主、同模块记录进行只读对比。" accessibilityLabel={compareSelected ? `取消对比${reading.title}` : `选择${reading.title}进行对比`} accessibilityRole="checkbox" accessibilityState={{ checked: compareSelected }} onPress={(event) => { event.stopPropagation(); toggleCompare(reading.id); }} style={({ pressed }) => [styles.compareToggle, compareSelected && styles.compareToggleActive, pressed && styles.pressed]}><Text style={[styles.compareToggleText, compareSelected && styles.compareToggleTextActive]}>{compareSelected ? '已选' : '对比'}</Text></Pressable></View></View>
+                            <Text style={styles.cardTitle}>{reading.title}</Text>
+                            <Text style={styles.cardSummary}>{reading.summary}</Text>
+                          </View>
+                          <MaterialCommunityIcons accessibilityElementsHidden color={palette.ashGreen} importantForAccessibility="no-hide-descendants" name={expanded ? 'chevron-up' : 'chevron-down'} size={20} />
+                        </Pressable>
+                        {expanded && (
+                          <View style={styles.detail}>
+                            <SnapshotViewer reading={reading} diff={diffByReadingId[reading.id]} onRunBaziDiff={runBaziDiff} />
+                            {!!diffError && <Text accessibilityRole="alert" style={styles.feedbackError}>{diffError}</Text>}
                             <View style={styles.detailActions}>
-                            <Pressable accessibilityLabel={reading.favorite ? `取消收藏${reading.title}` : `收藏${reading.title}`} accessibilityRole="button" disabled={recordsReadOnly} onPress={() => toggleFavorite(reading.id)} style={({ pressed }) => [styles.favoriteButton, reading.favorite && styles.favoriteButtonActive, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
-                              <MaterialCommunityIcons color={reading.favorite ? palette.brass : palette.ashGreen} name={reading.favorite ? 'star' : 'star-outline'} size={16} />
-                              <Text style={[styles.favoriteButtonText, reading.favorite && styles.favoriteButtonTextActive]}>{reading.favorite ? '已收藏' : '收藏'}</Text>
-                            </Pressable>
-                            <Pressable accessibilityLabel={`给${reading.title}添加事实反馈`} accessibilityRole="button" disabled={recordsReadOnly} onPress={() => startFeedback(reading.id)} style={({ pressed }) => [styles.feedbackButton, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
-                              <Text style={styles.feedbackButtonText}>{feedbackTargetId === reading.id ? '收起反馈' : '添加反馈'}</Text>
-                            </Pressable>
-                          </View>
-                          <View style={styles.feedbackPanel}>
-                            <View style={styles.feedbackHeader}>
-                              <Text style={styles.feedbackTitle}>事实反馈</Text>
-                              <Text style={styles.feedbackCount}>{feedbackList.length} 条</Text>
+                              <Pressable accessibilityHint="切换这条记录是否出现在收藏筛选中。" accessibilityLabel={reading.favorite ? `取消收藏${reading.title}` : `收藏${reading.title}`} accessibilityRole="checkbox" accessibilityState={{ checked: reading.favorite }} disabled={recordsReadOnly} onPress={() => void toggleFavorite(reading.id)} style={({ pressed }) => [styles.favoriteButton, reading.favorite && styles.favoriteButtonActive, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
+                                <MaterialCommunityIcons accessibilityElementsHidden color={reading.favorite ? palette.brass : palette.ashGreen} importantForAccessibility="no-hide-descendants" name={reading.favorite ? 'star' : 'star-outline'} size={16} />
+                                <Text style={[styles.favoriteButtonText, reading.favorite && styles.favoriteButtonTextActive]}>{reading.favorite ? '已收藏' : '收藏'}</Text>
+                              </Pressable>
+                              <Pressable accessibilityHint="展开或收起事实反馈表单；反馈只记录现实发生的事情。" accessibilityLabel={`给${reading.title}添加事实反馈`} accessibilityRole="button" accessibilityState={{ expanded: feedbackTargetId === reading.id }} disabled={recordsReadOnly} onPress={() => startFeedback(reading.id)} style={({ pressed }) => [styles.feedbackButton, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
+                                <Text style={styles.feedbackButtonText}>{feedbackTargetId === reading.id ? '收起反馈' : '添加反馈'}</Text>
+                              </Pressable>
                             </View>
-                            <Text style={styles.feedbackHint}>以日为最小粒度；事实不明确时，保留具体说明，不强行归因。</Text>
-                            {feedbackList.length === 0 ? (
-                              <Text style={styles.feedbackEmpty}>还没有反馈。等事情发生后，再回来记录“发生了什么”。</Text>
-                            ) : (
-                              feedbackList.map((feedback) => (
-                                <View key={feedback.id} style={styles.feedbackItem}>
-                                  <View style={styles.feedbackItemTop}>
-                                    <Text style={styles.feedbackStatus}>{feedbackStatusOptions.find((option) => option.value === feedback.status)?.label ?? feedback.status}</Text>
-                                    <Text style={styles.feedbackDate}>{feedback.observedAt}</Text>
-                                    {!!feedback.updatedAt && <Text style={styles.feedbackUpdated}>更新 {feedback.updatedAt.slice(0, 10)}</Text>}
-                                    <Pressable accessibilityLabel="编辑这条事实反馈" accessibilityRole="button" disabled={recordsReadOnly} onPress={() => startEditFeedback(reading.id, feedback)} style={({ pressed }) => [styles.feedbackEdit, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
-                                      <Text style={styles.feedbackEditText}>编辑</Text>
-                                    </Pressable>
-                                    <Pressable accessibilityLabel="删除这条事实反馈" accessibilityRole="button" disabled={recordsReadOnly} onPress={() => confirmDeleteFeedback(reading.id, feedback.id)} style={({ pressed }) => [styles.feedbackDelete, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
-                                      <Text style={styles.feedbackDeleteText}>删除</Text>
-                                    </Pressable>
-                                  </View>
-                                  <Text style={styles.feedbackNote}>{feedback.note}</Text>
-                                  {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLinks}>用户关联 · Interpretation {feedback.linkedInterpretationIds.join(', ')}</Text>}
-                                  {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLinks}>用户关联 · Evidence {feedback.linkedEvidenceIds.join(', ')}</Text>}
-                                </View>
-                              ))
-                            )}
-                            {feedbackTargetId === reading.id && (
-                              <View style={styles.feedbackForm}>
-                                <Text style={styles.feedbackFormLabel}>{editingFeedbackId ? '修改这条事实反馈' : '这次反馈的状态'}</Text>
-                                <View style={styles.statusOptions}>
-                                  {feedbackStatusOptions.map((option) => (
-                                    <Pressable accessibilityLabel={`反馈状态${option.label}`} accessibilityRole="radio" accessibilityState={{ selected: feedbackStatus === option.value }} key={option.value} onPress={() => setFeedbackStatus(option.value)} style={({ pressed }) => [styles.statusOption, feedbackStatus === option.value && styles.statusOptionActive, pressed && styles.pressed]}>
-                                      <Text style={[styles.statusOptionText, feedbackStatus === option.value && styles.statusOptionTextActive]}>{option.label}</Text>
-                                    </Pressable>
-                                  ))}
-                                </View>
-                                <TextInput accessibilityLabel="反馈发生日期" onChangeText={setFeedbackObservedAt} placeholder="发生日期 YYYY-MM-DD" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackObservedAt} />
-                                <TextInput accessibilityLabel="反馈事实说明" multiline onChangeText={setFeedbackNote} placeholder="记录可核对的事实，例如：哪一天、发生了什么、与盘面哪条观察有关" placeholderTextColor="#65736D" style={[styles.feedbackInput, styles.feedbackNoteInput]} textAlignVertical="top" value={feedbackNote} />
-                                <TextInput accessibilityLabel="用户关联的解释 ID" onChangeText={setFeedbackLinkedInterpretationIds} placeholder="可选：Interpretation ID，多个用逗号分隔" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedInterpretationIds} />
-                                <TextInput accessibilityLabel="用户关联的证据 ID" onChangeText={setFeedbackLinkedEvidenceIds} placeholder="可选：Evidence ID，多个用逗号分隔" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedEvidenceIds} />
-                                <Text style={styles.feedbackLinkHint}>这些关联只代表你的复盘标记（user-linked），不会被当作系统证明，也不会改写原命盘。</Text>
-                                {!!feedbackError && <Text style={styles.feedbackError}>{feedbackError}</Text>}
-                                <ActionButton accessibilityLabel="保存这次事实反馈" disabled={recordsReadOnly} onPress={() => submitFeedback(reading.id)} style={styles.feedbackSaveButton} variant="secondary">{editingFeedbackId ? '保存修改' : '保存反馈'}</ActionButton>
+                            <View accessibilityLabel={`${reading.title}的事实反馈`} style={styles.feedbackPanel}>
+                              <View style={styles.feedbackHeader}>
+                                <Text accessibilityRole="header" style={styles.feedbackTitle}>事实反馈</Text>
+                                <Text style={styles.feedbackCount}>{feedbackList.length} 条</Text>
                               </View>
-                            )}
+                              <Text style={styles.feedbackHint}>以日为最小粒度；事实不明确时，保留具体说明，不强行归因。</Text>
+                              {feedbackList.length === 0 ? (
+                                <Text accessibilityRole="text" style={styles.feedbackEmpty}>还没有反馈。等事情发生后，再回来记录“发生了什么”。</Text>
+                              ) : (
+                                feedbackList.map((feedback) => (
+                                  <View key={feedback.id} style={styles.feedbackItem}>
+                                    <View style={styles.feedbackItemTop}>
+                                      <Text style={styles.feedbackStatus}>{feedbackStatusOptions.find((option) => option.value === feedback.status)?.label ?? feedback.status}</Text>
+                                      <Text style={styles.feedbackDate}>{feedback.observedAt}</Text>
+                                      {!!feedback.updatedAt && <Text style={styles.feedbackUpdated}>更新 {feedback.updatedAt.slice(0, 10)}</Text>}
+                                      <Pressable accessibilityLabel="编辑这条事实反馈" accessibilityRole="button" disabled={recordsReadOnly} onPress={() => startEditFeedback(reading.id, feedback)} style={({ pressed }) => [styles.feedbackEdit, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
+                                        <Text style={styles.feedbackEditText}>编辑</Text>
+                                      </Pressable>
+                                      <Pressable accessibilityLabel="删除这条事实反馈" accessibilityRole="button" disabled={recordsReadOnly} onPress={() => confirmDeleteFeedback(reading.id, feedback.id)} style={({ pressed }) => [styles.feedbackDelete, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
+                                        <Text style={styles.feedbackDeleteText}>删除</Text>
+                                      </Pressable>
+                                    </View>
+                                    <Text style={styles.feedbackNote}>{feedback.note}</Text>
+                                    {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLinks}>用户关联 · Interpretation {feedback.linkedInterpretationIds.join(', ')}</Text>}
+                                    {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLinks}>用户关联 · Evidence {feedback.linkedEvidenceIds.join(', ')}</Text>}
+                                  </View>
+                                ))
+                              )}
+                              {feedbackTargetId === reading.id && (
+                                <View style={styles.feedbackForm}>
+                                  <Text accessibilityRole="header" style={styles.feedbackFormLabel}>{editingFeedbackId ? '修改这条事实反馈' : '这次反馈的状态'}</Text>
+                                  <View accessibilityLabel="事实反馈状态" accessibilityRole="radiogroup" style={styles.statusOptions}>
+                                    {feedbackStatusOptions.map((option) => (
+                                      <Pressable accessibilityHint="选择本次事实反馈的记录状态。" accessibilityLabel={`反馈状态${option.label}`} accessibilityRole="radio" accessibilityState={{ selected: feedbackStatus === option.value }} key={option.value} onPress={() => setFeedbackStatus(option.value)} style={({ pressed }) => [styles.statusOption, feedbackStatus === option.value && styles.statusOptionActive, pressed && styles.pressed]}>
+                                        <Text style={[styles.statusOptionText, feedbackStatus === option.value && styles.statusOptionTextActive]}>{option.label}</Text>
+                                      </Pressable>
+                                    ))}
+                                  </View>
+                                  <TextInput accessibilityLabel="反馈发生日期" onChangeText={setFeedbackObservedAt} placeholder="发生日期 YYYY-MM-DD" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackObservedAt} />
+                                  <TextInput accessibilityLabel="反馈事实说明" multiline onChangeText={setFeedbackNote} placeholder="记录可核对的事实，例如：哪一天、发生了什么、与盘面哪条观察有关" placeholderTextColor="#65736D" style={[styles.feedbackInput, styles.feedbackNoteInput]} textAlignVertical="top" value={feedbackNote} />
+                                  <TextInput accessibilityLabel="用户关联的解释 ID" onChangeText={setFeedbackLinkedInterpretationIds} placeholder="可选：Interpretation ID，多个用逗号分隔" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedInterpretationIds} />
+                                  <TextInput accessibilityLabel="用户关联的证据 ID" onChangeText={setFeedbackLinkedEvidenceIds} placeholder="可选：Evidence ID，多个用逗号分隔" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedEvidenceIds} />
+                                  <Text style={styles.feedbackLinkHint}>这些关联只代表你的复盘标记（user-linked），不会被当作系统证明，也不会改写原命盘。</Text>
+                                  {!!feedbackError && <Text accessibilityLabel={`错误：${feedbackError}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.feedbackError}>{feedbackError}</Text>}
+                                  <ActionButton accessibilityLabel="保存这次事实反馈" disabled={recordsReadOnly} onPress={() => void submitFeedback(reading.id)} style={styles.feedbackSaveButton} variant="secondary">{editingFeedbackId ? '保存修改' : '保存反馈'}</ActionButton>
+                                </View>
+                              )}
+                            </View>
+                            <Pressable accessibilityHint="删除这条本机排盘记录，操作无法撤销。" accessibilityLabel={`删除${reading.title}记录`} accessibilityRole="button" disabled={recordsReadOnly} onPress={() => confirmDelete(reading.id, reading.title)} style={({ pressed }) => [styles.deleteButton, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
+                              <Text style={styles.deleteButtonText}>删除这条记录</Text>
+                            </Pressable>
                           </View>
-                          <Pressable accessibilityLabel={`删除${reading.title}记录`} accessibilityRole="button" disabled={recordsReadOnly} onPress={() => confirmDelete(reading.id, reading.title)} style={({ pressed }) => [styles.deleteButton, recordsReadOnly && styles.disabled, pressed && styles.pressed]}>
-                            <Text style={styles.deleteButtonText}>删除这条记录</Text>
-                          </Pressable>
-                        </View>
-                      )}
-                    </View>
-                    <MaterialCommunityIcons color={palette.ashGreen} name={expanded ? 'chevron-up' : 'chevron-down'} size={20} />
-                  </Pressable>
-                  </AnimatedReveal>
+                        )}
+                      </View>
+                    </AnimatedReveal>
                   );
                 })}
               </View>
@@ -427,7 +432,7 @@ const styles = StyleSheet.create({
   compareHeader: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.x3 },
   compareTitle: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 16 },
   compareHint: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
-  compareClear: { minHeight: 30, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x2 },
+  compareClear: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   compareClearText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
   compareError: { marginTop: spacing.x3, color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   compareFields: { marginTop: spacing.x3, borderTopWidth: 1, borderColor: palette.hairline },
@@ -446,8 +451,9 @@ const styles = StyleSheet.create({
   list: { marginTop: spacing.x6, gap: spacing.x4 },
   group: { gap: spacing.x3 },
   groupLabel: { color: palette.brass, fontFamily: fontFamilies.display, fontSize: 15, letterSpacing: 1 },
-  card: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x3, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.card, backgroundColor: 'rgba(8,26,22,0.88)', padding: spacing.x4 },
+  card: { borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.card, backgroundColor: 'rgba(8,26,22,0.88)', overflow: 'hidden' },
   cardExpanded: { borderColor: palette.hairlineStrong },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x3, padding: spacing.x4 },
   moduleMark: { width: 44, height: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 22, backgroundColor: palette.obsidian },
   moduleGlyph: { fontFamily: fontFamilies.display, fontSize: 16 },
   cardCopy: { flex: 1, minWidth: 0 },
@@ -455,7 +461,7 @@ const styles = StyleSheet.create({
   cardMeta: { flexDirection: 'row', alignItems: 'center', gap: spacing.x2 },
   moduleName: { flex: 1, color: palette.brass, fontFamily: fontFamilies.body, fontSize: 10 },
   date: { color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9 },
-  compareToggle: { minHeight: 28, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x2 },
+  compareToggle: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   compareToggleActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },
   compareToggleText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 9 },
   compareToggleTextActive: { color: palette.paleBrass },
@@ -463,11 +469,11 @@ const styles = StyleSheet.create({
   cardSummary: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   detail: { marginTop: spacing.x4, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x2 },
   detailActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x4 },
-  favoriteButton: { minHeight: 36, flexDirection: 'row', alignItems: 'center', gap: spacing.x1, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
+  favoriteButton: { minHeight: layout.minTouch, flexDirection: 'row', alignItems: 'center', gap: spacing.x1, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   favoriteButtonActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },
   favoriteButtonText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11 },
   favoriteButtonTextActive: { color: palette.paleBrass },
-  feedbackButton: { minHeight: 36, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
+  feedbackButton: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   feedbackButtonText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },
   feedbackPanel: { marginTop: spacing.x4, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, backgroundColor: 'rgba(5,9,7,0.32)', padding: spacing.x3 },
   feedbackHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -480,9 +486,9 @@ const styles = StyleSheet.create({
   feedbackStatus: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },
   feedbackDate: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 10 },
   feedbackUpdated: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
-  feedbackEdit: { minHeight: 30, marginLeft: 'auto', justifyContent: 'center', paddingHorizontal: spacing.x2 },
+  feedbackEdit: { minHeight: layout.minTouch, marginLeft: 'auto', justifyContent: 'center', paddingHorizontal: spacing.x3 },
   feedbackEditText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10 },
-  feedbackDelete: { minHeight: 30, marginLeft: 'auto', justifyContent: 'center', paddingHorizontal: spacing.x2 },
+  feedbackDelete: { minHeight: layout.minTouch, marginLeft: 'auto', justifyContent: 'center', paddingHorizontal: spacing.x3 },
   feedbackDeleteText: { color: '#C89283', fontFamily: fontFamilies.body, fontSize: 10 },
   feedbackNote: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
   feedbackLinks: { marginTop: spacing.x1, color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9, lineHeight: 15 },
@@ -490,15 +496,15 @@ const styles = StyleSheet.create({
   feedbackFormLabel: { color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 11 },
   feedbackLinkHint: { marginTop: spacing.x2, color: palette.patina, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 15 },
   statusOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x2 },
-  statusOption: { minHeight: 34, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x2 },
+  statusOption: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   statusOptionActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.jadeGlow },
   statusOptionText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
   statusOptionTextActive: { color: palette.paleBrass },
-  feedbackInput: { minHeight: 42, marginTop: spacing.x2, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 12, paddingHorizontal: spacing.x3, paddingVertical: spacing.x2 },
+  feedbackInput: { minHeight: layout.minTouch, marginTop: spacing.x2, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 12, paddingHorizontal: spacing.x3, paddingVertical: spacing.x2 },
   feedbackNoteInput: { minHeight: 86, paddingTop: spacing.x3 },
   feedbackError: { marginTop: spacing.x2, color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
   feedbackSaveButton: { marginTop: spacing.x3 },
-  deleteButton: { minHeight: 36, alignSelf: 'flex-start', marginTop: spacing.x3, justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(216, 137, 120, 0.42)', borderRadius: radii.input, paddingHorizontal: spacing.x3 },
+  deleteButton: { minHeight: layout.minTouch, alignSelf: 'flex-start', marginTop: spacing.x3, justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(216, 137, 120, 0.42)', borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   deleteButtonText: { color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 11 },
   disabled: { opacity: 0.42 },
   pressed: { opacity: 0.72 },

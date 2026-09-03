@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -17,6 +17,8 @@ import { ActionButton } from '@/components/action-button';
 import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
+import { UI_STATE_COPY } from '@/constants/ui-copy';
+import { listMainlandCities, resolveCityCoordinates } from '@/data/china-cities';
 import { useScrollToTopOnMount } from '@/hooks/use-scroll-to-top-on-mount';
 import { useApp } from '@/state/app-context';
 import { Gender, Relationship } from '@/types/domain';
@@ -38,11 +40,28 @@ export function ProfilesScreen() {
   const [isLeapMonth, setIsLeapMonth] = useState(false);
   const [gender, setGender] = useState<Gender>('female');
   const [error, setError] = useState('');
+  const nameInputRef = useRef<TextInput | null>(null);
+  const birthDateInputRef = useRef<TextInput | null>(null);
+  const birthTimeInputRef = useRef<TextInput | null>(null);
+  const birthCityInputRef = useRef<TextInput | null>(null);
 
   const profilesReadOnly = storageBlockedKeys.includes('@guanxiang/profiles');
   const selectionReadOnly = storageBlockedKeys.includes('@guanxiang/selected-profile');
   const recordsReadOnly = storageBlockedKeys.includes('@guanxiang/readings');
   const profileDeleteBlocked = profilesReadOnly || selectionReadOnly || recordsReadOnly;
+  const cityMatch = birthCity.trim() ? resolveCityCoordinates(birthCity) : undefined;
+  const citySuggestions = birthCity.trim()
+    ? listMainlandCities().filter((city) => [city.name, ...city.aliases].some((alias) => alias.includes(birthCity.trim()))).slice(0, 6)
+    : listMainlandCities().slice(0, 6);
+
+  const handleSelectProfile = async (profileId: string) => {
+    try {
+      setError('');
+      await selectProfile(profileId);
+    } catch (operationError) {
+      setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
+    }
+  };
 
   const resetForm = () => {
     setEditingId(null);
@@ -99,10 +118,26 @@ export function ProfilesScreen() {
   };
 
   const save = async () => {
-    if (!name.trim()) return setError('请填写命主称呼。');
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) return setError('出生日期请使用 YYYY-MM-DD 格式。');
-    if (timeKnown && !/^([01]\d|2[0-3]):[0-5]\d$/.test(birthTime)) return setError('出生时间请使用 HH:mm 格式。');
-    if (!birthCity.trim()) return setError('请填写出生城市。');
+    if (!name.trim()) {
+      setError('请填写命主称呼。');
+      nameInputRef.current?.focus();
+      return;
+    }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birthDate)) {
+      setError('出生日期请使用 YYYY-MM-DD 格式。');
+      birthDateInputRef.current?.focus();
+      return;
+    }
+    if (timeKnown && !/^([01]\d|2[0-3]):[0-5]\d$/.test(birthTime)) {
+      setError('出生时间请使用 HH:mm 格式。');
+      birthTimeInputRef.current?.focus();
+      return;
+    }
+    if (!birthCity.trim()) {
+      setError('请填写出生城市。');
+      birthCityInputRef.current?.focus();
+      return;
+    }
 
     try {
       const input = {
@@ -123,12 +158,12 @@ export function ProfilesScreen() {
       resetForm();
       setShowForm(false);
     } catch (operationError) {
-      setError(operationError instanceof Error ? operationError.message : '保存失败，请稍后重试。');
+      setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
     }
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} testID="profiles-screen">
       <Atmosphere />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.flex}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -140,6 +175,7 @@ export function ProfilesScreen() {
             </View>
             <Pressable
               accessibilityLabel={showForm ? '收起新增命主表单' : '新增命主'}
+              accessibilityHint={profilesReadOnly ? '当前版本只读，不能编辑命主资料。' : showForm ? '关闭表单并清空未保存内容。' : '打开表单填写出生资料。'}
               accessibilityRole="button"
               disabled={profilesReadOnly}
               onPress={() => {
@@ -152,24 +188,27 @@ export function ProfilesScreen() {
           </View>
 
           {profilesReadOnly && (
-            <View style={styles.readOnlyBanner}>
+            <View accessibilityLabel={UI_STATE_COPY.blocked.announcement} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.readOnlyBanner}>
               <Text style={styles.readOnlyTitle}>命主数据只读</Text>
               <Text style={styles.readOnlyText}>这份数据由更新版本写入，当前版本不会覆盖它。请先升级应用后再编辑或删除。</Text>
             </View>
           )}
+          {!!error && !showForm && <Text accessibilityLabel={`错误：${error}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.globalError}>{error}</Text>}
 
           {showForm && (
-            <View style={styles.formPanel}>
-              <Text style={styles.formTitle}>{editingId ? '编辑命主' : '建立命主'}</Text>
+            <View accessibilityLabel="命主资料表单" style={styles.formPanel} testID="profiles-form">
+              <Text accessibilityRole="header" style={styles.formTitle}>{editingId ? '编辑命主' : '建立命主'}</Text>
               <Text style={styles.formHint}>不知道具体时辰可以关闭“时辰已知”，我们不会自动猜测。</Text>
 
               <Text style={styles.label}>称呼</Text>
-              <TextInput accessibilityLabel="命主称呼" onChangeText={setName} placeholder="例如：我、妈妈、小林" placeholderTextColor="#65736D" style={styles.input} value={name} />
+              <TextInput accessibilityLabel="命主称呼" autoComplete="name" onChangeText={setName} onSubmitEditing={() => birthDateInputRef.current?.focus()} placeholder="例如：我、妈妈、小林" placeholderTextColor="#65736D" ref={nameInputRef} returnKeyType="next" style={styles.input} textContentType="name" value={name} />
 
               <Text style={styles.label}>关系</Text>
-              <View style={styles.chipRow}>
+              <View accessibilityLabel="命主关系" accessibilityRole="radiogroup" style={styles.chipRow}>
                 {relationships.map((item) => (
                   <Pressable
+                    accessibilityHint="选择命主与自己的关系。"
+                    accessibilityLabel={`关系：${item}`}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: relationship === item }}
                     key={item}
@@ -181,9 +220,11 @@ export function ProfilesScreen() {
               </View>
 
               <Text style={styles.label}>历法</Text>
-              <View style={styles.segment}>
+              <View accessibilityLabel="出生历法" accessibilityRole="radiogroup" style={styles.segment}>
                 {(['solar', 'lunar'] as const).map((item) => (
                   <Pressable
+                    accessibilityHint="选择用于输入出生日期的历法。"
+                    accessibilityLabel={item === 'solar' ? '公历' : '农历'}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: calendar === item }}
                     key={item}
@@ -202,6 +243,7 @@ export function ProfilesScreen() {
                   </View>
                   <Switch
                     accessibilityLabel="农历出生月是否为闰月"
+                    accessibilityHint="只有农历生日明确写有闰字时才开启。"
                     onValueChange={setIsLeapMonth}
                     thumbColor={isLeapMonth ? palette.paleBrass : palette.ashGreen}
                     trackColor={{ false: palette.jadeMist, true: palette.patina }}
@@ -211,9 +253,11 @@ export function ProfilesScreen() {
               )}
 
               <Text style={styles.label}>排盘性别</Text>
-              <View style={styles.segment}>
+              <View accessibilityLabel="排盘性别" accessibilityRole="radiogroup" style={styles.segment}>
                 {(['female', 'male'] as const).map((item) => (
                   <Pressable
+                    accessibilityHint="选择用于排盘的性别参数。"
+                    accessibilityLabel={item === 'female' ? '女' : '男'}
                     accessibilityRole="radio"
                     accessibilityState={{ selected: gender === item }}
                     key={item}
@@ -227,7 +271,7 @@ export function ProfilesScreen() {
               </View>
 
               <Text style={styles.label}>出生日期</Text>
-              <TextInput accessibilityLabel="出生日期" keyboardType="numbers-and-punctuation" onChangeText={setBirthDate} placeholder="1998-08-20" placeholderTextColor="#65736D" style={styles.input} value={birthDate} />
+              <TextInput accessibilityLabel="出生日期" keyboardType="numbers-and-punctuation" onChangeText={setBirthDate} onSubmitEditing={() => timeKnown ? birthTimeInputRef.current?.focus() : birthCityInputRef.current?.focus()} placeholder="1998-08-20" placeholderTextColor="#65736D" ref={birthDateInputRef} returnKeyType="next" style={styles.input} value={birthDate} />
 
               <View style={styles.switchRow}>
                 <View style={styles.switchCopy}>
@@ -236,6 +280,7 @@ export function ProfilesScreen() {
                 </View>
                 <Switch
                   accessibilityLabel="出生时辰是否已知"
+                  accessibilityHint="关闭后仅保留日级别信息，需要准确时辰的模块会明确提示。"
                   onValueChange={setTimeKnown}
                   thumbColor={timeKnown ? palette.paleBrass : palette.ashGreen}
                   trackColor={{ false: palette.jadeMist, true: palette.patina }}
@@ -246,25 +291,37 @@ export function ProfilesScreen() {
               {timeKnown && (
                 <>
                   <Text style={styles.label}>出生时间</Text>
-                  <TextInput accessibilityLabel="出生时间" keyboardType="numbers-and-punctuation" onChangeText={setBirthTime} placeholder="20:30" placeholderTextColor="#65736D" style={styles.input} value={birthTime} />
+                  <TextInput accessibilityLabel="出生时间" keyboardType="numbers-and-punctuation" onChangeText={setBirthTime} onSubmitEditing={() => birthCityInputRef.current?.focus()} placeholder="20:30" placeholderTextColor="#65736D" ref={birthTimeInputRef} returnKeyType="next" style={styles.input} value={birthTime} />
                 </>
               )}
 
               <Text style={styles.label}>出生城市</Text>
-              <TextInput accessibilityLabel="出生城市" onChangeText={setBirthCity} placeholder="例如：广东省深圳市" placeholderTextColor="#65736D" style={styles.input} value={birthCity} />
+              <TextInput accessibilityLabel="出生城市" autoComplete="street-address" onChangeText={setBirthCity} onSubmitEditing={() => void save()} placeholder="例如：广东省深圳市" placeholderTextColor="#65736D" ref={birthCityInputRef} returnKeyType="done" style={styles.input} value={birthCity} />
+              <Text style={[styles.cityStatus, cityMatch ? styles.cityStatusMatched : styles.cityStatusUnknown]}>
+                {cityMatch
+                  ? `已匹配 ${cityMatch.province} · ${cityMatch.city}；中心坐标仅作近似，记录会保留 locationId。`
+                  : '未命中首发离线城市表时不会按包含关系猜测；需要精确星盘请改选下方城市。'}
+              </Text>
+              <View accessibilityLabel="首发离线城市建议" accessibilityRole="list" style={styles.citySuggestions}>
+                {citySuggestions.map((city) => (
+                  <Pressable accessibilityHint={`将出生城市设为${city.province}${city.name}。`} accessibilityLabel={`选择${city.province}${city.name}`} accessibilityRole="button" key={city.locationId} onPress={() => setBirthCity(city.name)} style={({ pressed }) => [styles.citySuggestion, pressed && styles.pressed]}>
+                    <Text style={styles.citySuggestionText}>{city.city}</Text>
+                  </Pressable>
+                ))}
+              </View>
 
-              {!!error && <Text style={styles.error}>{error}</Text>}
-              <ActionButton accessibilityLabel={editingId ? '保存命主修改' : '保存命主'} onPress={save} style={styles.saveButton}>{editingId ? '保存修改' : '保存命主'}</ActionButton>
+              {!!error && <Text accessibilityLabel={`错误：${error}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{error}</Text>}
+              <ActionButton accessibilityLabel={editingId ? '保存命主修改' : '保存命主'} accessibilityHint="验证资料后保存在当前设备。" disabled={profilesReadOnly} onPress={save} style={styles.saveButton}>{editingId ? '保存修改' : '保存命主'}</ActionButton>
             </View>
           )}
 
           <View style={styles.listHeader}>
-            <Text style={styles.listTitle}>已保存</Text>
+            <Text accessibilityRole="header" style={styles.listTitle}>已保存</Text>
             <Text style={styles.listCount}>{profiles.length} 位</Text>
           </View>
 
           {profiles.length === 0 ? (
-            <View style={styles.emptyState}>
+            <View accessibilityLabel={`${UI_STATE_COPY.empty.announcement} 建立第一位命主后，可以在四种体系间复用出生资料。`} accessibilityRole="text" style={styles.emptyState}>
               <Text style={styles.emptyGlyph}>命</Text>
               <Text style={styles.emptyTitle}>还没有命主</Text>
               <Text style={styles.emptyText}>建立第一位命主后，就可以在四种体系间复用出生资料。</Text>
@@ -277,10 +334,11 @@ export function ProfilesScreen() {
                   <View style={[styles.profileCard, active && styles.profileCardActive]} key={profile.id}>
                     <Pressable
                       accessibilityLabel={`选择命主${profile.name}`}
+                      accessibilityHint={`${profile.birthDate}，${profile.birthCity}。选择后用于后续排盘。`}
                       accessibilityRole="radio"
                       accessibilityState={{ selected: active }}
                       disabled={selectionReadOnly}
-                      onPress={() => selectProfile(profile.id)}
+                      onPress={() => void handleSelectProfile(profile.id)}
                       style={({ pressed }) => [styles.profileSelectArea, pressed && styles.pressed]}>
                       <View style={styles.profileMonogram}><Text style={styles.profileMonogramText}>{profile.name.slice(0, 1)}</Text></View>
                       <View style={styles.profileCopy}>
@@ -293,10 +351,10 @@ export function ProfilesScreen() {
                       <View style={[styles.selection, active && styles.selectionActive]} />
                     </Pressable>
                     <View style={styles.profileActions}>
-                      <Pressable accessibilityLabel={`编辑命主${profile.name}`} accessibilityRole="button" disabled={profilesReadOnly} onPress={() => startEdit(profile)} style={({ pressed }) => [styles.profileAction, profilesReadOnly && styles.disabled, pressed && styles.pressed]}>
+                      <Pressable accessibilityLabel={`编辑命主${profile.name}`} accessibilityHint="打开并填充该命主资料。" accessibilityRole="button" disabled={profilesReadOnly} onPress={() => startEdit(profile)} style={({ pressed }) => [styles.profileAction, profilesReadOnly && styles.disabled, pressed && styles.pressed]}>
                         <Text style={styles.profileActionText}>编辑</Text>
                       </Pressable>
-                      <Pressable accessibilityLabel={`删除命主${profile.name}`} accessibilityRole="button" disabled={profileDeleteBlocked} onPress={() => confirmDelete(profile)} style={({ pressed }) => [styles.profileAction, styles.deleteAction, profileDeleteBlocked && styles.disabled, pressed && styles.pressed]}>
+                      <Pressable accessibilityLabel={`删除命主${profile.name}`} accessibilityHint="删除该命主及其关联排盘记录，操作无法撤销。" accessibilityRole="button" disabled={profileDeleteBlocked} onPress={() => confirmDelete(profile)} style={({ pressed }) => [styles.profileAction, styles.deleteAction, profileDeleteBlocked && styles.disabled, pressed && styles.pressed]}>
                         <Text style={[styles.profileActionText, styles.deleteActionText]}>删除</Text>
                       </Pressable>
                     </View>
@@ -331,13 +389,19 @@ const styles = StyleSheet.create({
   formHint: { marginTop: spacing.x2, marginBottom: spacing.x5, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 20 },
   label: { marginTop: spacing.x4, marginBottom: spacing.x2, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 13 },
   input: { minHeight: 48, borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, backgroundColor: palette.obsidian, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 16, paddingHorizontal: spacing.x4 },
+  cityStatus: { marginTop: spacing.x2, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
+  cityStatusMatched: { color: palette.patina },
+  cityStatusUnknown: { color: '#C8A38E' },
+  citySuggestions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x1, marginTop: spacing.x2 },
+  citySuggestion: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.pill, paddingHorizontal: spacing.x3 },
+  citySuggestionText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2 },
-  chip: { minHeight: 40, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.pill, paddingHorizontal: spacing.x4 },
+  chip: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.pill, paddingHorizontal: spacing.x4 },
   chipSelected: { borderColor: palette.brass, backgroundColor: palette.brassGlow },
   chipText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12 },
   chipTextSelected: { color: palette.paleBrass },
   segment: { flexDirection: 'row', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, padding: 3, backgroundColor: palette.obsidian },
-  segmentItem: { flex: 1, minHeight: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
+  segmentItem: { flex: 1, minHeight: layout.minTouch, alignItems: 'center', justifyContent: 'center', borderRadius: 6 },
   segmentItemSelected: { backgroundColor: palette.jadeMist },
   segmentText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12 },
   segmentTextSelected: { color: palette.ricePaper },
@@ -345,7 +409,8 @@ const styles = StyleSheet.create({
   switchCopy: { flex: 1 },
   switchLabel: { color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 13 },
   switchHint: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 17 },
-  error: { marginTop: spacing.x4, color: '#D88978', fontFamily: fontFamilies.body, fontSize: 12 },
+  error: { marginTop: spacing.x4, color: '#D88978', fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 18 },
+  globalError: { marginTop: spacing.x4, color: '#D88978', fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 18 },
   saveButton: { marginTop: spacing.x5 },
   listHeader: { marginTop: spacing.x10, marginBottom: spacing.x4, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   listTitle: { color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 21, letterSpacing: 1 },
@@ -368,7 +433,7 @@ const styles = StyleSheet.create({
   selection: { width: 10, height: 10, borderRadius: 5, borderWidth: 1, borderColor: palette.ashGreen },
   selectionActive: { borderColor: palette.brass, backgroundColor: palette.brass },
   profileActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: spacing.x2, borderTopWidth: 1, borderColor: palette.hairline, marginTop: spacing.x3, paddingTop: spacing.x2 },
-  profileAction: { minHeight: 36, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
+  profileAction: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   profileActionText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },
   deleteAction: { borderColor: 'rgba(216, 137, 120, 0.42)' },
   deleteActionText: { color: '#E4A89A' },
