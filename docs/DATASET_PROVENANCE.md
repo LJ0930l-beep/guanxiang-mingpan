@@ -101,3 +101,5 @@ P5-B2 已完成一手网页/GitHub 证据收敛，但没有证明任何单一来
 一次性技术交付没有获得新的行政数据授权，因此没有向生产表导入记录，也没有修改 `locationId`、坐标、别名、历史映射或 `datasetVersion`。当前 35 条 prototype 城市仍只支持精确规范化命中；未知城市继续 fail-closed，不能用相邻城市或中心点猜测。P5-B Level A 仍为 **BLOCKED**，阻断原因是全国地级行政区完整覆盖、逐条行政/坐标/别名血缘以及商业离线再分发许可均未同时证明。
 
 本轮只补齐了产品/发布文档对数据边界的引用：`docs/DATA_PROCESSING_INVENTORY.md` 明确地点字段及其本地保存范围，`docs/PRIVACY_POLICY_DRAFT.md` 与 `docs/USER_AGREEMENT_DRAFT.md` 明确地点数据不代表精确出生地或真太阳时精度。后续若收到书面许可，仍需独立 pilot import、hash/schema/test/回滚审查，不得直接把候选来源标为 release-ready。
+
+本轮最终工程复核仍未改变上述数据边界：P5-B2 专项 8/8、统一 `npm test` 215/215，远端 Actions [run 33767015750](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750) 全部 Success。该证据只证明审计合同和 fail-closed tooling 可重复，不证明已取得数据再分发授权；全国覆盖继续 BLOCKED。

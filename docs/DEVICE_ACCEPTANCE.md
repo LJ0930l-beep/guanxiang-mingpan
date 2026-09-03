@@ -63,3 +63,5 @@ P3-F 的文件名契约和 Web/iPhone 共用 MIME 类型由 `tests/backup-file-c
 页面级 P5-C 已将四术输入、校验、生成、结果、证据展开、保存、历史复盘、反馈和失败恢复接入统一状态文案；读屏、键盘、字体缩放、减少动态效果和 44pt 触控目标有自动化结构回归。375/768/1024/1440 Web viewport 需按 `docs/UX_ACCEPTANCE.md` 逐项手工记录，不能用静态 DOM 或 Web 截图替代 VoiceOver/iPhone 签字。
 
 P5-H 当前交付到签名/上传前：`app.json` 已有竖屏、深色、Bundle ID 配置、图标与 splash，未声明敏感权限；Apple Developer、签名证书、实体设备和 TestFlight 权限尚未提供，因此本文件不记录 iPhone PASS。
+
+最终本机复核（2026-09-03）仍仅作为工程基线：`npm run test:performance` 3/3，观测中位数为八字 5.29ms、六爻 1.44ms、紫微 23.79ms、星盘 6.13ms、历史筛选 4.12ms、迁移 2.42ms、普通备份往返 4.43ms、错误 fail-fast 0.10ms；`npm test` 215/215。远端 Actions [run 33767015750](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750) 的 Web export 与验证也已 Success。以上不能替代小屏/大屏 iPhone、VoiceOver、动态文字、系统文件 App、内存/冷启动和电量实测；P5-H 仍 BLOCKED。

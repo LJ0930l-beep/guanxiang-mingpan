@@ -33,3 +33,7 @@
 ## 当前证据边界
 
 CUA/浏览器截图只能证明当前 Web 会话的视觉与交互，不等同于 iPhone、VoiceOver、Safari 私有存储和系统分享面板验收。发布前必须补齐真实设备证据。
+
+## 最终自动化证据（2026-09-03）
+
+`tests/p5-c-page-accessibility.regression.mjs` 11/11、`npm test` 215/215；记录页非嵌套 Pressable、未知 slug、深层路由安全返回、future-schema 只读提示均有回归断言。远端 Actions [run 33767015750](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750) 的 Regression、Typecheck、Lint、Web export 与 Verify web export 全部 Success。Web 375×812、768×1024、1024×768、1440×900 的手工矩阵，以及 iPhone/VoiceOver 的真实设备矩阵，仍需外部验收记录，不能从静态或 CUA 证据推导 PASS。

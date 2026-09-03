@@ -659,3 +659,26 @@ P5-B2 最小实现批的 DoD 是 source-decision/audit tooling、逐行血缘与
 | P5-I App Store | BLOCKED | 元数据/截图流程/隐私标签/审核备注草案完成；商店账号、主体、真实截图、正式 URL 与签字缺失。 |
 
 工程状态为 **技术发布候选 RC**，不是正式公开发布。主管须在代码验收后依据本矩阵处理外部 blocker；任何 blocked 项不得改写为 PASS。
+
+### 本轮最终交付证据（2026-09-03）
+
+- 本地 commit：`e2689527e2b2a642e7d2f894013b38b913f583c6`，parent `89a27ce68584de3c7ed7f51e3e9aacc6d6073e44`；远端等价 commit：`052634c1066479d9910f37d8e45d5d3a0ad0f903`，remote parent `fbb1bf4b65014efa4af6eaacd332ec5a36de07dd`。本批 34 个 changed paths，包含 P5-C 页面修复、P5-F/G/H/I 交付文档与配置、Web 离线安全文件和回归增强。
+- 本机质量门：`npm test` **215/215**；`tests/p5-c-page-accessibility.regression.mjs` **11/11**；`tests/p5-city-source-decision.regression.mjs` **8/8**；`npm run test:performance` **3/3**；`tests/p5-security.regression.mjs` **4/4**；`npm run typecheck`、`npm run lint`、`npm run security:scan`、`npm run security:audit`、`git diff --check` 均 PASS。
+- 性能基准（Asia/Shanghai、固定输入）：八字 5.29ms、六爻 1.44ms、紫微 23.79ms、星盘 6.13ms；历史筛选 4.12ms、迁移 2.42ms、普通备份往返 4.43ms、错误 fail-fast 0.10ms，均低于 `src/services/performance-budget.ts` 阈值。该结果不是低端 iPhone 承诺。
+- `npm audit --omit=dev` 已重新执行，原生命令 exit 1（存在 advisories）：0 critical / 9 high / 17 moderate / 0 low（26 total）。仓库 `npm run security:audit` 仅将 critical 作为当前工程门，P5-E 仍 BLOCKED，不能据此宣称可公开发布。
+- `npm run build:web` PASS，静态导出 `/`、`/home`、`/profiles`、`/records`、`/settings`、`/privacy`、`/terms`、`/_sitemap`、`/+not-found`、`/module/[slug]` 共 **10 routes**；`npm run verify:web` PASS，public manifest/robots/offline/sw/_headers/favicon 均存在。
+- GitHub Actions [run 33767015750](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750) / [validate job 100687381765](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750/job/100687381765) 为 `completed/success`。`Install dependencies`、`Secret scan`、`Production audit gate`、`Typecheck`、`Lint`、`Regression tests`、`Web export`、`Verify web export` **全部 completed/success**，Web Export 实际执行且未 skip。
+
+### 统一 external blockers
+
+| 负责人 | 需要提供 | 解除的门 |
+| --- | --- | --- |
+| 数据/法务负责人 | 全国行政区划、代码、坐标、别名、历史变更的逐行 source/version/hash/retrievedAt/license/attribution，以及商业离线再分发书面授权或法务结论 | P5-B |
+| 安全负责人 | 9 high/17 moderate 依赖漏洞的兼容升级方案，或逐项风险接受与上线签字 | P5-E |
+| 运营/法务负责人 | 法律主体、正式隐私/协议文本、联系方式、保留期限、未成年人规则、备案/跨境判断和正式 URL | P5-F |
+| Web 发布负责人 | 域名、HTTPS 托管账号、公开支持/隐私 URL、浏览器/离线验收和回滚负责人 | P5-G |
+| Apple 发布负责人 | Apple Developer 团队、Bundle ID 确认、证书/Provisioning Profile、macOS/Xcode 或 EAS 权限、实体 iPhone、TestFlight 访问 | P5-H |
+| 商店/法务负责人 | App Store Connect、主体/商标、真实签名截图、年龄分级、隐私营养标签与审核签字 | P5-I |
+| 产品负责人（后续 Phase 6/7） | 是否首发接入真实短信/Apple/微信账号、支付、广告、AI、云同步；相应供应商和数据处理授权 | 后续商业/账号能力 |
+
+在上述条件补齐前，发布等级保持 **技术 RC，非公开发布**；不得将工程 PASS 改写为 Level A 全部 PASS。

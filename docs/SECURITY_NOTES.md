@@ -90,3 +90,5 @@ metadata/public-file verification, and CI steps that run Web Export with
 `if: ${{ always() }}`. Secret scanning and the wrapper gate are green locally;
 they do not replace dependency remediation, signing-key custody or external
 penetration review.
+
+Final delivery evidence: remote commit `052634c1066479d9910f37d8e45d5d3a0ad0f903` (local `e2689527e2b2a642e7d2f894013b38b913f583c6`) passed GitHub Actions [run 33767015750](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750), including Install dependencies, Secret scan, Production audit gate, Typecheck, Lint, Regression tests, Web export and Verify web export. Every step completed successfully; Web Export was not skipped. This proves the reproducible engineering gate only, not that the outstanding high/moderate advisories are acceptable for a public release.

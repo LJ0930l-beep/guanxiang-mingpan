@@ -432,3 +432,33 @@ P5-B2 当前交接范围是来源收敛和 fail-closed source-decision contract�
 本轮依据总规划连续完成所有不依赖外部账号、证书、法律授权、域名备案或实体设备签字的开发工作。四术页面从输入校验到生成、结果、证据、解释、保存、历史复盘、反馈和失败恢复可操作；统一状态 copy 覆盖 loading/empty/failure/partial/blocked/unknown；本地数据说明、隐私政策/用户协议入口、备份/删除/导出边界已接入。Web 生产导出扩展为 10 routes，含 SEO 元数据、PWA manifest/service worker、离线页、robots 预发布 noindex、安全头和部署/回滚文档。iOS 配置、商店文案/审核/隐私标签草案和签名前清单已交付。
 
 城市数据保持 35 条 prototype、精确匹配与未知 fail-closed，`p5-a4a-cross-city-coverage` 未关闭；没有伪造行政代码、坐标/别名来源或商业离线许可。没有接入真实登录、AI、广告、支付、云同步或推送。当前级别为 **技术发布候选 RC（外部条件阻断）**，待主管独立验收。
+
+### 最终交接证据（2026-09-03）
+
+本轮最终 local commit 为 `e2689527e2b2a642e7d2f894013b38b913f583c6`（parent `89a27ce68584de3c7ed7f51e3e9aacc6d6073e44`），remote 为 `052634c1066479d9910f37d8e45d5d3a0ad0f903`（parent `fbb1bf4b65014efa4af6eaacd332ec5a36de07dd`）。交付包含四术页面级状态/错误恢复/安全返回与非嵌套记录卡片、P5-B2 fail-closed 来源合同、P5-D 固定 benchmark、P5-E secret/audit/CSP/构建产物门、P5-F 本地数据/政策草案、P5-G 10-route Web/PWA/offline/安全头、P5-H 签名前 iOS/EAS 配置和 P5-I 商店材料草案。
+
+质量门为：`npm test` **215/215**；P5-C **11/11**、P5-B2 **8/8**、P5-D **3/3**、P5-E/F/G/H **4/4**；typecheck、lint、secret scan、security audit wrapper、`git diff --check` PASS；`npm run build:web`/`verify:web` PASS（10 routes）。原生 `npm audit --omit=dev` 重新执行为 exit 1，0 critical / 9 high / 17 moderate / 0 low（26 total）。GitHub Actions [33767015750](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750) 的 validate job [100687381765](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750/job/100687381765) 全部 Success，Web Export 实际执行。
+
+#### 交接产物索引
+
+| 领域 | 产物 |
+| --- | --- |
+| Web | `src/app/+html.tsx`、`public/manifest.webmanifest`、`public/sw.js`、`public/offline.html`、`public/_headers`、`scripts/verify-web-export.mjs`、`docs/WEB_RELEASE.md` |
+| iPhone | `app.json`、`eas.json`、`docs/IOS_RELEASE.md`、`docs/DEVICE_ACCEPTANCE.md` |
+| UX/a11y | `src/constants/ui-copy.ts`、`src/components/state-panel.tsx`、`tests/p5-c-page-accessibility.regression.mjs`、`docs/UX_ACCEPTANCE.md` |
+| 安全 | `scripts/scan-secrets.mjs`、`scripts/production-audit.mjs`、`docs/SECURITY_NOTES.md` |
+| 隐私/合规 | `src/app/privacy.tsx`、`src/app/terms.tsx`、`src/components/local-data-notice.tsx`、`docs/PRIVACY_POLICY_DRAFT.md`、`docs/USER_AGREEMENT_DRAFT.md`、`docs/DATA_PROCESSING_INVENTORY.md` |
+| 商店 | `docs/APP_STORE_METADATA_DRAFT.md` |
+
+#### 统一 external blockers
+
+| 负责人 | 阻塞项 | 当前状态 |
+| --- | --- | --- |
+| 数据/法务 | 全国数据逐行来源、商业离线许可、行政历史映射 | P5-B BLOCKED；35 条 prototype 保持不变 |
+| 安全负责人 | high/moderate 依赖修复或书面风险接受 | P5-E BLOCKED；0 critical 但 9 high/17 moderate |
+| 运营/法务 | 主体、正式政策、联系方式、备案/未成年人规则 | P5-F BLOCKED；当前仅开发草案 |
+| Web 发布 | 域名、HTTPS、托管、公开 URL、真实浏览器/回滚验收 | P5-G 工程 PASS，公开部署 BLOCKED |
+| Apple/设备 | Developer、证书、Bundle ID、实体 iPhone、TestFlight | P5-H BLOCKED |
+| 商店/法务 | App Store Connect、主体、截图、标签、审核签字 | P5-I BLOCKED |
+
+当前只能称 **技术 RC，非公开发布**。真实登录、订阅、单次付费、广告、AI、云同步和推送未接入，也没有被本轮文档冒充已上线。

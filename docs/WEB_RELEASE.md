@@ -35,3 +35,7 @@ npm run verify:web
 ## 不得从构建推导的结论
 
 静态导出不等于浏览器兼容、低网、VoiceOver、真实设备或 App Store 验收；这些仍需按 `docs/UX_ACCEPTANCE.md` 和 `docs/DEVICE_ACCEPTANCE.md` 签字。
+
+## 最终工程证据（2026-09-03）
+
+本地 `npm run build:web` 与 `npm run verify:web` 已通过，导出并验证 10 条路由及全部 public release files；统一 `npm test` 为 215/215。GitHub Actions [run 33767015750](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750) 的 `Web export` 和 `Verify web export` 均 `completed/success`，不是 skip。当前仍缺正式域名、HTTPS 托管、公开支持/隐私 URL、真实浏览器兼容签字和部署回滚负责人，因此本文件是部署前交付，不是上线证明。

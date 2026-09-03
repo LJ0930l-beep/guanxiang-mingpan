@@ -106,6 +106,12 @@ P5-A～P5-I 是 Level A 发布质量前置项。完成 Phase 5 后必须经过 O
 - 确定短信、微信、Apple 登录服务商
 - 确定支付、AI 模型及内容审核供应商
 - App Store 正式 Bundle ID、商标和上线主体
+
+## P5 最终技术交付（2026-09-03）
+
+一次性全量开发已完成所有无需外部账号、证书、数据授权、法律签字、域名备案或实体设备签字的工作。当前远端提交为 `052634c1066479d9910f37d8e45d5d3a0ad0f903`（对应本地 `e2689527e2b2a642e7d2f894013b38b913f583c6`），Actions run `33767015750` 已 `completed/success`；Install、Secret scan、Production audit、Typecheck、Lint、Regression、Web export、Verify web export 全部实际成功，Web Export 未 skip。统一回归 **215/215**，Web 静态导出 **10 routes**，原生 `npm audit --omit=dev` 为 0 critical / 9 high / 17 moderate / 0 low（26 total）。
+
+Level A 结果：P5-B/P5-E/P5-F/P5-H/P5-I 仍 BLOCKED（数据授权/依赖风险/正式法律主体/Apple 签名与真机/商店主体与真实截图）；P5-C/P5-D/P5-G 为工程 PASS，需外部 Web 浏览器、低端真机、VoiceOver 和部署签字。发布等级保持技术 RC，非公开发布。
 - [x] **P5-B2 来源决策审计 microbatch（fail-closed）**：新增纯 JSON `p5-b2-city-source-decision.v1` source-decision/audit contract 与 8 项回归；一手核查民政部行政区划版本/API/年度变更、GB/T 2260、GeoNames CC BY 4.0、modood、kk-418、adyliu、OSM/ODbL、Natural Earth。每条证据固定 URL、sourceVersion、sha256 hash、retrievedAt、license、attribution，并覆盖十维 authority/completeness/freshness/stableCodes/coordinates/aliases/history/licenseClarity/redistributionFit/operationalCost。因权威 MCA 数据商业离线再分发许可未证明，快照 `releaseDecision=BLOCKED`；不导入生产数据、不关闭 `p5-a4a-cross-city-coverage`。P5-C 可独立推进；本条不表示 P5-B 全国覆盖完成。
 P5-B2 审计交付证据：本地 `a58ca0b`（parent `6fe3f81`），远端 `57d87c706ca8e9501cefe0c5f11c9dd618ccd692`（parent `65b6bb7e6fcc94d1e324f86918263fcd2b100f9c`）；专项 8/8、统一 `npm test` 190/190、typecheck、lint、Web Export 8 routes、git diff check 均 PASS，GitHub Actions [run 33639738697](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697) / [validate job 100279504893](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697/job/100279504893) completed/success，Web Export 非 skip。生产 audit 仍为 0 critical/9 high/16 moderate/0 low；来源许可不足以解除 fail-closed。
 

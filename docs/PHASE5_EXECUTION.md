@@ -625,3 +625,11 @@ validator/回归拒绝重复 `locationId`/`adminCode`、canonical name 冲突、
 一次性授权已连续推进 P5-B～P5-I 的全部可离线完成项：P5-C 四术输入至保存/复盘与六状态 UX/a11y 已实现；P5-D 具备固定数据、阈值与回归 benchmark；P5-E 有密钥扫描、生产审计、CSP/构建验证和非 skip CI workflow；P5-F 有首次使用本地说明、隐私/协议草案、删除/导出/注销边界和数据处理清单；P5-G 有静态导出、10 routes、SEO/PWA/错误页/部署文档；P5-H/iOS 配置与验收清单到签名前；P5-I 有 App Store 文案、截图流程、年龄/隐私标签和审核备注草案。
 
 P5-B 仍严格 fail-closed：未取得全国行政数据与商业离线再分发书面授权，不导入或宣称完整覆盖。P5-H/P5-I 需要 Apple/商店账号、证书、真实设备和主体资料；P5-F/G 需要法律/域名/托管外部输入。故本项目当前是技术发布候选，不是可公开发布版本。
+
+### 最终工程证据与交接边界（2026-09-03）
+
+本轮最终 local commit 为 `e2689527e2b2a642e7d2f894013b38b913f583c6`（parent `89a27ce68584de3c7ed7f51e3e9aacc6d6073e44`），经推送映射为 remote `052634c1066479d9910f37d8e45d5d3a0ad0f903`（remote parent `fbb1bf4b65014efa4af6eaacd332ec5a36de07dd`），本批 34 paths。`npm test` **215/215**；P5-C 页面 **11/11**、P5-B2 来源 **8/8**、P5-D benchmark **3/3**、P5-E/F/G/H 专项 **4/4**；typecheck、lint、secret scan、工程 audit wrapper、`git diff --check` 均 PASS。原生 `npm audit --omit=dev` exit 1，生产基线为 **0 critical / 9 high / 17 moderate / 0 low（26 total）**，高/中危风险没有被隐藏。
+
+Web Export 已实际生成并验证 **10 routes**：`/`、`/home`、`/profiles`、`/records`、`/settings`、`/privacy`、`/terms`、`/_sitemap`、`/+not-found`、`/module/[slug]`；`verify:web` 同时检查 manifest、预发布 noindex、offline、service worker、security headers 和 favicon。GitHub Actions [run 33767015750](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750) / [validate job 100687381765](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33767015750/job/100687381765) 的 Install、Secret scan、Audit、Typecheck、Lint、Regression、Web export、Verify web export 均 `completed/success`，Web export 非 skip。
+
+P5-B、P5-E、P5-F、P5-H、P5-I 仍是 BLOCKED：分别缺数据授权/全国覆盖证据、依赖风险处置、正式主体与法律文本、Apple 签名/真机/TestFlight、商店主体/真实截图/正式 URL。P5-C、P5-D、P5-G 仅表示工程自动化门通过；Web 浏览器手工矩阵、低端真机和 VoiceOver 仍按 `docs/UX_ACCEPTANCE.md`/`docs/DEVICE_ACCEPTANCE.md` 待外部验收。
