@@ -3,7 +3,7 @@ import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const projectRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
-const scanRoots = ['src', 'scripts', '.github', 'app.json', 'package.json', 'public'];
+const scanRoots = ['src', 'scripts', '.github', 'app.json', 'eas.json', 'package.json', 'public'];
 const secretPatterns = [
   /-----BEGIN [^-]*(?:PRIVATE|RSA|EC|OPENSSH) KEY-----/i,
   /\b(?:gh[pousr]|github_pat)_[A-Za-z0-9_]{20,}/,

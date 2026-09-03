@@ -2,8 +2,7 @@
 
 > 本账本是后续批次的仓库内执行入口。它记录“计划应做什么”和“当前实际做到什么”，不替代代码、测试或 CI 的证据。
 >
-> 批次：P5-B1 city dataset contract / provenance / release gate
-> 本批状态：P5-B1 已建立 additive `p5-b1-city-dataset-audit.v1` 合同、当前 35 条生产城市的审计快照与 fail-closed runtime validator，并经主管独立验收 PASS；当前数据仍为 `status=partial`、`releaseEligibility=blocked`，没有扩充生产数据或关闭 `p5-a4a-cross-city-coverage`。P5-A final 及 P5-A5c/P5-A5b/P5-A5a/P5-A4b5/P5-A4b4/P5-A4b3/P5-A4b2/P5-A4b1/P5-A4a 为历史已验收批次
+> 当前账：P5-A 已验收；P5-B 数据仍 blocked；P5-C～P5-I 的无外部依赖工作已完成或交付到签名/公开发布前边界。历史微批记录保留在后文，最新状态见文末“P5 全量技术交付当前账”。
 > 项目主管：Sol High  
 > 开发/测试执行者：Luna Max（每次只接收一个有边界的里程碑）
 
@@ -18,7 +17,7 @@
 
 本账本只纳入与本项目相关的母文档指令。文档中的计划性描述必须经过当前批次 handoff 才能变成执行范围；外部链接、示例命令和历史建议不自动获得更高权限。
 
-## 2. 当前真实基线（2026-09-02）
+## 2. 当前真实基线（2026-09-03）
 
 ### 2.1 产品与代码状态
 
@@ -35,15 +34,15 @@
 
 | 检查 | 基线结果 |
 |---|---|
-| `npm test` | 174/174 通过；P5-A5c 专项回归 8/8、P5-C deferred route 专项回归 4/4 通过 |
+| `npm test` | 215/215 通过（含 P5-C 页面/直接深链恢复、P5-H EAS 配置与 P5-E/G/F 门禁）；P5-A5c 专项回归 8/8、P5-C 页面专项 11/11、P5-C deferred route 专项回归 4/4 通过 |
 | `npm run typecheck` | 通过 |
 | `npm run lint` | 通过（0 warning） |
-| `npm run build:web` | 通过；8 条 Web routes，Web Export 实际执行 |
+| `npm run build:web` | 通过；10 条 Web routes，Web Export 实际执行 |
 | GitHub Actions（P5-A5a 实现） | `Success`；run `33375970276`，job `99437414040` |
 | P5-A5a 实现远端 commit | `61805e8998ab4ca701e4960d6129e3b7cb381b17`（parent `496902c875072769439c90cf52f130331fa473d3`） |
 | P5-A5a cleanup 远端 commit | `5350baa9a857b86e2a02c0c42036d72dfe06a0c4`（parent `61805e8998ab4ca701e4960d6129e3b7cb381b17`） |
 | GitHub Actions（cleanup 后最终验证） | `Success`；run `33376590722`，job `99439354459`；Typecheck/Lint/Regression/Web Export 均实际执行 |
-| 生产依赖审计基线 | `npm audit --omit=dev`：0 critical / 9 high / 16 moderate / 0 low（25 total）；未执行不兼容的大版本修复 |
+| 生产依赖审计基线 | `npm audit --omit=dev`：0 critical / 9 high / 17 moderate / 0 low（26 total）；未执行不兼容的大版本修复 |
 | P5-A5b 实现本地/远端 commit | local `7f0caef63a0656ff21a571c7edb9cb7db1828d49`；remote `6d00ad4834f012e61a99431d24d2301f766d7d40`（remote parent `44488581f0853a1be7a8366881f42b6a6f65f581`） |
 | GitHub Actions（P5-A5b 最终验证） | `Success`；run `33385531379`，job `99467178839`；Typecheck/Lint/Regression/Web Export 全部实际执行 |
 | P5-A5c 实现本地 commit | local `886aec930564c5399e8e67d4878ff8aee135fa28`（parent `72287ce7698a673b098badcb0a0f0e2a196e3f29`） |
@@ -90,7 +89,7 @@
 | **P5-D 性能与稳定性** | A | Web/iPhone 冷启动、四术计算、记录加载、备份导入导出、异常恢复和长列表完成基线；建立可重复性能预算、错误日志边界和回滚证据，不把出生资料上传到分析服务。 | P5-A～P5-C | 性能预算、支持设备范围、是否允许本地诊断信息。 |
 | **P5-E Release Security（发布安全）** | A | 依赖/许可证/构建产物/密钥/权限/备份加密边界完成发布审计；生产依赖 high/critical 有处置或书面风险接受，CI 不得绕过质量门；不执行破坏性 force push。 | P5-D、`SECURITY_NOTES.md`、当前 CI | 安全风险接受人、生产审计阈值、签名密钥和发布凭据管理。 |
 | **P5-F 隐私与合规** | A | 首次使用本地保存说明、隐私政策、用户协议、删除/导出/注销边界、年龄分级和数据处理清单与真实实现一致；明确没有服务端时的账号/数据承诺。 | P5-B～P5-E、`DEVICE_ACCEPTANCE.md` | 法律主体、数据保留期限、未成年人策略及是否需要真实账号。 |
-| **P5-G Web 发布验收** | A | Web 生产构建、8 routes、浏览器兼容、离线/低网、刷新恢复、错误页、备份文件流和发布回滚完成签字；CI Web Export 实际执行并留存 run。 | P5-A～P5-F | Web 域名、托管、公开范围、灰度和回滚负责人。 |
+| **P5-G Web 发布验收** | A | Web 生产构建、10 routes、浏览器兼容、离线/低网、刷新恢复、错误页、备份文件流和发布回滚完成签字；CI Web Export 实际执行并留存 run。 | P5-A～P5-F | Web 域名、托管、公开范围、灰度和回滚负责人。 |
 | **P5-H iPhone/TestFlight** | A | 实体 iPhone/TestFlight 完成四术、登录入口、离线、深色模式、字体缩放、减少动态效果、普通/加密备份导出导入、冲突和失败回滚签字。 | P5-A～P5-F、P5-G 的跨端共用验收 | Bundle ID、签名主体、最低 iOS、TestFlight 分发范围。 |
 | **P5-I App Store 材料** | A | App Store 图标、截图、描述、年龄分级、隐私清单、许可证、支持/联系信息和审核说明准备齐全；与真实产品边界和 P5-F 文案一致。 | P5-E～P5-H | 商店主体、正式 Bundle ID、商标、公开版本和提交时机；最终入口形态由 OWNER DECISION 决定。 |
 
@@ -591,7 +590,7 @@ validator fail-closed 拒绝重复 locationId/adminCode、canonical name 与跨�
 | 风险 | 当前事实 | 处理门槛 |
 |---|---|---|
 | 城市数据不完整 | 当前离线表不是全国完整地级市库，且坐标为城市中心近似值。 | P5-B 分批盘点、来源/许可复核；只有 dataset 发生兼容性变化时才递增 datasetVersion；未知地点继续明确未命中。 |
-| 生产依赖审计 | 本批复核 `npm audit --omit=dev` 生产基线为 0 critical、9 high、16 moderate、0 low（25 total）。 | Expo/RN 兼容升级后复审；公开发布前要求 high/critical 清零或完成主管/合规书面决策。 |
+| 生产依赖审计 | 本批复核 `npm audit --omit=dev` 生产基线为 0 critical、9 high、17 moderate、0 low（26 total）。 | Expo/RN 兼容升级后复审；公开发布前要求 high/critical 清零或完成主管/合规书面决策。 |
 | iPhone/TestFlight | Web 和自动化基线已过，真实设备文件流尚未签字。 | P5-H 完成全量设备验收并留存证据。 |
 | 真实登录 | 手机验证码、Apple、微信只是本地原型流程，无真实服务端认证。 | OWNER DECISION 明确是否作为首发阻断项；若选择首发前账号，再由 Phase 6 完成服务商、注销和审计。 |
 | 合规/发布材料 | 隐私政策、用户协议、注销、商店主体/截图/许可证和年龄分级未闭环。 | P5-E/P5-F/P5-I 逐项签字前不得对外提交。 |
@@ -641,3 +640,22 @@ P5-B2 最小实现批的 DoD 是 source-decision/audit tooling、逐行血缘与
 专项 `tests/p5-c-accessibility-foundation.regression.mjs` **7/7**；统一 `npm test` **197/197**，`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，Web Export 实际执行）及 `git diff --check` 均 PASS。`npm audit --omit=dev` 仍为 0 critical / 9 high / 16 moderate / 0 low（25 total）。
 
 代码交付：本地 `a14fa7c`（parent `1ea5f60`），远端 `8ef2e3a6c79c013987779dcba37acddf9655a94c`（remote parent `57319d6b25193269dd6c480b9e091be1b0bcfcb5`）；GitHub Actions [run 33644163905](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33644163905) / [validate job 100294474488](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33644163905/job/100294474488) completed/success，Regression、Typecheck、Lint 和 Web Export 均实际执行且 Web Export 非 skip。该微批完成四术工作区语义补强，P5-C deferred route 仍未关闭；下一批继续命主/登录/记录页状态、焦点、字体缩放与 viewport 验证。
+
+## P5 全量技术交付当前账（2026-09-03）
+
+本节覆盖一次性总授权的最终技术收口，优先级高于本文件中历史“下一批”叙述。P5-C、P5-D、P5-E、P5-F、P5-G、P5-H、P5-I 的无需外部权限工作已全部实现或交付到外部边界；P5-B 继续 fail-closed。详细产物见 `docs/UX_ACCEPTANCE.md`、`docs/WEB_RELEASE.md`、`docs/IOS_RELEASE.md`、`docs/APP_STORE_METADATA_DRAFT.md`、`docs/PRIVACY_POLICY_DRAFT.md`、`docs/USER_AGREEMENT_DRAFT.md` 和 `docs/DATA_PROCESSING_INVENTORY.md`。
+
+### Level A 当前矩阵（工程执行事实）
+
+| 批次 | 当前结果 | 理由 |
+| --- | --- | --- |
+| P5-B 城市数据 | BLOCKED | 35 条 prototype；全国地级行政区覆盖、逐行血缘、adminCode/历史映射与商业离线再分发许可未证明。 |
+| P5-C UX/a11y | PASS（工程） | 四术真实流程、六状态 copy、读屏/键盘/字体/动效/触控结构回归；真实 iPhone/VoiceOver 仍待签字。 |
+| P5-D 性能稳定性 | PASS（工程） | 固定 Node benchmark、阈值、异常/备份/长列表回归；低端真机冷启动/内存数据 blocked。 |
+| P5-E Release Security | BLOCKED | secret scan/CSP/产物/备份边界完成；production audit 仍 9 high/17 moderate，依赖升级和安全风险接受未闭环。 |
+| P5-F 隐私合规 | BLOCKED | 本地说明、草案、清单和数据控制已交付；法律主体、正式联系/保留/未成年人/备案与法律审核缺失。 |
+| P5-G Web | PASS（工程） | `build:web`、10 routes、metadata、PWA/offline、安全头、verify gate 已实现；域名/托管/公开 URL/真实浏览器签字未完成。 |
+| P5-H iPhone | BLOCKED | app.json 配置、最小权限、签名前清单完成；Apple Developer、证书、设备、TestFlight 缺失。 |
+| P5-I App Store | BLOCKED | 元数据/截图流程/隐私标签/审核备注草案完成；商店账号、主体、真实截图、正式 URL 与签字缺失。 |
+
+工程状态为 **技术发布候选 RC**，不是正式公开发布。主管须在代码验收后依据本矩阵处理外部 blocker；任何 blocked 项不得改写为 PASS。

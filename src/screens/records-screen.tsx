@@ -318,21 +318,24 @@ export function RecordsScreen() {
                   return (
                     <AnimatedReveal delay={Math.min(groupIndex * 3 + index, 6) * 55} key={reading.id}>
                       <View style={[styles.card, expanded && styles.cardExpanded]}>
-                        <Pressable
-                          accessibilityHint="查看或收起这条记录的输入、结果、解释和复盘反馈。"
-                          accessibilityLabel={`${expanded ? '收起' : '展开'}${reading.title}排盘记录`}
-                          accessibilityRole="button"
-                          accessibilityState={{ expanded }}
-                          onPress={() => setExpandedId(expanded ? null : reading.id)}
-                          style={({ pressed }) => [styles.cardHeader, pressed && styles.pressed]}>
-                          <View style={[styles.moduleMark, { borderColor: module.accent }]}><Text style={[styles.moduleGlyph, { color: module.accent }]}>{module.glyph}</Text></View>
-                          <View style={styles.cardCopy}>
-                            <View style={styles.cardTop}><Text style={styles.moduleName}>{module.title} · {reading.profileName}</Text><View style={styles.cardMeta}><Text style={styles.date}>{new Date(reading.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Text><Pressable accessibilityHint="选择两条同命主、同模块记录进行只读对比。" accessibilityLabel={compareSelected ? `取消对比${reading.title}` : `选择${reading.title}进行对比`} accessibilityRole="checkbox" accessibilityState={{ checked: compareSelected }} onPress={(event) => { event.stopPropagation(); toggleCompare(reading.id); }} style={({ pressed }) => [styles.compareToggle, compareSelected && styles.compareToggleActive, pressed && styles.pressed]}><Text style={[styles.compareToggleText, compareSelected && styles.compareToggleTextActive]}>{compareSelected ? '已选' : '对比'}</Text></Pressable></View></View>
-                            <Text style={styles.cardTitle}>{reading.title}</Text>
-                            <Text style={styles.cardSummary}>{reading.summary}</Text>
-                          </View>
-                          <MaterialCommunityIcons accessibilityElementsHidden color={palette.ashGreen} importantForAccessibility="no-hide-descendants" name={expanded ? 'chevron-up' : 'chevron-down'} size={20} />
-                        </Pressable>
+                        <View style={styles.cardHeader}>
+                          <Pressable
+                            accessibilityHint="查看或收起这条记录的输入、结果、解释和复盘反馈。"
+                            accessibilityLabel={`${expanded ? '收起' : '展开'}${reading.title}排盘记录`}
+                            accessibilityRole="button"
+                            accessibilityState={{ expanded }}
+                            onPress={() => setExpandedId(expanded ? null : reading.id)}
+                            style={({ pressed }) => [styles.cardHeaderMain, pressed && styles.pressed]}>
+                            <View style={[styles.moduleMark, { borderColor: module.accent }]}><Text style={[styles.moduleGlyph, { color: module.accent }]}>{module.glyph}</Text></View>
+                            <View style={styles.cardCopy}>
+                              <View style={styles.cardTop}><Text style={styles.moduleName}>{module.title} · {reading.profileName}</Text><Text style={styles.date}>{new Date(reading.createdAt).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</Text></View>
+                              <Text style={styles.cardTitle}>{reading.title}</Text>
+                              <Text style={styles.cardSummary}>{reading.summary}</Text>
+                            </View>
+                            <MaterialCommunityIcons accessibilityElementsHidden color={palette.ashGreen} importantForAccessibility="no-hide-descendants" name={expanded ? 'chevron-up' : 'chevron-down'} size={20} />
+                          </Pressable>
+                          <Pressable accessibilityHint="选择两条同命主、同模块记录进行只读对比。" accessibilityLabel={compareSelected ? `取消对比${reading.title}` : `选择${reading.title}进行对比`} accessibilityRole="checkbox" accessibilityState={{ checked: compareSelected }} onPress={() => toggleCompare(reading.id)} style={({ pressed }) => [styles.compareToggle, compareSelected && styles.compareToggleActive, pressed && styles.pressed]}><Text style={[styles.compareToggleText, compareSelected && styles.compareToggleTextActive]}>{compareSelected ? '已选' : '对比'}</Text></Pressable>
+                        </View>
                         {expanded && (
                           <View style={styles.detail}>
                             <SnapshotViewer reading={reading} diff={diffByReadingId[reading.id]} onRunBaziDiff={runBaziDiff} />
@@ -453,7 +456,8 @@ const styles = StyleSheet.create({
   groupLabel: { color: palette.brass, fontFamily: fontFamilies.display, fontSize: 15, letterSpacing: 1 },
   card: { borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.card, backgroundColor: 'rgba(8,26,22,0.88)', overflow: 'hidden' },
   cardExpanded: { borderColor: palette.hairlineStrong },
-  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x3, padding: spacing.x4 },
+  cardHeader: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x2, padding: spacing.x4 },
+  cardHeaderMain: { flex: 1, minWidth: 0, flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x3 },
   moduleMark: { width: 44, height: 44, flexShrink: 0, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderRadius: 22, backgroundColor: palette.obsidian },
   moduleGlyph: { fontFamily: fontFamilies.display, fontSize: 16 },
   cardCopy: { flex: 1, minWidth: 0 },

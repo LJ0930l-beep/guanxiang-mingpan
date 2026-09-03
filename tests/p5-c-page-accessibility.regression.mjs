@@ -32,6 +32,8 @@ test('P5-C 页面使用统一状态矩阵并保留本地原型边界', () => {
   assert.match(login, /UI_STATE_COPY\.failure/);
   assert.match(login, /当前为本地原型|当前均为本地原型/);
   assert.match(profiles, /UI_STATE_COPY\.(blocked|empty|failure)/);
+  assert.match(profiles, /blockedStorageLabels/);
+  assert.match(profiles, /部分本地数据只读/);
   assert.match(records, /UI_STATE_COPY\.(blocked|empty|failure)/);
   assert.match(settings, /UI_STATE_COPY\.(blocked|failure)/);
 });
@@ -75,6 +77,12 @@ test('P5-C 记录页为列表、筛选、对比、反馈和只读失败状态提
   assert.match(records, /importantForAccessibility="no-hide-descendants"/);
   assert.match(records, /compareToggle: \{ minHeight: layout\.minTouch/);
   assert.match(records, /statusOption: \{ minHeight: layout\.minTouch/);
+  assert.match(records, /cardHeaderMain: \{ flex: 1/);
+  const cardCopyIndex = records.indexOf('style={styles.cardCopy}');
+  const headerCloseIndex = records.indexOf('</Pressable>', cardCopyIndex);
+  const nestedPressableIndex = records.indexOf('<Pressable', cardCopyIndex);
+  assert.ok(cardCopyIndex >= 0 && headerCloseIndex > cardCopyIndex);
+  assert.ok(nestedPressableIndex < 0 || nestedPressableIndex > headerCloseIndex, 'card header must not contain a nested Pressable');
   assert.match(records, /cardHeader/);
   assert.match(records, /<View style=\{\[styles\.card/);
 });
@@ -114,8 +122,24 @@ test('P5-C 四术工作区具备真实生成、保存、失败恢复和部分状
   assert.match(moduleWorkspace, /onRetry=\{run\}/);
   assert.match(moduleWorkspace, /loading=\{busy\}/);
   assert.match(moduleWorkspace, /loading=\{loading\}/);
+  assert.match(moduleWorkspace, /router\.canGoBack\(\)/);
+  assert.match(moduleWorkspace, /router\.replace\('\/home'\)/);
   assert.match(moduleWorkspace, /StatePanel[\s\S]*state="partial"/);
   assert.match(moduleWorkspace, /testID="astrology-unknown-state"/);
+});
+
+test('P5-C 直接打开深层路由时返回按钮有安全 fallback，不触发未处理 GO_BACK', () => {
+  const policy = source('src/screens/policy-screen.tsx');
+  assert.match(policy, /router\.canGoBack\(\)/);
+  assert.match(policy, /router\.replace\('\/'\)/);
+});
+
+test('P5-C 未知术数 slug 显示 unknown 状态并提供首页恢复动作', () => {
+  const route = source('src/app/module/[slug].tsx');
+  assert.match(route, /state="unknown"/);
+  assert.match(route, /testID="module-unknown-route"/);
+  assert.match(route, /router\.replace\('\/home'\)/);
+  assert.doesNotMatch(route, /if \(!module\) return null/);
 });
 
 test('P5-C 页面级实现以 additive resolution 记录，不改写历史 deferred route', () => {

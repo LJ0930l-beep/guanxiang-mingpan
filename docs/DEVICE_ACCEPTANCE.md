@@ -56,3 +56,10 @@ P3-F 的文件名契约和 Web/iPhone 共用 MIME 类型由 `tests/backup-file-c
 - iPhone 真机需要 macOS/Xcode 或 TestFlight 包；当前仓库已完成原生文件流实现和验收清单，但尚未声称完成实体 iPhone 的最终签字。
 - 在实体设备签字前，不对外承诺“跨设备自动同步”；本批次仍是用户主动导出、主动分享、主动导入。
 
+## P5-D / P5-C 当前批次补充（2026-09-03）
+
+自动化 benchmark 已覆盖固定输入下四术排盘、250 条历史筛选/迁移/备份往返和错误 fail-fast；最近一次本机观测中位数为：八字约 5.8ms、六爻约 1.4ms、紫微约 25.0ms、星盘约 7.8ms、历史筛选约 5.2ms、迁移约 4.9ms、备份往返约 6.4ms，均低于 `src/services/performance-budget.ts` 的 Node 基线。该数据不是低端 iPhone 的性能承诺，真机冷启动、内存、长列表渲染和电量影响仍待设备批验收。
+
+页面级 P5-C 已将四术输入、校验、生成、结果、证据展开、保存、历史复盘、反馈和失败恢复接入统一状态文案；读屏、键盘、字体缩放、减少动态效果和 44pt 触控目标有自动化结构回归。375/768/1024/1440 Web viewport 需按 `docs/UX_ACCEPTANCE.md` 逐项手工记录，不能用静态 DOM 或 Web 截图替代 VoiceOver/iPhone 签字。
+
+P5-H 当前交付到签名/上传前：`app.json` 已有竖屏、深色、Bundle ID 配置、图标与 splash，未声明敏感权限；Apple Developer、签名证书、实体设备和 TestFlight 权限尚未提供，因此本文件不记录 iPhone PASS。

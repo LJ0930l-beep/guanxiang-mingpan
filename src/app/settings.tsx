@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { ActionButton } from '@/components/action-button';
+import { LocalDataNotice } from '@/components/local-data-notice';
 import { LoadingScreen } from '@/components/loading-screen';
 import { fontFamilies, palette, spacing } from '@/constants/guanxiang';
 import { UI_STATE_COPY } from '@/constants/ui-copy';
@@ -152,6 +153,7 @@ export default function SettingsRoute() {
       }}
       title="我的观象台"
     >
+      <LocalDataNotice />
       <View accessibilityLabel="本机数据与备份" style={styles.dataPanel} testID="settings-data-panel">
         <Text accessibilityRole="header" style={styles.dataTitle}>本机数据</Text>
         <Text style={styles.dataText}>命主 {profiles.length} 位 · 排盘记录 {readings.length} 条</Text>

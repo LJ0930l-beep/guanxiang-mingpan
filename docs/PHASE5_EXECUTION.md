@@ -1,10 +1,10 @@
-# Phase 5 · P5-A1～P5-A5c 四术可信度、输入边界与 P5-A final audit
+# Phase 5 · P5-A～P5-I 发布质量工程与交接
 
-更新日期：2026-09-02
-批次状态：P5-A1、P5-A2、P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b、P5-A5c 及 P5-A final 已由 Sol High/主管独立验收 PASS；`p5-c-deferred-input-route.v1` 将 `p5-a4a-cross-a11y-copy-route` 正式标记为 P5-C deferred/routed，但功能尚未实现；`p5-a4a-cross-city-coverage` 继续路由 P5-B；P5-A3 子里程碑已完成；下一批为 P5-B1 合同/来源/许可审计，整个 Phase 5 仍未完成
+更新日期：2026-09-03
+批次状态：P5-A1～P5-A5c 及 P5-A final 已由 Sol High/主管独立验收 PASS；P5-B 仍因城市来源/许可/覆盖 blocked；P5-C 页面级四术 UX/a11y、P5-D benchmark、P5-E 工程安全、P5-F 草案与数据清单、P5-G Web 交付、P5-H iOS 签名前配置和 P5-I 商店材料草案已在一次性授权中完成可离线工作。`p5-c-deferred-input-route.v1` 的历史 deferred 事实保留，新的 additive resolution 已关闭 P5-C 功能路由；整个 Level A 仍待外部条件与 Sol High 独立验收。
 范围：统一四术 Golden Case 数据合同、分类门禁、现状清单、回归测试、香港天文台 published-reference Golden、P5-A3a 真太阳时版本兼容与 Storage Schema 3、P5-A3b 历史证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计，以及 P5-A4b1 安全输入校验、可识别错误合同和 resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative resolution overlay、P5-A4b4 紫微农历/闰月输入校验与 cumulative resolution overlay、P5-A4b5 四模块 engine failures 与跨模块失败契约、P5-A5a 统一公开出生日期政策与 owner-decision overlay、P5-A5b Astrology 日级近似与缺坐标 fail-closed、P5-A5c 中国大陆 1986–1991 历史 DST 规则与快照复现，以及 P5-A final audit 的 P5-C deferred route 登记
 
-说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9 节记录 P5-A3a 的实现、修复和 Sol High 独立验收 PASS，第 10 节记录 P5-A3b 实现、复核和 Sol High 独立验收 PASS，第 11 节记录 P5-A4a 审计合同实现和 Sol High 独立验收 PASS，第 12 节记录 P5-A4b1 实现和 Sol High 独立验收 PASS，第 13 节记录 P5-A4b2 六爻输入合同实现和 Sol High 独立验收 PASS，第 14 节记录 P5-A4b3 八字跨日/子初矩阵与 v3 overlay 实现及 Sol High 独立验收 PASS，第 15 节记录 P5-A4b4 紫微农历/闰月输入校验与 v4 overlay 实现及 Sol High 独立验收 PASS，第 16 节记录 P5-A4b5 四模块 engine failures 与 v5 overlay 实现及 Sol High 独立验收 PASS，第 17 节记录 P5-A5a 统一公开出生日期政策与独立 owner-decision overlay 实现及 Sol High 独立验收 PASS，第 18 节记录 P5-A5b Astrology 日级近似/地点安全策略与 additive overlays 实现及 Sol High 独立验收 PASS，第 19 节记录 P5-A5c 中国大陆 1986–1991 历史 DST 与 owner-decision v3 实现及 Sol High 独立验收 PASS，第 20 节记录 P5-A final audit 的 P5-C deferred route 及最终 supervisor acceptance；P5-C 功能仍未实现，整个 Phase 5 仍未完成。
+说明：第 1～8 节保留 P5-A1/P5-A2 的历史验收记录；第 9～20 节记录 P5-A3a～P5-A final 的历史实现与独立验收；文末新增 P5 全量技术交付复核，覆盖 P5-B～P5-I 当前真实状态、外部阻断与交接产物。
 
 ## 1. Scope 与明确不做
 
@@ -619,3 +619,9 @@ validator/回归拒绝重复 `locationId`/`adminCode`、canonical name 冲突、
 专项 `tests/p5-c-accessibility-foundation.regression.mjs` **7/7**；统一 `npm test` **197/197**，`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，Web Export 实际执行）及 `git diff --check` 均 PASS。`npm audit --omit=dev` 仍为 0 critical / 9 high / 16 moderate / 0 low（25 total）。
 
 代码交付：本地 `a14fa7c`（parent `1ea5f60`），远端 `8ef2e3a6c79c013987779dcba37acddf9655a94c`（remote parent `57319d6b25193269dd6c480b9e091be1b0bcfcb5`）；GitHub Actions [run 33644163905](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33644163905) / [validate job 100294474488](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33644163905/job/100294474488) completed/success，Regression、Typecheck、Lint 和 Web Export 均实际执行且 Web Export 非 skip。该微批完成四术工作区语义补强，P5-C deferred route 仍未关闭；下一批继续命主/登录/记录页状态、焦点、字体缩放与 viewport 验证。
+
+## P5 全量技术交付复核（2026-09-03）
+
+一次性授权已连续推进 P5-B～P5-I 的全部可离线完成项：P5-C 四术输入至保存/复盘与六状态 UX/a11y 已实现；P5-D 具备固定数据、阈值与回归 benchmark；P5-E 有密钥扫描、生产审计、CSP/构建验证和非 skip CI workflow；P5-F 有首次使用本地说明、隐私/协议草案、删除/导出/注销边界和数据处理清单；P5-G 有静态导出、10 routes、SEO/PWA/错误页/部署文档；P5-H/iOS 配置与验收清单到签名前；P5-I 有 App Store 文案、截图流程、年龄/隐私标签和审核备注草案。
+
+P5-B 仍严格 fail-closed：未取得全国行政数据与商业离线再分发书面授权，不导入或宣称完整覆盖。P5-H/P5-I 需要 Apple/商店账号、证书、真实设备和主体资料；P5-F/G 需要法律/域名/托管外部输入。故本项目当前是技术发布候选，不是可公开发布版本。

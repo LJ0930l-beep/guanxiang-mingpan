@@ -14,5 +14,16 @@ self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
-  event.respondWith(fetch(event.request).catch(() => caches.match(event.request).then((cached) => cached ?? caches.match(OFFLINE))));
+  event.respondWith(caches.open(CACHE).then(async (cache) => {
+    try {
+      const response = await fetch(event.request);
+      if (response.ok && response.type === 'basic') {
+        await cache.put(event.request, response.clone());
+      }
+      return response;
+    } catch {
+      const cached = await cache.match(event.request);
+      return cached ?? caches.match(OFFLINE);
+    }
+  }));
 });

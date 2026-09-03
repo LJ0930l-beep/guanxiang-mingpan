@@ -8,5 +8,5 @@
   "background_color": "#050907",
   "theme_color": "#050907",
   "description": "八字、六爻、紫微斗数与西方星盘的本地排盘与复盘工具",
-  "icons": [{ "src": "/favicon.ico", "sizes": "48x48", "type": "image/x-icon" }]
+  "icons": [{ "src": "/favicon.ico", "sizes": "any", "type": "image/x-icon", "purpose": "any" }]
 }

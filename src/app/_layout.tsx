@@ -45,6 +45,8 @@ export default function RootLayout() {
           <Stack.Screen name="records" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="module/[slug]" />
+          <Stack.Screen name="privacy" />
+          <Stack.Screen name="terms" />
         </Stack>
       </AppProvider>
     </ThemeProvider>

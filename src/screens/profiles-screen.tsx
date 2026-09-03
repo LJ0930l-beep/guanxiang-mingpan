@@ -48,7 +48,14 @@ export function ProfilesScreen() {
   const profilesReadOnly = storageBlockedKeys.includes('@guanxiang/profiles');
   const selectionReadOnly = storageBlockedKeys.includes('@guanxiang/selected-profile');
   const recordsReadOnly = storageBlockedKeys.includes('@guanxiang/readings');
-  const profileDeleteBlocked = profilesReadOnly || selectionReadOnly || recordsReadOnly;
+  const profileWriteBlocked = profilesReadOnly || selectionReadOnly;
+  const profileDeleteBlocked = profileWriteBlocked || recordsReadOnly;
+  const blockedStorageLabels = storageBlockedKeys.map((key) => ({
+    '@guanxiang/user': '本地登录状态',
+    '@guanxiang/profiles': '命主资料',
+    '@guanxiang/selected-profile': '当前命主选择',
+    '@guanxiang/readings': '排盘记录与反馈',
+  }[key] ?? key));
   const cityMatch = birthCity.trim() ? resolveCityCoordinates(birthCity) : undefined;
   const citySuggestions = birthCity.trim()
     ? listMainlandCities().filter((city) => [city.name, ...city.aliases].some((alias) => alias.includes(birthCity.trim()))).slice(0, 6)
@@ -175,22 +182,22 @@ export function ProfilesScreen() {
             </View>
             <Pressable
               accessibilityLabel={showForm ? '收起新增命主表单' : '新增命主'}
-              accessibilityHint={profilesReadOnly ? '当前版本只读，不能编辑命主资料。' : showForm ? '关闭表单并清空未保存内容。' : '打开表单填写出生资料。'}
+              accessibilityHint={profileWriteBlocked ? '检测到更新版本的本地数据，当前版本只读，不能编辑命主资料。' : showForm ? '关闭表单并清空未保存内容。' : '打开表单填写出生资料。'}
               accessibilityRole="button"
-              disabled={profilesReadOnly}
+              disabled={profileWriteBlocked}
               onPress={() => {
                 if (showForm) resetForm();
                 setShowForm((current) => !current);
               }}
               style={({ pressed }) => [styles.addButton, profilesReadOnly && styles.disabled, pressed && styles.pressed]}>
-              <Text style={styles.addButtonText}>{profilesReadOnly ? '命主只读' : showForm ? '收起' : '新增命主'}</Text>
+              <Text style={styles.addButtonText}>{profileWriteBlocked ? '命主只读' : showForm ? '收起' : '新增命主'}</Text>
             </Pressable>
           </View>
 
-          {profilesReadOnly && (
+          {storageBlockedKeys.length > 0 && (
             <View accessibilityLabel={UI_STATE_COPY.blocked.announcement} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.readOnlyBanner}>
-              <Text style={styles.readOnlyTitle}>命主数据只读</Text>
-              <Text style={styles.readOnlyText}>这份数据由更新版本写入，当前版本不会覆盖它。请先升级应用后再编辑或删除。</Text>
+              <Text style={styles.readOnlyTitle}>部分本地数据只读</Text>
+              <Text style={styles.readOnlyText}>检测到更新版本写入的{blockedStorageLabels.join('、')}。当前版本不会覆盖这些数据；相关编辑、选择、删除或保存动作已锁定，请先升级应用。</Text>
             </View>
           )}
           {!!error && !showForm && <Text accessibilityLabel={`错误：${error}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.globalError}>{error}</Text>}
@@ -311,7 +318,7 @@ export function ProfilesScreen() {
               </View>
 
               {!!error && <Text accessibilityLabel={`错误：${error}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.error}>{error}</Text>}
-              <ActionButton accessibilityLabel={editingId ? '保存命主修改' : '保存命主'} accessibilityHint="验证资料后保存在当前设备。" disabled={profilesReadOnly} onPress={save} style={styles.saveButton}>{editingId ? '保存修改' : '保存命主'}</ActionButton>
+              <ActionButton accessibilityLabel={editingId ? '保存命主修改' : '保存命主'} accessibilityHint="验证资料后保存在当前设备。" disabled={profileWriteBlocked} onPress={save} style={styles.saveButton}>{editingId ? '保存修改' : '保存命主'}</ActionButton>
             </View>
           )}
 

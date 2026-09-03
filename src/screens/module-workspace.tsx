@@ -81,7 +81,10 @@ function ModuleScaffold({ module, children }: { module: ModuleDefinition; childr
           <Pressable
             accessibilityLabel="返回观象首页"
             accessibilityRole="button"
-            onPress={() => router.back()}
+            onPress={() => {
+              if (router.canGoBack()) router.back();
+              else router.replace('/home');
+            }}
             style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}>
             <MaterialCommunityIcons accessibilityElementsHidden color={palette.brass} importantForAccessibility="no-hide-descendants" name="arrow-left" size={18} />
             <Text style={styles.backText}>返回观象</Text>

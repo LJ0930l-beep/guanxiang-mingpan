@@ -1,9 +1,9 @@
 # 观象·命盘 — 项目交接文档
 
 > 文档状态：可作为后续产品、设计、研发和上线协作的单一交接入口  
-> 更新日期：2026-09-02
-> 当前收口：P5-A final 已由 Sol High/主管最终验收 PASS；`p5-a4a-cross-a11y-copy-route` 保持独立 P5-C deferred/routed disposition，功能尚未实现；`p5-a4a-cross-city-coverage` 继续路由 P5-B；下一批为 P5-B1 合同/来源/许可审计。
-> 当前阶段：Phase 4 四术解释体验与三术深度化代码基线已完成；P5-A1 Golden Case 合同与现状盘点、P5-A2 HKO published-reference Golden、P5-A3a 真太阳时版本兼容、P5-A3b 历史真太阳时证据展示与显式当前规则复核、P5-A4a 四术边界与输入策略机器可检查审计、P5-A4b1 安全输入校验/错误合同/resolution overlay、P5-A4b2 六爻 seed/date 输入合同与跨宿主 TZ 复现、P5-A4b3 八字真太阳时跨日/子初边界矩阵与 cumulative overlay、P5-A4b4 紫微农历/闰月输入校验与 cumulative overlay、P5-A4b5 四模块 engine failures 与跨模块失败契约、P5-A5a 统一公开出生日期政策与独立 owner-decision overlay、P5-A5b Astrology 日级近似与缺坐标 fail-closed、P5-A5c 中国大陆 1986–1991 历史 DST 及 P5-A final 均已通过 Sol High/主管独立验收；P5-A3 子里程碑整体完成，P5-A 已完成；P5-C 功能、P5-B 城市覆盖及整个 Phase 5 尚未完成，尚未达到公开上线标准，实体 iPhone/TestFlight 验收仍待执行。
+> 更新日期：2026-09-03
+> 当前收口：P5-A final 已由 Sol High/主管最终验收 PASS；P5-C 页面级功能、P5-D benchmark、P5-E 工程安全、P5-F 合规草案、P5-G Web 交付、P5-H iOS 签名前配置和 P5-I 商店材料草案已完成无外部依赖工作。`p5-a4a-cross-city-coverage` 仍路由 P5-B，城市数据保持 fail-closed；生产审计高/中危风险、真机、域名/托管、法律主体和商店账号仍阻断正式发布。
+> 当前阶段：本项目处于技术发布候选 RC（非公开发布）。P5-C 的历史 deferred route 保留不可变审计事实，新的 additive resolution 已关闭页面级功能路由；四术真实流程、备份/复盘和状态文案已接入。P5-B、iPhone/TestFlight、正式隐私/协议、Web 公开部署和 App Store 提交仍需外部条件与 Sol High 独立验收。
 
 ## 1. 一页总览
 
@@ -17,7 +17,7 @@
 - 首发支持 Web 与 iPhone；界面与文案为简体中文、中国大陆场景。
 - 使用“观象仪”作为原创视觉母题：曜石黑、深玉绿、旧铜金，以及克制的同心环动画。
 
-当前结论：**页面不再只是壳子**。四个模块均能在本地生成、解释并保存结构化排盘结果；八字、紫微、占星和六爻现在都有标准化模型/证据图/版本化解释快照，解释层支持术语与原始证据展开，记录页只读展示保存时解释，历史 Diff 只比较已保存快照。P5-A1 已建立 `golden-case.v1` 四术合同、分类门禁和现状 registry；P5-A2 又加入两条 HKO published-reference：立春只按公开分钟比较、农历只按公开日期比较，均不代表四柱流派或专业真值；P5-A3a、P5-A3b、P5-A4a、P5-A4b1、P5-A4b2、P5-A4b3、P5-A4b4、P5-A4b5、P5-A5a、P5-A5b 与 P5-A5c 均已通过 Sol High 独立验收，P5-A3 子里程碑整体完成；P5-A4a 已将四术边界/输入策略整理为 41 项机器可检查审计合同，P5-A4b1 已关闭三项安全输入 gap，P5-A4b2 已关闭六爻 date/seed 两项 gap 并将 overlay 累计到五项，P5-A4b3 已关闭八字真太阳时跨日/子初边界 gap 并将 overlay 累计到六项，P5-A4b4 已关闭紫微农历与闰月输入 gap 并将 overlay 累计到八项，P5-A4b5 已以 v5 overlay 关闭四模块 engine-error/cross-copy gap，P5-A5a 已以 `p5-a5a-owner-decision.v1` 关闭三项公开日期范围决策并统一 1900-01-01..2099-12-31（含端点），P5-A5b 已由 owner-decision v2 新增缺时辰日级近似策略，并由 A4b v6 关闭缺坐标/跨模块 no-guessing gap，P5-A5c 已由 owner-decision v3 关闭中国大陆 1986–1991 历史 DST。日级近似固定 Asia/Shanghai 正午锚点与日首/日末稳定性筛选，输出 `partial`、隐藏角点/宫位/相位和不稳定时间敏感因素；未知城市或无成对坐标 fail-fast，不再传入 `0,0`。P5-A5c 另固定 Asia/Shanghai 官方民用钟表/北京时间假设，春季不存在时刻和秋季重复时刻均 fail-fast，运行时不依赖 OS/process tzdata。P5-A final 已完成最终 supervisor acceptance，既有 A4a/A4b/owner overlay 与统计保持不变；`p5-a4a-cross-a11y-copy-route` 仅为 P5-C deferred/routed，功能尚未实现，`p5-a4a-cross-city-coverage` 继续路由 P5-B。Phase 3 的记录搜索/分组/对比、按日事实反馈、普通/加密备份、导入冲突预览和事务回滚仍保持有效。账号、支付、专业校验、实体设备签字与合规材料尚未完成，因此不应将当前版本作为正式公开产品提交。Phase 2 的批次记录见 [PHASE2_BAZI_EXECUTION.md](PHASE2_BAZI_EXECUTION.md)，Phase 3 的批次记录见 [PHASE3_EXECUTION.md](PHASE3_EXECUTION.md)，Phase 4 的批次记录见 [PHASE4_EXECUTION.md](PHASE4_EXECUTION.md)，P5-A1/P5-A2/P5-A3a/P5-A3b/P5-A4a/P5-A4b1/P5-A4b2/P5-A4b3/P5-A4b4/P5-A4b5/P5-A5a/P5-A5b/P5-A5c 的记录见 [PHASE5_EXECUTION.md](PHASE5_EXECUTION.md)。
+当前结论：**页面不再只是壳子**。四个模块均能在本地生成、解释并保存结构化排盘结果；八字、紫微、占星和六爻都有标准化模型/证据图/版本化解释快照，解释层支持术语与原始证据展开，记录页只读展示保存时解释，历史 Diff 只比较已保存快照。P5-A1～P5-A final 均已通过历史独立验收；P5-C 页面级输入/结果/证据/保存/历史/错误恢复和统一状态 copy 已实现，P5-D～P5-I 无外部依赖产物已交付。城市未知仍不猜测，生产依赖审计仍有 9 high/17 moderate，真实账号、AI、广告、支付、云同步和推送仍未接入。当前可作为技术发布候选交给主管验收，不能称正式公开上线。Phase 2～4 与 P5 历史批次记录继续见对应文档，最新总账见 [PROJECT_MASTER_EXECUTION.md](PROJECT_MASTER_EXECUTION.md) 文末。
 
 ## 2. 已确认的产品设计草案
 
@@ -426,3 +426,9 @@ P5-B2 当前交接范围是来源收敛和 fail-closed source-decision contract�
 新增 `tests/p5-c-accessibility-foundation.regression.mjs` 并接入统一测试，专项 **6/6**；统一 `npm test` **196/196**，`npm run typecheck`、`npm run lint`、`npm run build:web`（8 routes，Web Export 实际执行）及 `git diff --check` 均 PASS。`npm audit --omit=dev` 仍为 0 critical / 9 high / 16 moderate / 0 low（25 total），未做会改变 Expo 57 依赖树的自动修复。
 
 代码交付：本地 `b66421c`（parent `6d05bc2`），远端 `a30309ce1e556b3f99b661d6e2b3d17c0776e750`（remote parent `26b5969150dc0f93efe5b3fb9aeeb71fd7dc91c8`）；GitHub Actions [run 33642154569](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33642154569) / [validate job 100287662596](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33642154569/job/100287662596) completed/success，Regression、Typecheck、Lint 和 Web Export 均实际执行且 Web Export 非 skip。该微批只完成 P5-C 共享基础，`p5-a4a-cross-a11y-copy-route` 仍未关闭；下一批继续页面级状态/copy matrix 与 Web/iPhone viewport 验证。
+
+## 一次性全量技术交付交接（2026-09-03）
+
+本轮依据总规划连续完成所有不依赖外部账号、证书、法律授权、域名备案或实体设备签字的开发工作。四术页面从输入校验到生成、结果、证据、解释、保存、历史复盘、反馈和失败恢复可操作；统一状态 copy 覆盖 loading/empty/failure/partial/blocked/unknown；本地数据说明、隐私政策/用户协议入口、备份/删除/导出边界已接入。Web 生产导出扩展为 10 routes，含 SEO 元数据、PWA manifest/service worker、离线页、robots 预发布 noindex、安全头和部署/回滚文档。iOS 配置、商店文案/审核/隐私标签草案和签名前清单已交付。
+
+城市数据保持 35 条 prototype、精确匹配与未知 fail-closed，`p5-a4a-cross-city-coverage` 未关闭；没有伪造行政代码、坐标/别名来源或商业离线许可。没有接入真实登录、AI、广告、支付、云同步或推送。当前级别为 **技术发布候选 RC（外部条件阻断）**，待主管独立验收。

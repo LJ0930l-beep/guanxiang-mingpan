@@ -1,6 +1,8 @@
 # 观象离线城市数据说明
 
-## P5-B1 审计状态（2026-09-02）
+## P5-B2 审计状态（2026-09-03）
+
+P5-B1 的城市合同与 P5-B2 的来源决策审计均已完成工程交付，但都没有解除生产数据发布阻断。当前 `releaseDecision=BLOCKED`：城市表继续保持 35 条 prototype 记录，未知地点 fail-closed；未取得全国行政区划逐行血缘、稳定 adminCode/历史映射与商业离线再分发许可，不扩充生产表、不宣称全国覆盖。P5-B2 的纯 JSON 来源合同、证据哈希、许可矩阵和 validator 位于 `src/data/city-source-decision.ts`，专项回归为 8/8。
 
 P5-B1 已由主管基于本地/远端提交和质量证据独立验收 **PASS**：远端实现 `89b2d6d4a991f08f075408cbe2b82cfe476bdcfb`（parent `4f660e1fdc29b63a63711f4a96aa7b3ff04788ee`），Actions run `33629823749` / job `100246237118` 全部 Success，Web Export 实际执行且非 skip；专项 8/8、统一 `npm test` 182/182、生产依赖审计 0 critical / 9 high / 16 moderate / 0 low。该 PASS 只确认合同/审计/发布阻断门落地，不代表全国覆盖或离线再分发许可已完成。
 
@@ -93,3 +95,9 @@ P5-B2 已完成一手网页/GitHub 证据收敛，但没有证明任何单一来
 下一最小实现批只允许 source-decision/audit tooling：固定 manifest 的 URL/version/hash/retrievedAt/license/attribution，校验逐行血缘、代码/坐标/别名/历史链和数据库许可证风险；不导入未获授权数据。来源许可充分后，另立 pilot import 批，必须先定义 source/version/hash/schema/test/DoD、审查归因和回滚，再允许生产路径；当前 P5-C 可独立继续，不能将本快照误标为城市覆盖完成。
 
 本批质量与远端证据：本地 commit `a58ca0b`（完整 SHA 由 Git 固定，parent `6fe3f81`）；远端等价 commit `57d87c706ca8e9501cefe0c5f11c9dd618ccd692`，parent 为指定基线 `65b6bb7e6fcc94d1e324f86918263fcd2b100f9c`。`git diff --check`、`npm run typecheck`、`npm run lint`、专项 `tests/p5-city-source-decision.regression.mjs` **8/8**、统一 `npm test` **190/190** 和 `npm run build:web` **8 routes** 均 PASS；`npm audit --omit=dev` 保持 **0 critical / 9 high / 16 moderate / 0 low（25 total）**，未执行破坏性升级。GitHub Actions [run 33639738697](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697) / [validate job 100279504893](https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/33639738697/job/100279504893) 为 `completed/success`，Typecheck、Lint、Regression tests 与 Web Export 均实际执行且 Web Export 非 skip。
+
+## P5-B 当前状态复核（2026-09-03）
+
+一次性技术交付没有获得新的行政数据授权，因此没有向生产表导入记录，也没有修改 `locationId`、坐标、别名、历史映射或 `datasetVersion`。当前 35 条 prototype 城市仍只支持精确规范化命中；未知城市继续 fail-closed，不能用相邻城市或中心点猜测。P5-B Level A 仍为 **BLOCKED**，阻断原因是全国地级行政区完整覆盖、逐条行政/坐标/别名血缘以及商业离线再分发许可均未同时证明。
+
+本轮只补齐了产品/发布文档对数据边界的引用：`docs/DATA_PROCESSING_INVENTORY.md` 明确地点字段及其本地保存范围，`docs/PRIVACY_POLICY_DRAFT.md` 与 `docs/USER_AGREEMENT_DRAFT.md` 明确地点数据不代表精确出生地或真太阳时精度。后续若收到书面许可，仍需独立 pilot import、hash/schema/test/回滚审查，不得直接把候选来源标为 release-ready。

@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '@/components/action-button';
 import { Atmosphere } from '@/components/atmosphere';
 import { BrandMark } from '@/components/brand-mark';
+import { LocalDataNotice } from '@/components/local-data-notice';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
 import { UI_STATE_COPY } from '@/constants/ui-copy';
 import { useApp } from '@/state/app-context';
@@ -172,6 +173,7 @@ export function LoginScreen() {
             <Text style={styles.privacyText}>
               登录即表示你已阅读并同意《用户协议》与《隐私政策》。命理结果仅供文化研究与自我观察。
             </Text>
+            <LocalDataNotice />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
