@@ -90,4 +90,6 @@ npm audit --omit=dev
 
 ## 版本与发布记录
 
-提交和 GitHub Actions run 必须以本轮真实命令回填，不能复用旧 run 33768014467 作为本轮证据。若凭据或网络不可用，交接明确记录 `remote-sync-blocked`，只报告本地 SHA。
+本轮本地提交为 `770d036729900572d06308079c5ffd3d4ec47acd`，已推送到 `origin/main`。GitHub Actions 新 run `34201638220` 对应该 SHA，真实结论为 `success`；CI 中 Web Export 与 Verify Web Export 均实际执行。旧 run `33768014467` 仅为历史证据，不作为本轮验收。
+
+CI 地址：https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/34201638220
