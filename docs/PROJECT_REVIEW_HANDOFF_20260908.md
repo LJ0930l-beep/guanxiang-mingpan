@@ -1,95 +1,114 @@
-# 观象·命盘 项目复盘与三术解盘闭环交接（2026-09-08）
+# 观象 命盘 项目复盘与三术解盘闭环交接
+
+更新时间：2026-09-08。本文是本轮整包修复后的工程交接记录，面向独立验收、后续发布准备和专业内容复核。
 
 ## 交接结论
 
-本轮把技术 RC 补到“本地排盘 → 证据 → 解释 → 保存 → 历史查看 → 事实反馈”的可操作闭环。基础规则计算仍在设备本地，当前未接入广告、支付、云同步、真实手机号/Apple/微信供应商或 AI。
+本轮把技术 RC 补到“本地排盘 → 证据 → 解释 → 保存 → 历史查看 → 事实反馈”的可操作闭环。八字、六爻、紫微三术都有保存时的结构化盘面、规则版本和解释快照；基础计算仍在设备本地，未接入广告、支付、云同步、真实手机号/Apple/微信供应商或生产 AI。
 
-正式公开发布仍不是本轮结论：真机安装/签名、主体与商店合规、城市数据许可覆盖、传统术数专业复核和模型评测均保留阻塞。
+本地工程检查已经收口，但正式公开发布仍未完成：真机与签名、主体与商店合规、城市数据许可、传统术数专业复核、生产依赖漏洞处置和 Qwen 离线评测仍保留外部阻塞。本轮没有把这些条件包装成已通过。
 
 ## F01–F12 完成矩阵
 
 | 编号 | 状态 | 证据与真实路径 |
 |---|---|---|
-| F01 | 完成 | `src/state/app-context.tsx` 移除记录 100 条静默上限；`tests/storage-operations.regression.mjs` 的 R01 101 条测试。 |
-| F02 | 完成 | 写入采用 `transactionalReplace`，失败时不发布内存状态；R01 注入 `AsyncStorage.setItem` 失败并比较磁盘/重载内存。 |
-| F03 | 完成 | 四术 explanation 的引用只从语义候选节点取值，移除首节点 padding；紫微无四化时 `mutagens` 不再引用 `palace.position`。 |
-| F04 | 完成 | 八字新增 `conflict` 状态；只有显式 `strength.balance-validation` 节点才能标 `balanced`，解释明确区分冲突、待定和规则验证平衡。 |
-| F05 | 完成 | 四术 payload 写入 `inputFingerprint`；六爻 inputSnapshot 写入 timezone/date/seed/scope/castingMethod；TZ 回归与新产品闭环测试覆盖。 |
-| F06 | 部分完成 | 八字已有 8 层解释、候选取用边界与证据 explorer；未知时辰仍 fail-closed，不以 00:00 冒充准确时辰。大运/流年深度尚未作为事实引擎交付。 |
-| F07 | 完成（基础） | 六爻支持快捷自动、六次交互投掷和手工六爻录入，交互/手工保存 6/7/8/9 点、阴阳、动静与变卦事实；保留用神/世应/旺衰/动变解释，不承诺具体应期；保存失败重试原卦。 |
-| F08 | 完成（基础） | 紫微保留真实 12 宫、四化、主星；新增对宫/三方关系节点与可点击宫位；占星保留日级近似边界并支持查看全部相位。 |
-| F09 | 完成 | 历史页用 `ChartRenderer` 显示保存时完整盘面；反馈表单自动关联当前解读/依据，不要求用户输入内部 ID；历史默认只读，不静默重算。 |
-| F10 | 部分完成 | 生产 audit 仍为 0 critical / 9 high / 17 moderate；安全脚本和 Web 导出门禁保留。真机、签名、主体、城市许可和线上部署仍阻塞。 |
-| F11 | 方案完成、评测阻塞 | `docs/QWEN35_9B_OFFLINE_EVAL_PLAN_20260908.md`；当前未下载权重、未上传真实档案、未接生产链路。 |
-| F12 | 完成 | 本文、`tests/product-closure.regression.mjs`、全量测试/类型/ lint / Web Export 结果组成交接证据。 |
+| F01 | 完成 | `src/state/app-context.tsx` 不再对记录静默 `slice(0, 100)`；`tests/storage-operations.regression.mjs` 覆盖 101 条保存和重载回查。 |
+| F02 | 完成 | `transactionalReplace` 先写盘后发布内存；注入 `AsyncStorage.setItem` 失败时磁盘和内存都保持原值，并覆盖多 key 回滚。 |
+| F03 | 完成 | 八字、六爻、紫微解释只引用语义相关证据；没有足够证据时明确未覆盖。`tests/feedback-links.regression.mjs` 和解释回归验证无关证据不会被凑入反馈。 |
+| F04 | 完成 | 八字 `support + opposition` 不再直接映射 balanced；`conflict`、`待定`、经 `balance-validation` 规则验证的 balanced 分开保存并进入版本化解释。 |
+| F05 | 完成 | 四术 payload 保存 `inputFingerprint`；六爻保存业务 `Asia/Shanghai`、`seed`、`date`、`seedScope`、`castingMethod`、`castingRuleVersion` 和手工/交互 6/7/8/9 点事实。 |
+| F06 | 部分完成 | 八字保留主题、条件、反证、候选取用、证据链和未知时辰 fail-closed；大运/流年事实引擎仍需专业规则确认，未用模板或 AI 补齐。 |
+| F07 | 完成（基础规则） | 六爻支持快捷自动、六次三枚铜钱投掷、手工六爻录入；实现 1:3:3:1 的 6/7/8/9 规则，保存用神、世应、旺衰、动变和变后事实；不承诺确定应期。 |
+| F08 | 完成（基础深度） | 紫微真实十二宫、命身定位、主星/亮度、四化、对宫与三方四正节点可回查；占星保留辅助盘和全量相位查看，不扩展为第四套深度解读。 |
+| F09 | 完成 | 实时页和历史页复用只读 `ChartRenderer`；旧记录缺数组时安全降级且不重算。反馈默认“待验证/不关联”，用户选择具体解读卡和该卡引用的可读证据，编辑、导入导出后保持关联。 |
+| F10 | 部分完成 | 生产 audit、密钥扫描、14 路 Web Export、四模块具体深链和 Service Worker 缓存迁移均有本地证据；真机、证书、主体、城市许可和线上部署仍阻塞。 |
+| F11 | 方案完成、评测阻塞 | `docs/QWEN35_9B_OFFLINE_EVAL_PLAN_20260908.md` 只定义本地脱敏评测和规则边界；没有下载权重、购买算力、上传真实档案或接生产链路。 |
+| F12 | 完成 | 统一 `npm test` 纳入页面可访问性回归、三枚铜钱、旧档案渲染、反馈关联；测试、类型、lint、Web Export、审计和本交接文件均有证据。 |
 
 ## 可操作路径
 
 ### 八字
 
-首页 → 命主 → 八字 → 选择性别/日界线/真太阳时 → 排出四柱 → 展开“深度判断”“本次计算依据” → 保存到记录 → 记录页打开 L3/L4/L5 → 添加事实反馈。
+首页 → 命主 → 八字 → 选择性别、日界线、真太阳时 → 排出四柱 → 查看主题判断、条件/反证、候选取用和计算依据 → 保存到记录 → 记录页打开保存时完整盘面、解释和事实反馈。未知时辰不补造时柱，也不把大运/流年缺失事实写成确定结论。
 
 ### 六爻
 
-首页 → 六爻 → 输入至少 4 字问题 → 选择父母/官鬼/妻财/子孙/兄弟 → 选择快捷自动、六次投掷或手工录入 → 生成六条爻 → 逐条检查世应、旺衰、动变和解释 → 保存；保存失败点击“重试保存原卦”。
+首页 → 六爻 → 输入至少 4 字问题 → 选择父母/官鬼/妻财/子孙/兄弟 → 选择快捷自动、六次投掷或手工录入 → 逐条检查爻位、世应、旺衰、动静、纳甲和 6/7/8/9 点 → 生成解释并保存。保存失败时点击“重试保存原卦”，不会重新随机。
 
 ### 紫微
 
-首页 → 紫微 → 生成十二宫 → 点击任一宫位查看主星、对宫和三方坐标 → 展开四化/解释 → 记录页查看保存时完整十二宫。
+首页 → 紫微 → 生成十二宫 → 点击宫位查看主星、亮度、命身定位、对宫和三方四正 → 展开四化和主题解释 → 记录页查看保存时完整十二宫。命宫文案使用真实干支坐标，不再输出无信息的“命宫落在命宫”。
 
-### 占星
+### 占星与历史
 
-首页 → 星盘 → 生成本命盘 → 在完整盘中查看行星、宫位和相位；超过 8 组时点击“显示全部相位”。未知时辰只展示通过全天稳定性检查的日级落座，不猜测上升、宫位或相位。
+首页 → 星盘 → 生成本命盘 → 查看全部星体、宫位和相位；未知时辰只展示日级稳定落座，不猜测上升、宫位或相位。历史页只读保存时结果；规则更新必须由用户主动运行当前规则复核并生成 Diff，历史快照不会静默改义。
 
 ### Future Schema 原始值
 
-设置 → 检测到“记录数据只读”后，使用“导出只读原始值”。导出只读取原始 AsyncStorage 字符串，不解码、不迁移、不覆盖；升级后再用正式备份/迁移路径恢复。
+设置 → 检测到“记录数据只读”后，使用“导出只读原始值”。导出直接读取原始 AsyncStorage 字符串，不解码、不迁移、不覆盖；升级后再使用正式备份/迁移路径恢复。任何 add/select/save/restore 等可能覆盖 blocked key 的操作都会拒绝。
 
 ## 数据迁移与回滚
 
-- 当前 Storage Schema 为 v3，未来 schema key 进入 blocked 集合；任何可能覆盖该 key 的写、删、清空、普通/加密恢复都会拒绝。
-- 同版本迁移只在读成功且目标 key 未 blocked 时写回；多 key 写入统一通过 `transactionalReplace` 保存旧值，失败尝试逐 key 回滚。
-- 清除数据使用 `transactionalRemove`，删除失败同样尝试回滚。
-- 迁移失败或回滚失败均保留原始 key，并报错；不得 `reset --hard`、强制覆盖或静默重算历史。
+- 当前 Storage Schema 为 v3。future schema key 进入 blocked 集合；对应数据是只读/不兼容状态。
+- 同版本迁移只在读取成功且目标 key 未 blocked 时写回。多 key 写入统一通过 `transactionalReplace` 保存旧值，失败时逐 key 回滚；清除使用 `transactionalRemove`。
+- 只有成功落盘后才发布 React 状态和 refs。迁移失败或回滚失败时保留原始 key并报错，不强制清空、不静默重算历史。
+- 旧六爻 payload 缺少 `lines`、证据或解释时，迁移保留可用事实，渲染层使用空数组并显示“历史记录未保存”；不会补造爻位或重新计算。回归入口为 `tests/archive-legacy-render.regression.mjs`。
 
 ## 测试与构建证据
 
-本轮实际重新执行结果：
+本轮实际重新执行：
 
 ```text
 npm test
 npm run typecheck
 npm run lint
-npm run build:web
-npm run verify:web
 npm run security:scan
 npm run security:audit
 npm audit --omit=dev
+npm run build:web
+npm run verify:web
 ```
 
 | 命令 | 结果 |
 |---|---|
-| `npm test` | 通过，221/221，0 失败，0 跳过 |
+| `npm test` | 通过，239/239，0 失败，0 跳过 |
 | `npm run typecheck` | 通过 |
 | `npm run lint` | 通过 |
-| `npm run build:web` | 通过，真实导出 10 个静态路由 |
-| `npm run verify:web` | 通过，10 routes |
 | `npm run security:scan` | 通过，7 个配置根目录无密钥命中 |
-| `npm run security:audit` | 通过报告门禁，`0 critical / 9 high / 17 moderate / 0 low` |
-| `npm audit --omit=dev` | 真实 exit 1，报告 `0 critical / 9 high / 17 moderate / 0 low`，详见 `docs/PRODUCTION_AUDIT_20260908.md` |
+| `npm run security:audit` | 以当前生产 audit 基线生成报告，数字仍为 0 critical / 9 high / 17 moderate / 0 low |
+| `npm audit --omit=dev` | 真实 exit 1，26 项：9 high / 17 moderate / 0 critical / 0 low；不是已清零 |
+| `npm run build:web` | 通过，真实导出 14 个静态路由，含 `/module/bazi`、`/module/liuyao`、`/module/ziwei`、`/module/astrology` |
+| `npm run verify:web` | 通过，14 routes、公共发布文件、bundle、深链和 SW 迁移/资源回退验证通过 |
 
-生产 audit 当前基线为 `critical=0 high=9 moderate=17 low=0`。非零退出来自 Expo/Metro/Router 等传递依赖，不能冒充已清零；本轮已逐项记录可达性和 SDK 57 兼容性，没有执行破坏性 `--force` 升级。
+生产依赖的高/中漏洞主要来自 Expo、Metro、Router、xcode 等传递工具链。本轮逐项记录可达性和兼容性，没有执行 `npm audit fix --force`，也没有用白名单把漏洞伪装成清零。基线明细见 `docs/PRODUCTION_AUDIT_20260908.md`。
+
+新增关键回归：
+
+- `tests/liuyao-casting.regression.mjs`：8 种三枚投币组合、手工/交互事实一致性、变爻、TZ 复现和规则版本。
+- `tests/archive-legacy-render.regression.mjs`：真实旧六爻迁移后进入共享 render model，不因 `lines` 缺失崩溃。
+- `tests/feedback-links.regression.mjs`：解释卡选择、相关证据筛选、默认不关联、旧 ID 保留和显式解除。
+- `tests/p5-c-page-accessibility.regression.mjs`：已纳入统一 `npm test`，不再单独遗漏。
+
+## Qwen3 5 9B 离线评测边界
+
+设备事实为 AMD Ryzen 5 5600 与 RTX 4060 约 8 GB 显存，但仓库没有模型权重、推理服务或人工评测记录。若继续试验，采用本地脱敏 fixture、受约束 JSON 输出和双轮人工审核；模型只可润色已经审核的规则结果，不能改变排盘、证据、置信度、输入指纹或历史快照。当前状态为 evaluation-not-run。
 
 ## 未完成与外部阻塞
 
-- 真机 Web/iPhone 安装、键盘/触控/性能和签名证书：本地环境没有可验收设备、证书和主体，不能声称已通过。
-- 真实手机号验证码、Apple、微信登录：当前是本地原型入口，不是上线身份系统；接入需要供应商、隐私协议、密钥和服务端。
-- 传统规则、流派选择、四化/大运/流年专业准确性：需要有资质的内容审核与可引用规则来源，当前不能用模型或模板补齐。
-- 城市数据完整覆盖与再分发许可：现有合同保持 fail-closed，不能把当前部分城市表称为全国可发布数据。
-- Qwen3.5-9B：设备有 RTX 4060 8GB，但没有安装权重或人工评测；4-bit 试验可排期，生产接入仍 blocked，方案见 `docs/QWEN35_9B_OFFLINE_EVAL_PLAN_20260908.md`。
+- 真机 Web/iPhone 安装、键盘、触控、VoiceOver、性能和签名证书：当前环境没有可验收设备、证书和主体，不能声称已通过。
+- 真实手机号验证码、Apple、微信登录：当前只有本地体验边界，不是上线身份系统；接入需要供应商、隐私协议、密钥和服务端。
+- 传统规则、流派选择、八字大运/流年、紫微四化和六爻细分规则：需要专业审核与可引用来源；专业审核前不能把工程规则描述成科学准确性。
+- 城市数据完整覆盖与再分发许可：未知地点继续 fail-closed，不能把当前部分城市表称为全国可发布数据。
+- Qwen3.5-9B：没有安装权重或人工评测；不购买服务、不上传真实出生/账号数据、不接生产链路。
+- 发布主体、隐私与商店审核材料、线上部署环境仍需产品负责人提供。
 
 ## 版本与发布记录
 
-本轮本地提交为 `770d036729900572d06308079c5ffd3d4ec47acd`，已推送到 `origin/main`。GitHub Actions 新 run `34201638220` 对应该 SHA，真实结论为 `success`；CI 中 Web Export 与 Verify Web Export 均实际执行。旧 run `33768014467` 仅为历史证据，不作为本轮验收。
+本轮已生成本地提交，当前尚未推送远端。具体 SHA 以最终 `git rev-parse HEAD` 记录为准。当前不能声称本轮 GitHub Actions 为绿色，也不引用旧 run 作为本轮证据。远端验证条件为：推送本地提交后重新检查该 SHA 对应的 Actions，确认 Web Export 和 Verify Web Export 实际执行并成功。
 
-CI 地址：https://github.com/LJ0930l-beep/guanxiang-mingpan/actions/runs/34201638220
+文件索引：
+
+- 工程交接：`docs/PROJECT_REVIEW_HANDOFF_20260908.md`
+- Word 交接：`docs/PROJECT_REVIEW_HANDOFF_20260908.docx`
+- 生产依赖审计：`docs/PRODUCTION_AUDIT_20260908.md`
+- Qwen 离线方案：`docs/QWEN35_9B_OFFLINE_EVAL_PLAN_20260908.md`

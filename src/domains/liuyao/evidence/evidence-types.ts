@@ -1,6 +1,6 @@
 import type { NormalizedLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 
-export const LIUYAO_EVIDENCE_RULE_VERSION = 'liuyao-evidence-v1' as const;
+export const LIUYAO_EVIDENCE_RULE_VERSION = 'liuyao-evidence-v2' as const;
 
 export interface LiuyaoEvidenceNode {
   id: string;

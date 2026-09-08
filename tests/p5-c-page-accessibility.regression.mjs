@@ -135,7 +135,7 @@ test('P5-C 直接打开深层路由时返回按钮有安全 fallback，不触发
 });
 
 test('P5-C 未知术数 slug 显示 unknown 状态并提供首页恢复动作', () => {
-  const route = source('src/app/module/[slug].tsx');
+  const route = source('src/screens/module-route.tsx');
   assert.match(route, /state="unknown"/);
   assert.match(route, /testID="module-unknown-route"/);
   assert.match(route, /router\.replace\('\/home'\)/);

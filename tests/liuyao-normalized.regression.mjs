@@ -26,7 +26,7 @@ test('P4-F 六爻标准模型保存复盘输入和稳定爻位引用', async () 
 test('P4-F 六爻证据图覆盖用神、旺衰、世应、动变与空亡', async () => {
   const result = await calculateLiuyaoView('这个版本的证据链是否清晰？', '官鬼', options);
   const graph = result.evidenceGraph;
-  assert.equal(graph.evidenceVersion, 'liuyao-evidence-v1');
+  assert.equal(graph.evidenceVersion, 'liuyao-evidence-v2');
   const types = new Set(graph.nodes.map((node) => node.type));
   for (const required of ['question.frame', 'yongshen.selection', 'line.strength', 'shi-ying', 'moving-change', 'void.fact', 'hexagram.structure', 'time.fact']) {
     assert.equal(types.has(required), true, required);

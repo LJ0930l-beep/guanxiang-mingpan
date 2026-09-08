@@ -1,6 +1,6 @@
 import type { NormalizedBaziChart, RelationEdge } from '@/domains/bazi/model/normalized-chart';
 
-export const BAZI_EVIDENCE_RULE_VERSION = 'bazi-evidence-v1' as const;
+export const BAZI_EVIDENCE_RULE_VERSION = 'bazi-evidence-v2' as const;
 
 export type EvidenceSource = 'chart' | 'derived-rule';
 export type EvidenceWeight = 'major' | 'medium' | 'minor';

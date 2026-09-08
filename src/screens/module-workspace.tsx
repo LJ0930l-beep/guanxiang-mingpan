@@ -1,6 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -17,6 +17,7 @@ import { AnimatedReveal } from '@/components/animated-reveal';
 import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
 import { ExplanationLayer } from '@/components/explanation-layer';
+import { ChartRenderer } from '@/components/chart-renderer';
 import { ModuleSigil } from '@/components/module-sigil';
 import { StatePanel } from '@/components/state-panel';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
@@ -39,6 +40,7 @@ import type {
 } from '@/types/charts';
 import type { BaziDayBoundary, BaziSolarTimeModel } from '@/domains/bazi/types';
 import type { BirthProfile, DivinationModule, Gender } from '@/types/domain';
+import { castThreeCoins, lineFactsFromCoinValue, LIUYAO_CASTING_RULE_VERSION, type LiuyaoCoinValue } from '@/domains/liuyao/casting';
 
 const moduleIntro: Record<DivinationModule, { step: string; action: string }> = {
   bazi: { step: '四柱落盘', action: '排出四柱' },
@@ -59,10 +61,10 @@ export function ModuleWorkspace({ slug }: ModuleWorkspaceProps) {
       {!selectedProfile ? <NoProfile /> : (
         <>
           <ProfileBanner module={module} profile={selectedProfile} />
-          {slug === 'bazi' && <BaziWorkspace profile={selectedProfile} />}
-          {slug === 'liuyao' && <LiuyaoWorkspace profile={selectedProfile} />}
-          {slug === 'ziwei' && <ZiweiWorkspace profile={selectedProfile} />}
-          {slug === 'astrology' && <AstrologyWorkspace profile={selectedProfile} />}
+          {slug === 'bazi' && <BaziWorkspace key={selectedProfile.id} profile={selectedProfile} />}
+          {slug === 'liuyao' && <LiuyaoWorkspace key={selectedProfile.id} profile={selectedProfile} />}
+          {slug === 'ziwei' && <ZiweiWorkspace key={selectedProfile.id} profile={selectedProfile} />}
+          {slug === 'astrology' && <AstrologyWorkspace key={selectedProfile.id} profile={selectedProfile} />}
         </>
       )}
     </ModuleScaffold>
@@ -459,9 +461,9 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
     try {
       setError('');
       setSaveState('idle');
-      setInputChanged(false);
       const next = calculateBaziView(profile, gender, { bazi: { dayBoundary, trueSolarTime, solarTimeModel: trueSolarTime ? solarTimeModel : 'none' } });
       setResult(next);
+      setInputChanged(false);
       try {
         await saveReading({ profile, payload: next, title: `${next.dayMaster}日主 · 四柱命盘`, summary: next.focus[0] });
         setSaveState('saved');
@@ -506,7 +508,7 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
 function BaziResult({ result }: { result: BaziChartView }) {
   const trueSolarDisplay = buildBaziTrueSolarEvidenceDisplay(result.calculationSettings, result.calculationEvidence);
   return (
-    <View style={styles.resultArea}>
+      <View style={styles.resultArea}>
       <View style={styles.resultHeading}><View><Text style={styles.resultEyebrow}>四柱命盘</Text><Text style={styles.resultTitle}>{result.dayMaster}日主</Text></View><Text style={styles.engineTag}>{result.engineVersion}</Text></View>
       <View style={styles.pillarGrid}>
         {result.pillars.map((pillar, index) => (
@@ -521,6 +523,7 @@ function BaziResult({ result }: { result: BaziChartView }) {
           </AnimatedReveal>
         ))}
       </View>
+      <ChartRenderer payload={result} compact />
       <View style={styles.evidenceStrip}><Text style={styles.evidenceLabel}>旬空</Text><Text style={styles.evidenceValue}>{result.kongWang}</Text></View>
       <View style={styles.evidenceStrip}>
         <Text style={styles.evidenceLabel}>月柱依据</Text>
@@ -545,7 +548,6 @@ function BaziResult({ result }: { result: BaziChartView }) {
 }
 
 const liuyaoTargets = ['父母', '官鬼', '妻财', '子孙', '兄弟'] as const;
-type LiuyaoCoinValue = 6 | 7 | 8 | 9;
 type LiuyaoManualLine = { position: number; yinYang: '阴' | '阳'; isChanging: boolean; value: LiuyaoCoinValue };
 
 function manualCoinValue(yinYang: '阴' | '阳', isChanging: boolean): LiuyaoCoinValue {
@@ -564,36 +566,53 @@ function LiuyaoWorkspace({ profile }: { profile: BirthProfile }) {
   const [saveState, setSaveState] = useState<'idle' | 'saved' | 'failed'>('idle');
   const [inputChanged, setInputChanged] = useState(false);
   const [error, setError] = useState('');
+  const manualYaosRef = useRef<LiuyaoManualLine[]>([]);
+  const castingBusyRef = useRef(false);
+  const [castingBusy, setCastingBusy] = useState(false);
+  const commitManualYaos = (next: LiuyaoManualLine[]) => {
+    manualYaosRef.current = next;
+    setManualYaos(next);
+  };
   const castInteractiveLine = () => {
-    if (manualYaos.length >= 6) return;
-    const total = 6 + Math.floor(Math.random() * 4);
+    if (castingBusyRef.current || manualYaosRef.current.length >= 6) return;
+    castingBusyRef.current = true;
+    setCastingBusy(true);
+    const thrown = castThreeCoins();
+    const current = manualYaosRef.current;
+    if (current.length >= 6) {
+      castingBusyRef.current = false;
+      setCastingBusy(false);
+      return;
+    }
     const nextLine: LiuyaoManualLine = {
-      position: manualYaos.length + 1,
-      yinYang: total === 7 || total === 9 ? '阳' : '阴',
-      isChanging: total === 6 || total === 9,
-      value: total as LiuyaoCoinValue,
+      position: current.length + 1,
+      ...lineFactsFromCoinValue(thrown.value),
     };
-    setManualYaos((current) => [...current, nextLine]);
+    commitManualYaos([...current, nextLine]);
     setInputChanged(true);
+    castingBusyRef.current = false;
+    setCastingBusy(false);
   };
   const toggleManualLine = (position: number) => {
-    setManualYaos((current) => {
-      const existing = current.find((line) => line.position === position);
-      if (!existing) return [...current, { position, yinYang: '阳' as const, isChanging: false, value: 7 as const }].sort((a, b) => a.position - b.position);
-      return current.map((line) => line.position === position
+    const current = manualYaosRef.current;
+    const existing = current.find((line) => line.position === position);
+    const next = !existing
+      ? [...current, { position, yinYang: '阳' as const, isChanging: false, value: 7 as const }].sort((a, b) => a.position - b.position)
+      : current.map((line) => line.position === position
         ? { ...line, yinYang: (line.yinYang === '阳' ? '阴' : '阳') as '阴' | '阳', value: manualCoinValue(line.yinYang === '阳' ? '阴' : '阳', line.isChanging) }
         : line);
-    });
+    commitManualYaos(next);
     setInputChanged(true);
   };
   const toggleManualChange = (position: number) => {
-    setManualYaos((current) => {
-      const existing = current.find((line) => line.position === position);
-      if (!existing) return [...current, { position, yinYang: '阳' as const, isChanging: true, value: 9 as const }].sort((a, b) => a.position - b.position);
-      return current.map((line) => line.position === position
+    const current = manualYaosRef.current;
+    const existing = current.find((line) => line.position === position);
+    const next = !existing
+      ? [...current, { position, yinYang: '阳' as const, isChanging: true, value: 9 as const }].sort((a, b) => a.position - b.position)
+      : current.map((line) => line.position === position
         ? { ...line, isChanging: !line.isChanging, value: manualCoinValue(line.yinYang, !line.isChanging) }
         : line);
-    });
+    commitManualYaos(next);
     setInputChanged(true);
   };
   const run = async () => {
@@ -602,7 +621,6 @@ function LiuyaoWorkspace({ profile }: { profile: BirthProfile }) {
     setLoading(true);
     setError('');
     setSaveState('idle');
-    setInputChanged(false);
     try {
       const next = await calculateLiuyaoView(question.trim(), target, {
         liuyao: {
@@ -611,6 +629,7 @@ function LiuyaoWorkspace({ profile }: { profile: BirthProfile }) {
         },
       });
       setResult(next);
+      setInputChanged(false);
       try {
         await saveReading({ profile, payload: next, title: `${next.hexagramName}${next.changedHexagramName ? ` → ${next.changedHexagramName}` : ''}`, summary: next.question });
         setSaveState('saved');
@@ -655,12 +674,12 @@ function LiuyaoWorkspace({ profile }: { profile: BirthProfile }) {
       <Text style={styles.fieldLabel}>起卦方式</Text>
       <View accessibilityLabel="六爻起卦方式" accessibilityRole="radiogroup" style={styles.chipRow}>
         {([['auto', '快捷自动'], ['interactive', '六次投掷'], ['manual', '手工录入']] as const).map(([value, label]) => (
-          <Pressable key={value} accessibilityRole="radio" accessibilityState={{ selected: castingMode === value }} onPress={() => { setCastingMode(value); setManualYaos([]); if (result) setInputChanged(true); }} style={[styles.choiceChip, castingMode === value && styles.choiceChipActive]}>
+          <Pressable key={value} accessibilityRole="radio" accessibilityState={{ selected: castingMode === value }} onPress={() => { setCastingMode(value); commitManualYaos([]); if (result) setInputChanged(true); }} style={[styles.choiceChip, castingMode === value && styles.choiceChipActive]}>
             <Text style={[styles.choiceChipText, castingMode === value && styles.choiceChipTextActive]}>{label}</Text>
           </Pressable>
         ))}
       </View>
-      {castingMode === 'interactive' && <View style={styles.interactiveCast}><Text style={styles.fieldHint}>每次投掷固定记录 6/7/8/9 点，并保留阴阳与动静事实；完成六次后再生成原卦。</Text><ActionButton accessibilityLabel="投掷下一爻" disabled={manualYaos.length >= 6} onPress={castInteractiveLine}>投掷第 {manualYaos.length + 1} 爻</ActionButton>{manualYaos.map((line) => <Text key={line.position} style={styles.fieldHint}>{line.position}爻：{line.value}点 · {line.yinYang} · {line.isChanging ? '动' : '静'}</Text>)}</View>}
+      {castingMode === 'interactive' && <View style={styles.interactiveCast}><Text style={styles.fieldHint}>三枚铜钱法（规则 {LIUYAO_CASTING_RULE_VERSION}）：每条独立投掷三枚，记录 6/7/8/9 点；未完成六次前不会生成原卦。当前页面中断不会伪造“已完成”，请从下一次投掷继续或重新开始。</Text><ActionButton accessibilityLabel="投掷下一爻" disabled={manualYaos.length >= 6 || castingBusy} onPress={castInteractiveLine}>投掷第 {manualYaos.length + 1} 爻</ActionButton>{manualYaos.map((line) => <Text key={line.position} style={styles.fieldHint}>{line.position}爻：{line.value}点 · {line.yinYang} · {line.isChanging ? '动' : '静'}</Text>)}</View>}
       {castingMode === 'manual' && <View style={styles.manualLines}><Text style={styles.fieldHint}>点击左侧切换阴/阳，右侧切换动/静；每条会同步记录 6/7/8/9 点，生成后可在盘面逐条核对。</Text>{[1, 2, 3, 4, 5, 6].map((position) => { const line = manualYaos.find((item) => item.position === position); return <View key={position} style={styles.manualLine}><Pressable accessibilityLabel={`切换${position}爻阴阳`} accessibilityRole="button" onPress={() => toggleManualLine(position)} style={styles.manualLineMain}><Text style={styles.yaoPosition}>{position}爻</Text><Text style={styles.yaoPrimary}>{line ? `${line.value}点 · ${line.yinYang}` : '待录入'}</Text></Pressable><Pressable accessibilityLabel={`切换${position}爻动静`} accessibilityRole="button" onPress={() => toggleManualChange(position)} style={styles.manualChange}><Text style={styles.yaoSecondary}>{line ? (line.isChanging ? '动爻' : '静爻') : '动/静'}</Text></Pressable></View>; })}</View>}
        <Text style={styles.fieldLabel}>用神方向</Text>
        <View accessibilityLabel="六爻用神方向" accessibilityRole="radiogroup" style={styles.chipRow}>{liuyaoTargets.map((item) => <Pressable accessibilityHint={target === item ? '当前选项' : '选择此用神方向'} accessibilityLabel={item} accessibilityRole="radio" accessibilityState={{ selected: target === item }} key={item} onPress={() => { setTarget(item); if (result) setInputChanged(true); }} style={[styles.choiceChip, target === item && styles.choiceChipActive]}><Text style={[styles.choiceChipText, target === item && styles.choiceChipTextActive]}>{item}</Text></Pressable>)}</View>
@@ -696,6 +715,7 @@ function LiuyaoResult({ result }: { result: LiuyaoChartView }) {
           </AnimatedReveal>
         ))}
       </View>
+      <ChartRenderer payload={result} compact />
       <View style={styles.timeEvidence}><Text style={styles.timeText}>{result.ganZhiTime}</Text><Text style={styles.timeText}>{result.kongWang}</Text></View>
       <ExplanationLayer
         snapshot={result.explanation}
@@ -721,9 +741,9 @@ function ZiweiWorkspace({ profile }: { profile: BirthProfile }) {
     try {
       setError('');
       setSaveState('idle');
-      setInputChanged(false);
       const next = calculateZiweiView(profile, gender);
       setResult(next);
+      setInputChanged(false);
       try {
         await saveReading({ profile, payload: next, title: `${next.fiveElement} · 十二宫命盘`, summary: next.focus[0] });
         setSaveState('saved');
@@ -794,6 +814,7 @@ function ZiweiResult({ result }: { result: ZiweiChartView }) {
           </AnimatedReveal>
         ))}
       </View>
+      <ChartRenderer payload={result} compact />
       {selected && <View style={styles.selectedPalace}><Text style={styles.resultSectionTitle}>{selected.name} · 三方四正</Text><Text style={styles.factorValue}>对宫：{selectedOpposite?.name ?? '未记录'} · 三方：{selectedTrines.join('、') || '未记录'}</Text><Text style={styles.factorValue}>主星：{selected.majorStarRefs.map((id) => result.normalizedChart.stars.find((star) => star.id === id)?.name).filter((name): name is string => Boolean(name)).join('、') || '无主星'}</Text></View>}
       <View style={styles.mutagenRow}>{result.mutagens.map((item, index) => <Text key={`${item}-${index}`} style={styles.mutagenTag}>{item}</Text>)}</View>
       <FocusList items={result.focus} />
@@ -814,9 +835,9 @@ function AstrologyWorkspace({ profile }: { profile: BirthProfile }) {
     try {
       setError('');
       setSaveState('idle');
-      setInputChanged(false);
       const next = calculateAstrologyView(profile);
       setResult(next);
+      setInputChanged(false);
       try {
         await saveReading({ profile, payload: next, title: `${next.sunSign} · 本命星盘`, summary: next.focus[0] });
         setSaveState('saved');
@@ -885,6 +906,7 @@ function AstrologyResult({ result }: { result: AstrologyChartView }) {
           <Text style={[styles.modeTag, result.calculationMode === 'approximate' && styles.modeTagPartial]}>{result.calculationMode === 'exact' ? '完整盘' : '近似盘'}</Text>
         </View>
       </View>
+      <ChartRenderer payload={result} compact />
       {result.calculationMode === 'approximate' && (
         <StatePanel
           body="出生时辰未提供；只展示全天稳定的日期级落座，宫位、上升与相位保持隐藏。"

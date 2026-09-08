@@ -19,6 +19,12 @@ import {
   groupArchiveReadings,
   type ArchiveFilterState,
 } from '@/domains/archive/query';
+import {
+  feedbackLinkSummary,
+  listFeedbackLinkOptions,
+  resolveFeedbackLinkSelection,
+  serializeFeedbackLinkSelection,
+} from '@/domains/archive/feedback-links';
 import { diffBaziInterpretations } from '@/domains/bazi/interpretation/history';
 import { buildBaziCurrentRuleReplay } from '@/domains/bazi/true-solar-presentation';
 import { useScrollToTopOnMount } from '@/hooks/use-scroll-to-top-on-mount';
@@ -53,11 +59,13 @@ export function RecordsScreen() {
   const [compareError, setCompareError] = useState('');
   const [feedbackTargetId, setFeedbackTargetId] = useState<string | null>(null);
   const [editingFeedbackId, setEditingFeedbackId] = useState<string | null>(null);
-  const [feedbackStatus, setFeedbackStatus] = useState<ReadingFeedbackStatus>('confirmed');
+  const [feedbackStatus, setFeedbackStatus] = useState<ReadingFeedbackStatus>('not-yet');
   const [feedbackObservedAt, setFeedbackObservedAt] = useState(todayShanghai());
   const [feedbackNote, setFeedbackNote] = useState('');
-  const [feedbackLinkedInterpretationIds, setFeedbackLinkedInterpretationIds] = useState('');
-  const [feedbackLinkedEvidenceIds, setFeedbackLinkedEvidenceIds] = useState('');
+  const [feedbackLinkedInterpretationId, setFeedbackLinkedInterpretationId] = useState<string | undefined>();
+  const [feedbackLinkedEvidenceIds, setFeedbackLinkedEvidenceIds] = useState<string[]>([]);
+  const [feedbackUnresolvedInterpretationIds, setFeedbackUnresolvedInterpretationIds] = useState<string[]>([]);
+  const [feedbackUnresolvedEvidenceIds, setFeedbackUnresolvedEvidenceIds] = useState<string[]>([]);
   const [feedbackError, setFeedbackError] = useState('');
   const [diffByReadingId, setDiffByReadingId] = useState<Record<string, ReturnType<typeof diffBaziInterpretations>>>({});
   const [diffError, setDiffError] = useState('');
@@ -92,23 +100,29 @@ export function RecordsScreen() {
   };
 
   const startFeedback = (readingId: string) => {
-    const reading = readings.find((item) => item.id === readingId);
-    const firstBlock = reading?.explanationSnapshot?.blocks[0];
     setFeedbackTargetId((current) => current === readingId ? null : readingId);
     setEditingFeedbackId(null);
-    setFeedbackStatus('confirmed');
+    setFeedbackStatus('not-yet');
     setFeedbackObservedAt(todayShanghai());
     setFeedbackNote('');
-    setFeedbackLinkedInterpretationIds(firstBlock?.id ?? '');
-    setFeedbackLinkedEvidenceIds(firstBlock?.evidenceRefs?.[0] ?? '');
+    setFeedbackLinkedInterpretationId(undefined);
+    setFeedbackLinkedEvidenceIds([]);
+    setFeedbackUnresolvedInterpretationIds([]);
+    setFeedbackUnresolvedEvidenceIds([]);
     setFeedbackError('');
   };
 
-  const associateCurrentExplanation = (readingId: string) => {
+  const selectFeedbackInterpretation = (readingId: string, interpretationId?: string) => {
     const reading = readings.find((item) => item.id === readingId);
-    const firstBlock = reading?.explanationSnapshot?.blocks[0];
-    setFeedbackLinkedInterpretationIds(firstBlock?.id ?? '');
-    setFeedbackLinkedEvidenceIds(firstBlock?.evidenceRefs?.[0] ?? '');
+    const option = reading ? listFeedbackLinkOptions(reading).find((item) => item.id === interpretationId) : undefined;
+    setFeedbackLinkedInterpretationId(option?.id);
+    setFeedbackLinkedEvidenceIds([]);
+    setFeedbackUnresolvedInterpretationIds([]);
+    setFeedbackUnresolvedEvidenceIds([]);
+  };
+
+  const toggleFeedbackEvidence = (evidenceId: string) => {
+    setFeedbackLinkedEvidenceIds((current) => current.includes(evidenceId) ? current.filter((id) => id !== evidenceId) : [...current, evidenceId]);
   };
 
   const startEditFeedback = (readingId: string, feedback: ReadingFeedback) => {
@@ -117,12 +131,20 @@ export function RecordsScreen() {
     setFeedbackStatus(feedback.status);
     setFeedbackObservedAt(feedback.observedAt);
     setFeedbackNote(feedback.note);
-    setFeedbackLinkedInterpretationIds((feedback.linkedInterpretationIds ?? []).join(', '));
-    setFeedbackLinkedEvidenceIds((feedback.linkedEvidenceIds ?? []).join(', '));
+    const reading = readings.find((item) => item.id === readingId);
+    const selection = reading
+      ? resolveFeedbackLinkSelection(reading, feedback)
+      : {
+          evidenceIds: [],
+          unresolvedInterpretationIds: feedback.linkedInterpretationIds ?? [],
+          unresolvedEvidenceIds: feedback.linkedEvidenceIds ?? [],
+        };
+    setFeedbackLinkedInterpretationId(selection.interpretationId);
+    setFeedbackLinkedEvidenceIds(selection.evidenceIds);
+    setFeedbackUnresolvedInterpretationIds(selection.unresolvedInterpretationIds);
+    setFeedbackUnresolvedEvidenceIds(selection.unresolvedEvidenceIds);
     setFeedbackError('');
   };
-
-  const parseFeedbackLinks = (value: string) => value.split(/[\s,，、]+/).map((item) => item.trim()).filter(Boolean);
 
   const submitFeedback = async (readingId: string) => {
     try {
@@ -130,16 +152,22 @@ export function RecordsScreen() {
         status: feedbackStatus,
         observedAt: feedbackObservedAt,
         note: feedbackNote,
-        linkedInterpretationIds: parseFeedbackLinks(feedbackLinkedInterpretationIds),
-        linkedEvidenceIds: parseFeedbackLinks(feedbackLinkedEvidenceIds),
+        ...serializeFeedbackLinkSelection({
+          ...(feedbackLinkedInterpretationId ? { interpretationId: feedbackLinkedInterpretationId } : {}),
+          evidenceIds: feedbackLinkedEvidenceIds,
+          unresolvedInterpretationIds: feedbackUnresolvedInterpretationIds,
+          unresolvedEvidenceIds: feedbackUnresolvedEvidenceIds,
+        }),
       };
       if (editingFeedbackId) await updateFeedback(readingId, editingFeedbackId, input);
       else await addFeedback(readingId, input);
       setFeedbackTargetId(null);
       setEditingFeedbackId(null);
       setFeedbackNote('');
-      setFeedbackLinkedInterpretationIds('');
-      setFeedbackLinkedEvidenceIds('');
+      setFeedbackLinkedInterpretationId(undefined);
+      setFeedbackLinkedEvidenceIds([]);
+      setFeedbackUnresolvedInterpretationIds([]);
+      setFeedbackUnresolvedEvidenceIds([]);
       setFeedbackError('');
     } catch (operationError) {
       setFeedbackError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
@@ -323,6 +351,8 @@ export function RecordsScreen() {
                   const module = moduleBySlug[reading.module];
                   const expanded = reading.id === expandedId;
                   const feedbackList = reading.feedback ?? [];
+                  const feedbackLinkOptions = listFeedbackLinkOptions(reading);
+                  const selectedFeedbackLink = feedbackLinkOptions.find((option) => option.id === feedbackLinkedInterpretationId);
                   const compareSelected = compareIds.includes(reading.id);
                   return (
                     <AnimatedReveal delay={Math.min(groupIndex * 3 + index, 6) * 55} key={reading.id}>
@@ -381,8 +411,7 @@ export function RecordsScreen() {
                                       </Pressable>
                                     </View>
                                     <Text style={styles.feedbackNote}>{feedback.note}</Text>
-                                    {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLinks}>用户复盘标记 · 已关联 {feedback.linkedInterpretationIds.length} 条解读</Text>}
-                                    {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLinks}>用户复盘标记 · 已关联 {feedback.linkedEvidenceIds.length} 条依据</Text>}
+                                    {feedbackLinkSummary(reading, feedback).map((summary) => <Text key={summary} style={styles.feedbackLinks}>用户复盘标记 · {summary}</Text>)}
                                   </View>
                                 ))
                               )}
@@ -398,10 +427,26 @@ export function RecordsScreen() {
                                   </View>
                                   <TextInput accessibilityLabel="反馈发生日期" onChangeText={setFeedbackObservedAt} placeholder="发生日期 YYYY-MM-DD" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackObservedAt} />
                                   <TextInput accessibilityLabel="反馈事实说明" multiline onChangeText={setFeedbackNote} placeholder="记录可核对的事实，例如：哪一天、发生了什么、与盘面哪条观察有关" placeholderTextColor="#65736D" style={[styles.feedbackInput, styles.feedbackNoteInput]} textAlignVertical="top" value={feedbackNote} />
-                                  <Pressable accessibilityLabel="关联当前解读和依据" accessibilityRole="button" onPress={() => associateCurrentExplanation(reading.id)} style={({ pressed }) => [styles.associateButton, pressed && styles.pressed]}><Text style={styles.associateButtonText}>关联当前解读与依据</Text></Pressable>
-                                  <Text style={styles.feedbackLinkHint}>{feedbackLinkedInterpretationIds ? '已自动关联当前解读；' : '尚未关联解读；'}{feedbackLinkedEvidenceIds ? '已自动关联本条依据。' : '可不关联依据。'} 这些关联只代表你的复盘标记，不是系统证明。</Text>
-                                  <TextInput accessibilityLabel="高级：用户关联的解释标识" onChangeText={setFeedbackLinkedInterpretationIds} placeholder="高级可选：输入解读标识" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedInterpretationIds} />
-                                  <TextInput accessibilityLabel="高级：用户关联的证据标识" onChangeText={setFeedbackLinkedEvidenceIds} placeholder="高级可选：输入依据标识" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedEvidenceIds} />
+                                  <Text style={styles.feedbackLinkHint}>选择一张具体解读卡，再从它引用的依据中选择可核对事实；默认不关联。关联只是用户复盘标记，不是系统证明。</Text>
+                                  <View accessibilityLabel="选择要复盘的解读卡片" accessibilityRole="radiogroup" style={styles.feedbackLinkOptions}>
+                                    <Pressable accessibilityLabel="不关联解读" accessibilityRole="radio" accessibilityState={{ selected: !feedbackLinkedInterpretationId }} onPress={() => selectFeedbackInterpretation(reading.id)} style={({ pressed }) => [styles.feedbackLinkOption, !feedbackLinkedInterpretationId && styles.feedbackLinkOptionActive, pressed && styles.pressed]}>
+                                      <Text style={[styles.feedbackLinkOptionTitle, !feedbackLinkedInterpretationId && styles.feedbackLinkOptionTitleActive]}>不关联</Text>
+                                      <Text style={styles.feedbackLinkOptionSummary}>只记录现实事实</Text>
+                                    </Pressable>
+                                    {feedbackLinkOptions.map((option) => (
+                                      <Pressable accessibilityHint="选择这张解读卡片后，再决定是否关联它的依据。" accessibilityLabel={`解读卡片：${option.title}`} accessibilityRole="radio" accessibilityState={{ selected: feedbackLinkedInterpretationId === option.id }} key={option.id} onPress={() => selectFeedbackInterpretation(reading.id, option.id)} style={({ pressed }) => [styles.feedbackLinkOption, feedbackLinkedInterpretationId === option.id && styles.feedbackLinkOptionActive, pressed && styles.pressed]}>
+                                        <Text style={[styles.feedbackLinkOptionTitle, feedbackLinkedInterpretationId === option.id && styles.feedbackLinkOptionTitleActive]}>{option.title}</Text>
+                                        <Text style={styles.feedbackLinkOptionSummary}>{option.summary}</Text>
+                                      </Pressable>
+                                    ))}
+                                  </View>
+                                  {!!selectedFeedbackLink && selectedFeedbackLink.evidence.length > 0 && (
+                                    <View accessibilityLabel="选择要复盘的依据" style={styles.feedbackEvidenceOptions}>
+                                      <Text style={styles.feedbackEvidenceLabel}>这张解读引用的依据（可多选）</Text>
+                                      {selectedFeedbackLink.evidence.map((evidence) => <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: feedbackLinkedEvidenceIds.includes(evidence.id) }} accessibilityLabel={`依据：${evidence.label}`} key={evidence.id} onPress={() => toggleFeedbackEvidence(evidence.id)} style={({ pressed }) => [styles.feedbackEvidenceOption, feedbackLinkedEvidenceIds.includes(evidence.id) && styles.feedbackEvidenceOptionActive, pressed && styles.pressed]}><Text style={styles.feedbackEvidenceText}>{feedbackLinkedEvidenceIds.includes(evidence.id) ? '✓ ' : ''}{evidence.label}</Text></Pressable>)}
+                                    </View>
+                                  )}
+                                  {(feedbackUnresolvedInterpretationIds.length > 0 || feedbackUnresolvedEvidenceIds.length > 0) && <Text style={styles.feedbackLinkHint}>这条历史反馈含有当前版本无法显示的旧关联；保存时会保留原始关联，点击“不关联”才会解除。</Text>}
                                   {!!feedbackError && <Text accessibilityLabel={`错误：${feedbackError}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.feedbackError}>{feedbackError}</Text>}
                                   <ActionButton accessibilityLabel="保存这次事实反馈" disabled={recordsReadOnly} onPress={() => void submitFeedback(reading.id)} style={styles.feedbackSaveButton} variant="secondary">{editingFeedbackId ? '保存修改' : '保存反馈'}</ActionButton>
                                 </View>
@@ -509,8 +554,17 @@ const styles = StyleSheet.create({
   feedbackForm: { marginTop: spacing.x4, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x3 },
   feedbackFormLabel: { color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 11 },
   feedbackLinkHint: { marginTop: spacing.x2, color: palette.patina, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 15 },
-  associateButton: { minHeight: layout.minTouch, marginTop: spacing.x2, alignSelf: 'flex-start', justifyContent: 'center', borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
-  associateButtonText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10 },
+  feedbackLinkOptions: { marginTop: spacing.x2, gap: spacing.x2 },
+  feedbackLinkOption: { minHeight: layout.minTouch, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, padding: spacing.x2 },
+  feedbackLinkOptionActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },
+  feedbackLinkOptionTitle: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11 },
+  feedbackLinkOptionTitleActive: { color: palette.paleBrass },
+  feedbackLinkOptionSummary: { marginTop: spacing.x1, color: palette.patina, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 15 },
+  feedbackEvidenceOptions: { marginTop: spacing.x3, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x2, gap: spacing.x1 },
+  feedbackEvidenceLabel: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
+  feedbackEvidenceOption: { minHeight: layout.minTouch, justifyContent: 'center', paddingHorizontal: spacing.x2, borderRadius: radii.input },
+  feedbackEvidenceOptionActive: { backgroundColor: 'rgba(183,155,101,0.14)' },
+  feedbackEvidenceText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
   statusOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x2 },
   statusOption: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   statusOptionActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.jadeGlow },

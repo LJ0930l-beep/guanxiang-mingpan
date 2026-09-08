@@ -1,6 +1,6 @@
 import type { NormalizedZiweiChart } from '@/domains/ziwei/model/normalized-chart';
 
-export const ZIWEI_EVIDENCE_RULE_VERSION = 'ziwei-evidence-v1' as const;
+export const ZIWEI_EVIDENCE_RULE_VERSION = 'ziwei-evidence-v2' as const;
 
 export type ZiweiEvidenceSource = 'chart' | 'derived-rule';
 

@@ -26,7 +26,7 @@ test('P4-D 紫微 Explanation V1 只引用标准化证据', () => {
   const snapshot = result.explanation;
   assert.ok(snapshot);
   assert.equal(snapshot.explanationVersion, ZIWEI_EXPLANATION_VERSION);
-  assert.deepEqual(snapshot.blocks.map((block) => block.category), ['overview', 'life-palace', 'body-palace', 'three-square-four-correctness', 'mutagens', 'focus-palaces', 'summary']);
+  assert.deepEqual(snapshot.blocks.map((block) => block.category), ['overview', 'life-palace', 'body-palace', 'star-combinations', 'three-square-four-correctness', 'mutagens', 'focus-palaces', 'summary']);
   const evidenceIds = new Set(result.evidenceGraph.nodes.map((node) => node.id));
   for (const block of snapshot.blocks) {
     assert.ok(block.summary.length >= 20 && block.summary.length <= 80, `${block.category} summary length`);

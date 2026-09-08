@@ -7,6 +7,7 @@ import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 import { buildLiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 import { buildLiuyaoExplanation } from '@/domains/liuyao/explanation/index';
+import { LIUYAO_CASTING_RULE_VERSION } from '@/domains/liuyao/casting';
 
 const LIUYAO_TARGETS = ['父母', '兄弟', '官鬼', '妻财', '子孙'] as const;
 type LiuyaoCoinValue = 6 | 7 | 8 | 9;
@@ -73,7 +74,10 @@ export async function calculateLiuyaoView(
   const autoSeed = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
   const seed = normalizeLiuyaoSeed(options?.seed === undefined ? autoSeed : options.seed);
   const date = options?.date === undefined ? new Date().toISOString() : options.date;
-  const settings = calculationSettings(options);
+  const settings = {
+    ...calculationSettings(options),
+    liuyaoCastingRuleVersion: LIUYAO_CASTING_RULE_VERSION,
+  };
   const calculationDate = normalizeLiuyaoDate(date, settings.timezone);
   const seedScope = LIUYAO_SEED_SCOPE;
   const requestedMethod = options?.liuyao?.method ?? 'auto';
@@ -131,7 +135,12 @@ export async function calculateLiuyaoView(
     const lines = result.fullYaos
       .slice()
       .sort((a, b) => b.position - a.position)
-      .map((line) => ({
+      .map((line) => {
+      const extendedLine = line as typeof line & {
+        changedYao?: { naJia: string; wuXing: string; liuQin: string; relation: string } | null;
+        changeAnalysis?: { huaType: string; description: string; originalZhi: string; changedZhi: string };
+      };
+      return ({
       position: line.position,
       yinYang: line.type === 1 ? ('阳' as const) : ('阴' as const),
       ...(recordedManualYaos ? { value: recordedManualYaos.find((manual) => manual.position === line.position)?.value } : {}),
@@ -144,7 +153,24 @@ export async function calculateLiuyaoView(
       isYingYao: line.isYingYao,
       strength: line.strength?.wangShuai ? (strengthLabels[line.strength.wangShuai] ?? line.strength.wangShuai) : undefined,
       evidence: line.strength?.evidence?.slice(0, 3) ?? [],
-      }));
+      ...(extendedLine.changedYao ? {
+        changed: {
+          naJia: extendedLine.changedYao.naJia,
+          wuXing: extendedLine.changedYao.wuXing,
+          liuQin: extendedLine.changedYao.liuQin,
+          relation: extendedLine.changedYao.relation,
+        },
+      } : {}),
+      ...(extendedLine.changeAnalysis ? {
+        changeAnalysis: {
+          huaType: extendedLine.changeAnalysis.huaType,
+          description: extendedLine.changeAnalysis.description,
+          originalNaJia: extendedLine.changeAnalysis.originalZhi,
+          changedNaJia: extendedLine.changeAnalysis.changedZhi,
+        },
+      } : {}),
+      });
+      });
     const moving = lines.filter((line) => line.isChanging);
     const time = result.ganZhiTime;
     const generated = generatedAt(options);
@@ -157,7 +183,59 @@ export async function calculateLiuyaoView(
       date: calculationDate,
       seedScope,
       castingMethod: requestedMethod,
+      castingRuleVersion: LIUYAO_CASTING_RULE_VERSION,
       ...(recordedManualYaos ? { manualYaos: recordedManualYaos } : {}),
+    };
+    const yongShen = (result.yongShen ?? []).map((group) => ({
+      targetLiuQin: group.targetLiuQin,
+      selectionStatus: group.selectionStatus,
+      selectionNote: group.selectionNote,
+      selected: {
+        liuQin: group.selected.liuQin,
+        ...(group.selected.position !== undefined ? { position: group.selected.position } : {}),
+        ...(group.selected.naJia ? { naJia: group.selected.naJia } : {}),
+        ...(group.selected.changedNaJia ? { changedNaJia: group.selected.changedNaJia } : {}),
+        element: group.selected.element,
+        source: group.selected.source,
+        strength: group.selected.strength,
+        strengthLabel: group.selected.strengthLabel,
+        movementState: group.selected.movementState,
+        movementLabel: group.selected.movementLabel,
+        isShiYao: group.selected.isShiYao,
+        isYingYao: group.selected.isYingYao,
+        ...(group.selected.kongWangState ? { kongWangState: group.selected.kongWangState } : {}),
+        evidence: group.selected.evidence,
+      },
+      candidates: group.candidates.map((candidate) => ({
+        liuQin: candidate.liuQin,
+        ...(candidate.position !== undefined ? { position: candidate.position } : {}),
+        ...(candidate.naJia ? { naJia: candidate.naJia } : {}),
+        ...(candidate.changedNaJia ? { changedNaJia: candidate.changedNaJia } : {}),
+        element: candidate.element,
+        source: candidate.source,
+        strength: candidate.strength,
+        strengthLabel: candidate.strengthLabel,
+        movementState: candidate.movementState,
+        movementLabel: candidate.movementLabel,
+        isShiYao: candidate.isShiYao,
+        isYingYao: candidate.isYingYao,
+        ...(candidate.kongWangState ? { kongWangState: candidate.kongWangState } : {}),
+        evidence: candidate.evidence,
+      })),
+    }));
+    const timeRecommendations = (result.timeRecommendations ?? []).map((recommendation) => ({
+      targetLiuQin: recommendation.targetLiuQin,
+      type: recommendation.type,
+      ...(recommendation.earthlyBranch ? { earthlyBranch: recommendation.earthlyBranch } : {}),
+      trigger: recommendation.trigger,
+      basis: recommendation.basis,
+      description: recommendation.description,
+    }));
+    const castingFacts = {
+      ruleVersion: LIUYAO_CASTING_RULE_VERSION,
+      method: requestedMethod,
+      timezone: settings.timezone,
+      ...(recordedManualYaos ? { lineValues: recordedManualYaos.map((line) => ({ position: line.position, value: line.value! })) } : {}),
     };
     const fingerprint = inputFingerprint({ module: 'liuyao', inputSnapshot, calculationSettings: settings });
     const normalizedChart = normalizeLiuyaoChart({
@@ -172,6 +250,9 @@ export async function calculateLiuyaoView(
     ganZhiTime: `${time.year.gan}${time.year.zhi}年 ${time.month.gan}${time.month.zhi}月 ${time.day.gan}${time.day.zhi}日 ${time.hour.gan}${time.hour.zhi}时`,
     kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongDizhi.join('、')}`,
     lines,
+    yongShen,
+    timeRecommendations,
+    castingFacts,
     }, { engineVersion: ENGINE_VERSIONS.liuyao, snapshotVersion: CHART_SNAPSHOT_VERSION });
     const evidenceGraph = buildLiuyaoEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.liuyao });
 
@@ -190,6 +271,7 @@ export async function calculateLiuyaoView(
     date,
     seedScope,
     castingMethod: requestedMethod,
+    castingRuleVersion: LIUYAO_CASTING_RULE_VERSION,
     ...(recordedManualYaos ? { manualYaos: recordedManualYaos } : {}),
     hexagramName: result.hexagramName,
     changedHexagramName: result.changedHexagramName,
@@ -197,6 +279,9 @@ export async function calculateLiuyaoView(
     ganZhiTime: `${time.year.gan}${time.year.zhi}年 ${time.month.gan}${time.month.zhi}月 ${time.day.gan}${time.day.zhi}日 ${time.hour.gan}${time.hour.zhi}时`,
     kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongDizhi.join('、')}`,
     lines,
+    yongShen,
+    timeRecommendations,
+    castingFacts,
     normalizedChart,
     evidenceGraph,
     explanation: buildLiuyaoExplanation({ chart: normalizedChart, evidenceGraph, generatedAt: generated }),

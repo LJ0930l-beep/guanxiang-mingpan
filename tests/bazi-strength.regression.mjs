@@ -52,7 +52,7 @@ test('P2-C four strength classes remain explainable and do not collapse into a s
       'strength:control-drain',
       'strength:relations',
     ], birthDate);
-    assert.equal(assessment.ruleVersion, 'bazi-strength-v1', birthDate);
+    assert.equal(assessment.ruleVersion, 'bazi-strength-v2', birthDate);
     assert.equal(assessment.decisionPath.every((step) => Array.isArray(step.evidenceRefs)), true, birthDate);
   }
 });

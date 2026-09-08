@@ -178,7 +178,7 @@ test('六爻固定种子保持卦名、干支时间和六爻证据稳定', async
   assert.equal(result.seed, fixedCalculation.seed);
   assert.equal(result.date, fixedCalculation.date);
   assert.equal(result.seedScope, 'guanxiang-local-v1');
-  assert.deepEqual(result.calculationSettings, { timezone: 'Asia/Shanghai' });
+  assert.deepEqual(result.calculationSettings, { timezone: 'Asia/Shanghai', liuyaoCastingRuleVersion: 'three-coin-v1' });
   assert.deepEqual(result.inputSnapshot, {
     type: 'liuyao',
     timezone: 'Asia/Shanghai',
@@ -188,6 +188,7 @@ test('六爻固定种子保持卦名、干支时间和六爻证据稳定', async
     date: '2026-01-01T20:00:00',
     seedScope: 'guanxiang-local-v1',
     castingMethod: 'auto',
+    castingRuleVersion: 'three-coin-v1',
   });
   assert.equal(result.question, question);
   assert.equal(result.hexagramName, '离为火');

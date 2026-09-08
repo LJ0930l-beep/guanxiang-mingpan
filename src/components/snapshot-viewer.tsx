@@ -6,6 +6,7 @@ import type { BaziInterpretationDiff } from '@/domains/bazi/interpretation/histo
 import { buildBaziTrueSolarEvidenceDisplay } from '@/domains/bazi/true-solar-presentation';
 import { listGlossaryTerms } from '@/domains/explanation/glossary';
 import { buildSnapshotViewerModel } from '@/domains/archive/types';
+import { feedbackLinkSummary } from '@/domains/archive/feedback-links';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
 import type { SavedReading } from '@/types/domain';
 
@@ -71,15 +72,19 @@ function inputRows(model: ReturnType<typeof buildSnapshotViewerModel>) {
 function calculationRows(model: ReturnType<typeof buildSnapshotViewerModel>) {
   if (model.payload.module !== 'bazi') return [['业务时区', model.calculationSnapshot.calculationSettings.timezone] as const];
   const settings = model.payload.calculationSettings;
-  const display = buildBaziTrueSolarEvidenceDisplay(settings, model.payload.calculationEvidence);
   const rows: (readonly [string, string])[] = [
     ['业务时区', settings.timezone],
     ['日界线', settings.dayBoundary === 'ziEarly' ? '子初换日' : '午夜换日'],
     ['真太阳时', settings.trueSolarTime ? `启用 · ${settings.solarTimeModel}` : '未启用'],
     ['城市数据', settings.locationDatasetVersion],
     ['历法解析', settings.calendarResolverVersion],
-    ...display.rows,
   ];
+  if (!model.payload.calculationEvidence) {
+    rows.push(['计算依据', '历史记录未保存八字证据；不会补造或重算。']);
+    return rows;
+  }
+  const display = buildBaziTrueSolarEvidenceDisplay(settings, model.payload.calculationEvidence);
+  rows.push(...display.rows);
   if (display.conflictMessage) rows.push(['一致性提示', display.conflictMessage]);
   return rows;
 }
@@ -189,8 +194,7 @@ export function SnapshotViewer({ reading, diff, onRunBaziDiff }: SnapshotViewerP
             <View key={feedback.id} style={styles.feedbackItem}>
             <View style={styles.feedbackTop}><Text style={styles.feedbackStatus}>{feedback.status}</Text><Text style={styles.feedbackDate}>{feedback.observedAt}</Text>{!!feedback.updatedAt && <Text style={styles.feedbackDate}>更新 {feedback.updatedAt.slice(0, 10)}</Text>}</View>
             <Text style={styles.feedbackNote}>{feedback.note}</Text>
-            {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLink}>已关联 {feedback.linkedInterpretationIds.length} 条解读（用户复盘标记）</Text>}
-            {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLink}>已关联 {feedback.linkedEvidenceIds.length} 条依据（用户复盘标记）</Text>}
+            {feedbackLinkSummary(reading, feedback).map((summary) => <Text key={summary} style={styles.feedbackLink}>用户复盘标记 · {summary}</Text>)}
           </View>
         ))}
       </Section>

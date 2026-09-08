@@ -34,7 +34,7 @@ test('P4-C 紫微标准模型与证据图具有稳定 ID 和完整引用', () =>
   assert.equal(chart.bodyPalaceRefId, chart.palaces.find((palace) => palace.isBodyPalace)?.id);
   assert.equal(chart.palaces.every((palace) => palace.trinePalaceRefIds.length === 2), true);
   assert.equal(chart.palaces.every((palace) => typeof palace.oppositePalaceRefId === 'string'), true);
-  assert.equal(graph.evidenceVersion, 'ziwei-evidence-v1');
+  assert.equal(graph.evidenceVersion, 'ziwei-evidence-v2');
   assert.equal(graph.source.modelVersion, chart.modelVersion);
   const ids = new Set(graph.nodes.map((node) => node.id));
   assert.equal(ids.size, graph.nodes.length);

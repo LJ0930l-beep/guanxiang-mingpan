@@ -36,7 +36,9 @@ test('P5-G production web export verification and security headers are wired', (
   const serviceWorker = readFileSync('public/sw.js', 'utf8');
   assert.match(serviceWorker, /offline\.html/);
   assert.match(serviceWorker, /cache\.put\(event\.request, response\.clone\(\)\)/);
-  assert.match(serviceWorker, /cached \?\? caches\.match\(OFFLINE\)/);
+  assert.match(serviceWorker, /if \(cached\) return cached/);
+  assert.match(serviceWorker, /isNavigation/);
+  assert.match(serviceWorker, /status: 503/);
   assert.match(readFileSync('public/robots.txt', 'utf8'), /Disallow: \/$/m);
   assert.match(readFileSync('scripts/verify-web-export.mjs', 'utf8'), /expectedPublicFiles/);
   assert.match(readFileSync('src/app/+html.tsx', 'utf8'), /lang="zh-CN"/);

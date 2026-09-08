@@ -3,7 +3,7 @@ import { GLOSSARY_VERSION, type ExplanationBlock, type ExplanationConfidence, ty
 import type { ZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 import type { NormalizedZiweiChart } from '@/domains/ziwei/model/normalized-chart';
 
-export const ZIWEI_EXPLANATION_VERSION = 'ziwei-explanation-v1' as const;
+export const ZIWEI_EXPLANATION_VERSION = 'ziwei-explanation-v2' as const;
 
 type BuildInput = {
   chart: NormalizedZiweiChart;
@@ -35,11 +35,25 @@ function palaceName(chart: NormalizedZiweiChart, refId: string | undefined): str
   return chart.palaces.find((palace) => palace.id === refId)?.name ?? '未标记宫位';
 }
 
+function palacePosition(chart: NormalizedZiweiChart, refId: string | undefined): string {
+  const palace = chart.palaces.find((item) => item.id === refId);
+  return palace?.stemBranch || '位置未记录';
+}
+
 function starNames(chart: NormalizedZiweiChart, refId: string | undefined): string {
   const ids = chart.palaces.find((palace) => palace.id === refId)?.majorStarRefs ?? [];
   const names = ids
     .map((id) => chart.stars.find((star) => star.id === id)?.name)
     .filter((name): name is string => Boolean(name));
+  return names.length ? names.join('、') : '未见十四主星坐守';
+}
+
+function starDetails(chart: NormalizedZiweiChart, refId: string | undefined): string {
+  const ids = chart.palaces.find((palace) => palace.id === refId)?.majorStarRefs ?? [];
+  const names = ids
+    .map((id) => chart.stars.find((star) => star.id === id))
+    .filter((star): star is NonNullable<typeof star> => Boolean(star))
+    .map((star) => `${star.name}${star.brightness ? `（${star.brightness}）` : ''}${star.mutagen ? ` · 化${star.mutagen}` : ''}`);
   return names.length ? names.join('、') : '未见十四主星坐守';
 }
 
@@ -73,6 +87,8 @@ function makeBlock(
 export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: BuildInput): ExplanationSnapshot {
   const lifePalace = palaceName(chart, chart.lifePalaceRefId);
   const bodyPalace = palaceName(chart, chart.bodyPalaceRefId);
+  const lifePosition = palacePosition(chart, chart.lifePalaceRefId);
+  const bodyPosition = palacePosition(chart, chart.bodyPalaceRefId);
   const lifeRefs = refsFor(evidenceGraph, palaceEvidence(evidenceGraph, chart.lifePalaceRefId));
   const bodyRefs = refsFor(evidenceGraph, palaceEvidence(evidenceGraph, chart.bodyPalaceRefId));
   const mutagenRefs = refsFor(evidenceGraph, evidenceGraph.nodes.filter((node) => node.type === 'mutagen.edge').map((node) => node.id));
@@ -83,7 +99,7 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     makeBlock(
       'overview',
       '先看盘面骨架',
-      `本盘以${lifePalace}为命宫、${bodyPalace}为身宫，先定位十二宫与主星。`,
+      `本盘命宫坐标为${lifePosition}，身宫坐标为${bodyPosition}，先定位十二宫与主星。`,
       [
         `本次排盘固定记录了${chart.palaces.length}个宫位、${chart.stars.length}颗星曜及其位置。`,
         `命宫与身宫是阅读入口，后续解释会把每个判断回连到具体宫位和星曜事实。`,
@@ -95,7 +111,7 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     makeBlock(
       'life-palace',
       '命宫位置',
-      `命宫落在${lifePalace}，主星记录为${starNames(chart, chart.lifePalaceRefId)}，可从此处展开。`,
+      `命宫定位于${lifePosition}（宫名：${lifePalace}），主星记录为${starNames(chart, chart.lifePalaceRefId)}，可从此处展开。`,
       [
         `命宫的天干地支与星曜清单来自标准化宫位模型，而不是页面临时拼接。`,
         '这意味着什么：命宫可以作为继续查看主星、亮度和四化引用的坐标，但不会单独生成现实结论。',
@@ -106,13 +122,28 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     makeBlock(
       'body-palace',
       '身宫位置',
-      `身宫落在${bodyPalace}，命主与身主字段一并保留作复盘坐标。`,
+      `身宫定位于${bodyPosition}（宫名：${bodyPalace}），命主与身主字段一并保留作复盘坐标。`,
       [
         `身宫位置通过稳定宫位 ID 保存，可与命宫位置和星曜引用做复盘对照。`,
         `这意味着什么：身宫是盘面中的另一条观察坐标，需结合命宫与其他证据阅读。`,
       ],
       bodyRefs,
       ['glossary:ziwei:body-palace', 'glossary:ziwei:palace-position'],
+    ),
+    makeBlock(
+      'star-combinations',
+      '主星与组合',
+      `命宫主星组合为${starDetails(chart, chart.lifePalaceRefId)}，只按本次算法落点展示。`,
+      [
+        `命宫主星、亮度与四化字段来自星曜落点节点：${starDetails(chart, chart.lifePalaceRefId)}。`,
+        '主星组合可以作为继续查阅主题的入口；具体流派含义必须连同安星、亮度和四化规则一起复核。',
+        '当前没有把星曜名称自动翻译成职业、婚姻或性格断语，也不会用缺失星曜补齐组合。',
+      ],
+      refsFor(evidenceGraph, evidenceGraph.nodes
+        .filter((node) => node.type === 'star.placement' && chart.lifePalaceRefId && node.subjectRefs.includes(chart.lifePalaceRefId))
+        .map((node) => node.id)),
+      ['glossary:ziwei:main-star', 'glossary:ziwei:four-transform'],
+      'medium',
     ),
     makeBlock(
       'three-square-four-correctness',
@@ -153,7 +184,7 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     makeBlock(
       'summary',
       '本盘小结',
-      `先确认${lifePalace}与${bodyPalace}，再按四化与星曜落点逐层展开。`,
+      `先确认${lifePalace}（${lifePosition}）与${bodyPalace}（${bodyPosition}），再按四化与星曜落点逐层展开。`,
       [
         `本版小结只汇总已计算的宫位、星曜和命身关系，不跨出盘面事实作事件承诺。`,
         '这意味着什么：保存快照后，可以在未来版本中对照解释版本和证据引用是否发生变化。',

@@ -3,7 +3,7 @@ import { GLOSSARY_VERSION, type ExplanationBlock, type ExplanationConfidence, ty
 import type { BaziEvidenceGraph, EvidenceNode, StrengthAssessment } from '@/domains/bazi/evidence/evidence-types';
 import type { BaziInterpretation, InterpretationResult } from '@/domains/bazi/interpretation/rules';
 
-export const BAZI_EXPLANATION_VERSION = 'bazi-explanation-v1' as const;
+export const BAZI_EXPLANATION_VERSION = 'bazi-explanation-v2' as const;
 
 const ELEMENT_LABELS: Record<string, string> = {
   wood: '木',

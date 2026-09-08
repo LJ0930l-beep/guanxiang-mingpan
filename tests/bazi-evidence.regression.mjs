@@ -23,7 +23,7 @@ const fixture = {
 test('P2-B evidence graph separates element facts, month command, roots and exposures', () => {
   const result = calculateBaziView(fixture, undefined, { generatedAt: '2026-08-15T00:00:00.000Z' });
   const graph = result.evidenceGraph;
-  assert.equal(graph.evidenceVersion, 'bazi-evidence-v1');
+  assert.equal(graph.evidenceVersion, 'bazi-evidence-v2');
   assert.equal(graph.source.modelVersion, 'bazi-normalized-v1');
   assert.equal(graph.relationEdges.length, result.normalizedChart.relations.length);
 

@@ -33,8 +33,8 @@ test('P2-F 保存完整的归一化盘、证据图和解释快照', () => {
 
   assert.ok(snapshot);
   assert.equal(snapshot.normalizedChart.modelVersion, 'bazi-normalized-v1');
-  assert.equal(snapshot.evidenceGraph.evidenceVersion, 'bazi-evidence-v1');
-  assert.equal(snapshot.interpretation.interpretationVersion, 'bazi-rules-v2');
+  assert.equal(snapshot.evidenceGraph.evidenceVersion, 'bazi-evidence-v2');
+  assert.equal(snapshot.interpretation.interpretationVersion, 'bazi-rules-v3');
   assert.strictEqual(snapshot.normalizedChart, chart.normalizedChart);
   assert.strictEqual(snapshot.evidenceGraph, chart.evidenceGraph);
   assert.strictEqual(snapshot.interpretation, chart.interpretation);
@@ -44,7 +44,7 @@ test('P2-F Diff 只比较用户主动提供的新旧解释，不会触发计算'
   const oldInterpretation = result('1980-01-01').interpretation;
   const newInterpretation = {
     ...oldInterpretation,
-    interpretationVersion: 'bazi-rules-v3',
+    interpretationVersion: 'bazi-rules-v4',
     results: oldInterpretation.results.map((item) => item.id === 'interpretation:strength'
       ? {
           ...item,

@@ -22,9 +22,9 @@ test('P2-D interpretation is versioned and every conclusion points to graph evid
   const result = calculateBaziView({ ...base, birthDate: '1980-01-01' }, undefined, { generatedAt: '2026-08-15T00:00:00.000Z' });
   const interpretation = result.interpretation;
   const evidenceIds = new Set(result.evidenceGraph.nodes.map((node) => node.id));
-  assert.equal(interpretation.interpretationVersion, 'bazi-rules-v2');
+  assert.equal(interpretation.interpretationVersion, 'bazi-rules-v3');
   assert.deepEqual(interpretation.results.map((item) => item.category), ['strength', 'element', 'relation']);
-  assert.equal(interpretation.results.every((item) => item.ruleVersion === 'bazi-rules-v2'), true);
+  assert.equal(interpretation.results.every((item) => item.ruleVersion === 'bazi-rules-v3'), true);
   assert.equal(interpretation.results.every((item) => item.evidenceRefs.every((id) => evidenceIds.has(id))), true);
   assert.equal(interpretation.results.every((item) => item.counterEvidenceRefs.every((id) => evidenceIds.has(id))), true);
 });

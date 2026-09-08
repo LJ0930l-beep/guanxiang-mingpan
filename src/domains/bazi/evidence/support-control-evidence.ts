@@ -1,7 +1,7 @@
 import type { NormalizedBaziChart, BaziElement } from '@/domains/bazi/model/normalized-chart';
 import type { EvidenceNode, StrengthAssessment, StrengthDecisionStep } from '@/domains/bazi/evidence/evidence-types';
 
-export const BAZI_STRENGTH_RULE_VERSION = 'bazi-strength-v1' as const;
+export const BAZI_STRENGTH_RULE_VERSION = 'bazi-strength-v2' as const;
 
 type Influence = 'support' | 'opposing' | 'neutral';
 

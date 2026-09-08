@@ -45,6 +45,10 @@ export default function RootLayout() {
           <Stack.Screen name="records" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="module/[slug]" />
+          <Stack.Screen name="module/bazi" />
+          <Stack.Screen name="module/liuyao" />
+          <Stack.Screen name="module/ziwei" />
+          <Stack.Screen name="module/astrology" />
           <Stack.Screen name="privacy" />
           <Stack.Screen name="terms" />
         </Stack>

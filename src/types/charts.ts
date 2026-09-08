@@ -10,7 +10,7 @@ import type { ZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 import type { NormalizedAstrologyChart } from '@/domains/astrology/model/normalized-chart';
 import type { AstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
 import type { AstrologyCalculationPolicy, AstrologyPrecision } from '@/domains/astrology/policy';
-import type { NormalizedLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
+import type { NormalizedLiuyaoChart, LiuyaoCastingFacts, LiuyaoTimeRecommendation, LiuyaoYongShenGroup } from '@/domains/liuyao/model/normalized-chart';
 import type { PublicBirthDateRangePolicy } from '@/domains/policy/public-birth-date-range';
 import type { LiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 
@@ -31,6 +31,8 @@ export interface CalculationSettings {
   historicalDstPolicy?: BaziHistoricalDstPolicy;
   /** Versioned Astrology precision and location policy; absent on legacy records. */
   astrologyPolicy?: AstrologyCalculationPolicy;
+  /** Versioned three-coin rule used for Liuyao reproducibility. */
+  liuyaoCastingRuleVersion?: string;
 }
 
 export interface BirthInputSnapshot {
@@ -68,6 +70,8 @@ export interface LiuyaoInputSnapshot {
   seedScope: string;
   /** How the six lines were obtained. Legacy records omit this field. */
   castingMethod?: 'auto' | 'interactive' | 'manual' | 'time' | 'number';
+  /** Explicit rule contract; legacy snapshots omit it and remain read-only facts. */
+  castingRuleVersion?: string;
   /** Exact user-entered/coin-toss facts, when the method was not auto. */
   manualYaos?: {
     position: number;
@@ -146,6 +150,13 @@ export interface LiuyaoLineView {
   isYingYao: boolean;
   strength?: string;
   evidence: string[];
+  changed?: {
+    naJia: string;
+    wuXing: string;
+    liuQin: string;
+    relation: string;
+  };
+  changeAnalysis?: { huaType: string; description: string; originalNaJia: string; changedNaJia: string };
 }
 
 export interface LiuyaoChartView extends ChartMeta {
@@ -155,6 +166,7 @@ export interface LiuyaoChartView extends ChartMeta {
   date: string;
   seedScope: string;
   castingMethod?: LiuyaoInputSnapshot['castingMethod'];
+  castingRuleVersion?: string;
   manualYaos?: LiuyaoInputSnapshot['manualYaos'];
   hexagramName: string;
   changedHexagramName?: string;
@@ -164,6 +176,10 @@ export interface LiuyaoChartView extends ChartMeta {
   lines: LiuyaoLineView[];
   normalizedChart: NormalizedLiuyaoChart;
   evidenceGraph: LiuyaoEvidenceGraph;
+  /** The engine's structured analysis facts, kept separate from explanation prose. */
+  yongShen?: LiuyaoYongShenGroup[];
+  timeRecommendations?: LiuyaoTimeRecommendation[];
+  castingFacts?: LiuyaoCastingFacts;
   focus: string[];
 }
 

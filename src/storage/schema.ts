@@ -230,6 +230,9 @@ function migrateCalculationSettings(value: unknown, module?: DivinationModule): 
     ...(module === 'astrology' && isAstrologyCalculationPolicy(raw.astrologyPolicy)
       ? { astrologyPolicy: raw.astrologyPolicy }
       : {}),
+    ...(module === 'liuyao' && typeof raw.liuyaoCastingRuleVersion === 'string'
+      ? { liuyaoCastingRuleVersion: raw.liuyaoCastingRuleVersion }
+      : {}),
   };
 }
 
@@ -499,6 +502,11 @@ function migrateReading(value: unknown): SavedReading | null {
           date: rawPayload.date ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.date : generatedAt),
           seedScope: rawPayload.seedScope ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.seedScope : 'legacy'),
           ...(typeof rawPayload.castingMethod === 'string' ? { castingMethod: rawPayload.castingMethod } : {}),
+          ...(typeof rawPayload.castingRuleVersion === 'string'
+            ? { castingRuleVersion: rawPayload.castingRuleVersion }
+            : inputSnapshot.type === 'liuyao' && typeof inputSnapshot.castingRuleVersion === 'string'
+              ? { castingRuleVersion: inputSnapshot.castingRuleVersion }
+              : {}),
           ...(Array.isArray(rawPayload.manualYaos) ? { manualYaos: rawPayload.manualYaos } : {}),
         }
       : {}),

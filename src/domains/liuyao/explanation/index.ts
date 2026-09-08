@@ -3,7 +3,7 @@ import { GLOSSARY_VERSION, type ExplanationBlock, type ExplanationConfidence, ty
 import type { LiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 import type { NormalizedLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 
-export const LIUYAO_EXPLANATION_VERSION = 'liuyao-explanation-v1' as const;
+export const LIUYAO_EXPLANATION_VERSION = 'liuyao-explanation-v2' as const;
 
 const COMMON_CAVEAT = '六爻解释只描述当前问题、取用和盘面结构，不承诺结果或具体时间。';
 
@@ -53,6 +53,12 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
   const shiYing = evidenceGraph.nodes.find((node) => node.type === 'shi-ying')?.id;
   const strength = idsOf(evidenceGraph, 'line.strength');
   const moving = idsOf(evidenceGraph, 'moving-change');
+  const yongShenDetails = idsOf(evidenceGraph, 'yongshen.detail');
+  const timeRecommendations = idsOf(evidenceGraph, 'time.recommendation');
+  const selectedGroups = chart.yongShen ?? [];
+  const selectedText = selectedGroups
+    .map((group) => `${group.targetLiuQin}${group.selected.position ? `取${group.selected.position}爻` : '未定具体爻位'}（${group.selectionStatus}，${group.selected.strengthLabel}，${group.selected.movementLabel}）`)
+    .join('；');
   const blocks: ExplanationBlock[] = [
     makeBlock(
       'question-frame',
@@ -72,9 +78,10 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
       `当前用神方向记录为“${chart.yongShenTarget}”，可回到对应六亲和爻位核对。`,
       [
         '用神方向来自起卦时的用户选择，证据层同时保留六亲、纳甲和五行字段。',
+        `当前可核对的取用候选：${selectedText || '引擎未返回具体爻位，保持待定。'}。`,
         '这意味着什么：取用是观察入口，复盘时仍应检查它是否贴合问题语境。',
       ],
-      refsFor(evidenceGraph, [yongShen, ...strength].filter((item): item is string => Boolean(item))),
+      refsFor(evidenceGraph, [yongShen, ...yongShenDetails, ...strength].filter((item): item is string => Boolean(item))),
       ['glossary:liuyao:yongshen', 'glossary:liuyao:strength'],
       'high',
     ),
@@ -94,7 +101,7 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
       '动变结构',
       moving.length ? `本卦记录${moving.length}个动爻，变卦字段为${chart.changedHexagramName ?? '未返回'}，可逐条核对。` : '本次未记录动爻，变卦字段保持为空。',
       [
-        moving.length ? '动爻节点与本卦、变卦结构节点相互引用，便于逐爻核对变化。' : '静卦不会补写动爻或变卦，复盘应回到世应、时间和旺衰字段。',
+        moving.length ? `动爻节点与本卦、变卦结构节点相互引用；${chart.lines.filter((line) => line.isChanging).map((line) => `${line.position}爻${line.changed ? `变为${line.changed.naJia}${line.changed.wuXing}` : '的变后事实未保存'}`).join('、')}。` : '静卦不会补写动爻或变卦，复盘应回到世应、时间和旺衰字段。',
         '这意味着什么：动变只说明盘面结构如何变化，不对现实结果或具体时间作保证。',
       ],
       refsFor(evidenceGraph, [...moving, structure].filter((item): item is string => Boolean(item))),
@@ -105,12 +112,12 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
     makeBlock(
       'time-strength',
       '时间与旺衰',
-      `本盘保存干支时间和${strength.length}条爻状态证据，供后续复盘核对。`,
+      `本盘保存干支时间、${strength.length}条爻状态证据和${timeRecommendations.length}条规则参考窗口，供后续复盘核对。`,
       [
-        '干支时间、日期、空亡和每爻旺衰证据分开记录，避免把一个标签压缩成总分。',
-        '这意味着什么：时间字段用于解释当下结构背景，不在基础版推算具体应验日期。',
+        `干支时间、日期、空亡和每爻旺衰证据分开记录；当前选中的取用为${selectedText || '未保存具体取用爻位'}。`,
+        timeRecommendations.length ? '引擎返回的参考窗口只来自取用爻的旺衰、动变或空亡事实；它是待观察线索，不是确定日期。' : '当前没有足够的规则参考窗口；不会为了完整感补造日期。',
       ],
-      refsFor(evidenceGraph, [time, voidFact, ...strength].filter((item): item is string => Boolean(item))),
+      refsFor(evidenceGraph, [time, voidFact, ...timeRecommendations, ...strength].filter((item): item is string => Boolean(item))),
       ['glossary:liuyao:strength', 'glossary:liuyao:void'],
     ),
     makeBlock(
@@ -129,10 +136,10 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
       '本卦小结',
       `先核对问题与用神，再按世应、旺衰和动变逐层复盘当前结构。`,
       [
-        '小结只汇总本次输入和已返回的结构证据，不把基础盘面扩写成确定结果。',
+        `小结只汇总本次输入和已返回的结构证据；取用状态为${selectedText || '未保存具体取用事实'}。`,
         '这意味着什么：保存快照后，反馈记录可以按日期回填，用来检查当时的判断边界。',
       ],
-      refsFor(evidenceGraph, [question, yongShen, shiYing, structure, time].filter((item): item is string => Boolean(item))),
+      refsFor(evidenceGraph, [question, yongShen, ...yongShenDetails, shiYing, structure, time].filter((item): item is string => Boolean(item))),
       ['glossary:liuyao:yongshen', 'glossary:liuyao:shi-ying', 'glossary:liuyao:strength'],
     ),
   ];

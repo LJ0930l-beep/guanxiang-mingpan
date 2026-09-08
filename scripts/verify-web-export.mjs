@@ -3,7 +3,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const dist = resolve(fileURLToPath(new URL('../dist/', import.meta.url)));
-const expectedRoutes = ['index.html', 'home.html', 'profiles.html', 'records.html', 'settings.html', 'privacy.html', 'terms.html', '+not-found.html', '_sitemap.html', 'module/[slug].html'];
+const expectedRoutes = ['index.html', 'home.html', 'profiles.html', 'records.html', 'settings.html', 'privacy.html', 'terms.html', '+not-found.html', '_sitemap.html', 'module/[slug].html', 'module/bazi.html', 'module/liuyao.html', 'module/ziwei.html', 'module/astrology.html'];
 const missing = expectedRoutes.filter((route) => !existsSync(join(dist, route)));
 if (missing.length > 0) {
   console.error(`Web export is missing static routes: ${missing.join(', ')}`);
@@ -14,6 +14,15 @@ const expectedPublicFiles = ['manifest.webmanifest', 'robots.txt', 'offline.html
 const missingPublicFiles = expectedPublicFiles.filter((file) => !existsSync(join(dist, file)));
 if (missingPublicFiles.length > 0) {
   console.error(`Web export is missing public release files: ${missingPublicFiles.join(', ')}`);
+  process.exit(1);
+}
+const serviceWorker = readFileSync(join(dist, 'sw.js'), 'utf8');
+if (!serviceWorker.includes("CACHE_PREFIX = 'guanxiang-shell-'")
+  || !serviceWorker.includes("CACHE_PREFIX}v2")
+  || !serviceWorker.includes('caches.keys()')
+  || !serviceWorker.includes('isNavigation')
+  || !serviceWorker.includes('status: 503')) {
+  console.error('Web export service worker is missing cache migration or offline resource fallback.');
   process.exit(1);
 }
 
@@ -32,4 +41,4 @@ if (!existsSync(bundleDirectory) || readdirSync(bundleDirectory).filter((file) =
   console.error('Web export JavaScript bundle is missing.');
   process.exit(1);
 }
-console.log(`Web export verification passed (${expectedRoutes.length} routes).`);
+console.log(`Web export verification passed (${expectedRoutes.length} routes, deep links and SW migration).`);

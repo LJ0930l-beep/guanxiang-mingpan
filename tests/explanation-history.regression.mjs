@@ -26,7 +26,7 @@ test('P4-H 解释历史 Diff 只比较已保存快照，不触发重新计算', 
   const oldSnapshot = payload.explanation;
   const newSnapshot = {
     ...oldSnapshot,
-    explanationVersion: 'bazi-explanation-v2',
+    explanationVersion: 'bazi-explanation-v3',
     blocks: oldSnapshot.blocks.map((block, index) => index === 0
       ? { ...block, summary: `${block.summary}（修订）`, evidenceRefs: block.evidenceRefs.slice(0, -1) }
       : block),
