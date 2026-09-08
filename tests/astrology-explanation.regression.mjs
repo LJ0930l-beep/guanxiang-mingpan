@@ -42,8 +42,9 @@ test('P4-E 精确星盘生成标准化点位、证据和解释', () => {
   for (const block of result.explanation?.blocks ?? []) {
     assert.ok(block.summary.length >= 20 && block.summary.length <= 90, block.category);
     assert.ok(block.paragraphs.length >= 2 && block.paragraphs.length <= 4, block.category);
-    assert.ok(block.evidenceRefs.length >= 2 && block.evidenceRefs.length <= 5, block.category);
+    assert.ok(block.evidenceRefs.length <= 5, block.category);
     assert.equal(block.evidenceRefs.every((ref) => ids.has(ref)), true);
+    if (block.category === 'precision') assert.equal(block.evidenceRefs.every((ref) => result.evidenceGraph.nodes.find((node) => node.id === ref)?.type === 'precision.caveat'), true);
     assert.equal(block.glossaryRefs.every((ref) => Boolean(getGlossaryTerm(ref))), true);
     assert.equal(block.paragraphs.join(' ').match(/一定|必然|注定|必有|疾病|死亡|投资收益|成功|失败/) ?? null, null);
   }

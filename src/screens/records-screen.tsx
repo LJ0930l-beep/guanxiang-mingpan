@@ -92,14 +92,23 @@ export function RecordsScreen() {
   };
 
   const startFeedback = (readingId: string) => {
+    const reading = readings.find((item) => item.id === readingId);
+    const firstBlock = reading?.explanationSnapshot?.blocks[0];
     setFeedbackTargetId((current) => current === readingId ? null : readingId);
     setEditingFeedbackId(null);
     setFeedbackStatus('confirmed');
     setFeedbackObservedAt(todayShanghai());
     setFeedbackNote('');
-    setFeedbackLinkedInterpretationIds('');
-    setFeedbackLinkedEvidenceIds('');
+    setFeedbackLinkedInterpretationIds(firstBlock?.id ?? '');
+    setFeedbackLinkedEvidenceIds(firstBlock?.evidenceRefs?.[0] ?? '');
     setFeedbackError('');
+  };
+
+  const associateCurrentExplanation = (readingId: string) => {
+    const reading = readings.find((item) => item.id === readingId);
+    const firstBlock = reading?.explanationSnapshot?.blocks[0];
+    setFeedbackLinkedInterpretationIds(firstBlock?.id ?? '');
+    setFeedbackLinkedEvidenceIds(firstBlock?.evidenceRefs?.[0] ?? '');
   };
 
   const startEditFeedback = (readingId: string, feedback: ReadingFeedback) => {
@@ -372,8 +381,8 @@ export function RecordsScreen() {
                                       </Pressable>
                                     </View>
                                     <Text style={styles.feedbackNote}>{feedback.note}</Text>
-                                    {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLinks}>用户关联 · Interpretation {feedback.linkedInterpretationIds.join(', ')}</Text>}
-                                    {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLinks}>用户关联 · Evidence {feedback.linkedEvidenceIds.join(', ')}</Text>}
+                                    {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLinks}>用户复盘标记 · 已关联 {feedback.linkedInterpretationIds.length} 条解读</Text>}
+                                    {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLinks}>用户复盘标记 · 已关联 {feedback.linkedEvidenceIds.length} 条依据</Text>}
                                   </View>
                                 ))
                               )}
@@ -389,9 +398,10 @@ export function RecordsScreen() {
                                   </View>
                                   <TextInput accessibilityLabel="反馈发生日期" onChangeText={setFeedbackObservedAt} placeholder="发生日期 YYYY-MM-DD" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackObservedAt} />
                                   <TextInput accessibilityLabel="反馈事实说明" multiline onChangeText={setFeedbackNote} placeholder="记录可核对的事实，例如：哪一天、发生了什么、与盘面哪条观察有关" placeholderTextColor="#65736D" style={[styles.feedbackInput, styles.feedbackNoteInput]} textAlignVertical="top" value={feedbackNote} />
-                                  <TextInput accessibilityLabel="用户关联的解释 ID" onChangeText={setFeedbackLinkedInterpretationIds} placeholder="可选：Interpretation ID，多个用逗号分隔" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedInterpretationIds} />
-                                  <TextInput accessibilityLabel="用户关联的证据 ID" onChangeText={setFeedbackLinkedEvidenceIds} placeholder="可选：Evidence ID，多个用逗号分隔" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedEvidenceIds} />
-                                  <Text style={styles.feedbackLinkHint}>这些关联只代表你的复盘标记（user-linked），不会被当作系统证明，也不会改写原命盘。</Text>
+                                  <Pressable accessibilityLabel="关联当前解读和依据" accessibilityRole="button" onPress={() => associateCurrentExplanation(reading.id)} style={({ pressed }) => [styles.associateButton, pressed && styles.pressed]}><Text style={styles.associateButtonText}>关联当前解读与依据</Text></Pressable>
+                                  <Text style={styles.feedbackLinkHint}>{feedbackLinkedInterpretationIds ? '已自动关联当前解读；' : '尚未关联解读；'}{feedbackLinkedEvidenceIds ? '已自动关联本条依据。' : '可不关联依据。'} 这些关联只代表你的复盘标记，不是系统证明。</Text>
+                                  <TextInput accessibilityLabel="高级：用户关联的解释标识" onChangeText={setFeedbackLinkedInterpretationIds} placeholder="高级可选：输入解读标识" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedInterpretationIds} />
+                                  <TextInput accessibilityLabel="高级：用户关联的证据标识" onChangeText={setFeedbackLinkedEvidenceIds} placeholder="高级可选：输入依据标识" placeholderTextColor="#65736D" style={styles.feedbackInput} value={feedbackLinkedEvidenceIds} />
                                   {!!feedbackError && <Text accessibilityLabel={`错误：${feedbackError}`} accessibilityLiveRegion="polite" accessibilityRole="alert" style={styles.feedbackError}>{feedbackError}</Text>}
                                   <ActionButton accessibilityLabel="保存这次事实反馈" disabled={recordsReadOnly} onPress={() => void submitFeedback(reading.id)} style={styles.feedbackSaveButton} variant="secondary">{editingFeedbackId ? '保存修改' : '保存反馈'}</ActionButton>
                                 </View>
@@ -499,6 +509,8 @@ const styles = StyleSheet.create({
   feedbackForm: { marginTop: spacing.x4, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x3 },
   feedbackFormLabel: { color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 11 },
   feedbackLinkHint: { marginTop: spacing.x2, color: palette.patina, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 15 },
+  associateButton: { minHeight: layout.minTouch, marginTop: spacing.x2, alignSelf: 'flex-start', justifyContent: 'center', borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
+  associateButtonText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10 },
   statusOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x2 },
   statusOption: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   statusOptionActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.jadeGlow },

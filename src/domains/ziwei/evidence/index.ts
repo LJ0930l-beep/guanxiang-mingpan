@@ -53,7 +53,25 @@ export function buildZiweiEvidenceGraph(
     ruleVersion: ZIWEI_EVIDENCE_RULE_VERSION,
     source: 'chart',
   }));
-  const relationNodes: ZiweiEvidenceNode[] = [];
+  const relationNodes: ZiweiEvidenceNode[] = chart.palaces.map((palace) => {
+    const refs = [palace.id, palace.oppositePalaceRefId, ...palace.trinePalaceRefIds]
+      .filter((value): value is string => Boolean(value));
+    return {
+      id: `${palace.id}:three-square-four-correctness`,
+      type: 'palace.relation',
+      subjectRefs: refs,
+      label: `${palace.name}三方四正关系`,
+      facts: {
+        palaceRefId: palace.id,
+        oppositePalaceRefId: palace.oppositePalaceRefId,
+        trinePalaceRefIds: palace.trinePalaceRefIds,
+        relation: 'three-square-four-correctness',
+      },
+      weight: palace.name === '命宫' ? 'major' : 'medium',
+      ruleVersion: ZIWEI_EVIDENCE_RULE_VERSION,
+      source: 'derived-rule',
+    };
+  });
   if (chart.lifePalaceRefId || chart.bodyPalaceRefId) {
     relationNodes.push({
       id: 'ziwei:relation:life-body',

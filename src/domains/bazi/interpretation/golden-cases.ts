@@ -4,7 +4,7 @@ export interface BaziInterpretationGoldenCase {
   id: string;
   caseType: BaziInterpretationCaseType;
   birthDate: string;
-  expectedStatus?: 'strong' | 'weak' | 'balanced' | 'uncertain';
+  expectedStatus?: 'strong' | 'weak' | 'conflict' | 'balanced' | 'uncertain';
   expectedConfidence?: 'high' | 'medium' | 'low';
   expectedRelationTypes?: string[];
 }
@@ -33,7 +33,7 @@ export const BAZI_INTERPRETATION_GOLDEN_CASES: readonly BaziInterpretationGolden
     id: 'interpretation-balanced-conflict',
     caseType: 'golden-interpretation',
     birthDate: '1980-01-01',
-    expectedStatus: 'balanced',
+    expectedStatus: 'conflict',
     expectedConfidence: 'medium',
   },
   {

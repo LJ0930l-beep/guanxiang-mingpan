@@ -2,7 +2,7 @@
  * Stable domain data for Ziwei.  UI labels are derived from this model; the
  * explanation layer never needs to inspect iztro's presentation objects.
  */
-export const ZIWEI_NORMALIZED_MODEL_VERSION = 'ziwei-normalized-v1' as const;
+export const ZIWEI_NORMALIZED_MODEL_VERSION = 'ziwei-normalized-v2' as const;
 
 export type ZiweiStarType = 'major' | 'minor' | 'adjective';
 
@@ -30,6 +30,9 @@ export interface NormalizedZiweiPalace {
   minorStarRefs: string[];
   adjectiveStarRefs: string[];
   decadalRange?: [number, number];
+  /** Palace coordinates used by the three-square/four-correctness view. */
+  oppositePalaceRefId?: string;
+  trinePalaceRefIds: string[];
 }
 
 export interface ZiweiMutagenEdge {
@@ -131,7 +134,7 @@ export function normalizeZiweiChart(
 ): NormalizedZiweiChart {
   const rawPalaces = raw.palaces ?? [];
   const stars: NormalizedZiweiStar[] = [];
-  const palaces = rawPalaces.map((palace, position) => {
+  const palaces: NormalizedZiweiPalace[] = rawPalaces.map((palace, position) => {
     const index = Number.isFinite(palace.index) ? Number(palace.index) : position;
     const branch = palace.earthlyBranch ?? '';
     const id = palaceId(index, branch);
@@ -150,8 +153,17 @@ export function normalizeZiweiChart(
       decadalRange: palace.decadal?.range?.length === 2
         ? [Number(palace.decadal.range[0]), Number(palace.decadal.range[1])] as [number, number]
         : undefined,
+      trinePalaceRefIds: [],
     } satisfies NormalizedZiweiPalace;
   });
+  const indexed = new Map(palaces.map((palace) => [palace.index, palace]));
+  for (const palace of palaces) {
+    palace.oppositePalaceRefId = indexed.get((palace.index + 6) % 12)?.id;
+    palace.trinePalaceRefIds = [
+      indexed.get((palace.index + 4) % 12)?.id,
+      indexed.get((palace.index + 8) % 12)?.id,
+    ].filter((id): id is string => Boolean(id));
+  }
   const mutagenEdges = stars
     .filter((star) => Boolean(star.mutagen))
     .map((star) => ({

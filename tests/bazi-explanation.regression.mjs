@@ -33,9 +33,12 @@ test('P4-B 八字 Explanation V1 生成 8 类可追溯解释块', () => {
   for (const block of snapshot.blocks) {
     assert.ok(block.summary.length >= 20 && block.summary.length <= 60, `${block.category} summary length`);
     assert.ok(block.paragraphs.length >= 2 && block.paragraphs.length <= 4, `${block.category} paragraph count`);
-    assert.ok(block.evidenceRefs.length >= 2 && block.evidenceRefs.length <= 5, `${block.category} evidence count`);
+    assert.ok(block.evidenceRefs.length <= 5, `${block.category} evidence count`);
     assert.equal(block.evidenceRefs.every((ref) => evidenceIds.has(ref)), true);
     assert.equal(block.counterEvidenceRefs.every((ref) => evidenceIds.has(ref)), true);
+    const refs = block.evidenceRefs.map((ref) => result.evidenceGraph.nodes.find((node) => node.id === ref)?.type);
+    if (block.category === 'season') assert.equal(refs.every((type) => type === 'season.month-command'), true);
+    if (block.category === 'relations') assert.equal(refs.every((type) => type === 'relation.edge'), true);
     assert.equal(block.glossaryRefs.every((ref) => Boolean(getGlossaryTerm(ref))), true);
     assert.equal(block.paragraphs.join(' ').match(/一定|必然|注定|必有|疾病|死亡|投资收益/) ?? null, null);
   }

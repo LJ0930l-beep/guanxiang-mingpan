@@ -8,16 +8,9 @@ export const LIUYAO_EXPLANATION_VERSION = 'liuyao-explanation-v1' as const;
 const COMMON_CAVEAT = '六爻解释只描述当前问题、取用和盘面结构，不承诺结果或具体时间。';
 
 function refsFor(graph: LiuyaoEvidenceGraph, preferred: string[], min = 2, max = 5): string[] {
-  const ids = new Set<string>();
-  for (const id of preferred) {
-    if (graph.nodes.some((node) => node.id === id)) ids.add(id);
-    if (ids.size >= max) break;
-  }
-  for (const node of graph.nodes) {
-    if (ids.size >= min) break;
-    ids.add(node.id);
-  }
-  return [...ids].slice(0, max);
+  const valid = new Set(graph.nodes.map((node) => node.id));
+  void min;
+  return [...new Set(preferred)].filter((id) => valid.has(id)).slice(0, max);
 }
 
 function idsOf(graph: LiuyaoEvidenceGraph, type: string): string[] {

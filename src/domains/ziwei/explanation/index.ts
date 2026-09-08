@@ -19,16 +19,9 @@ function refsFor(
   min = 2,
   max = 5,
 ): string[] {
-  const ids = new Set<string>();
-  for (const id of preferred) {
-    if (graph.nodes.some((node) => node.id === id)) ids.add(id);
-    if (ids.size >= max) break;
-  }
-  for (const node of graph.nodes) {
-    if (ids.size >= min) break;
-    ids.add(node.id);
-  }
-  return [...ids].slice(0, max);
+  const valid = new Set(graph.nodes.map((node) => node.id));
+  void min;
+  return [...new Set(preferred)].filter((id) => valid.has(id)).slice(0, max);
 }
 
 function palaceEvidence(graph: ZiweiEvidenceGraph, palaceRefId: string | undefined): string[] {
@@ -83,6 +76,7 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
   const lifeRefs = refsFor(evidenceGraph, palaceEvidence(evidenceGraph, chart.lifePalaceRefId));
   const bodyRefs = refsFor(evidenceGraph, palaceEvidence(evidenceGraph, chart.bodyPalaceRefId));
   const mutagenRefs = refsFor(evidenceGraph, evidenceGraph.nodes.filter((node) => node.type === 'mutagen.edge').map((node) => node.id));
+  const threeSquareRefs = refsFor(evidenceGraph, evidenceGraph.nodes.filter((node) => node.type === 'palace.relation').map((node) => node.id));
   const relationRef = evidenceGraph.nodes.find((node) => node.type === 'life-body.relation')?.id;
   const palaceRefs = refsFor(evidenceGraph, evidenceGraph.nodes.filter((node) => node.type === 'palace.position').map((node) => node.id));
   const blocks: ExplanationBlock[] = [
@@ -119,6 +113,18 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
       ],
       bodyRefs,
       ['glossary:ziwei:body-palace', 'glossary:ziwei:palace-position'],
+    ),
+    makeBlock(
+      'three-square-four-correctness',
+      '三方四正',
+      '每个宫位都保留对宫与三方宫位坐标，先看关联位置，再回到星曜事实。',
+      [
+        '三方四正节点只记录宫位之间的坐标关系，不把关联自动翻译成吉凶。',
+        '这意味着什么：展开某个宫位时，可以同时核对它的对宫和三方宫位，避免只看单宫。',
+      ],
+      threeSquareRefs,
+      ['glossary:ziwei:palace-position', 'glossary:ziwei:life-palace'],
+      'medium',
     ),
     makeBlock(
       'mutagens',

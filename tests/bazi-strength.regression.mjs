@@ -38,7 +38,7 @@ test('P2-C four strength classes remain explainable and do not collapse into a s
   const cases = [
     ['1980-01-16', 'strong'],
     ['1980-05-11', 'weak'],
-    ['1980-01-01', 'balanced'],
+    ['1980-01-01', 'conflict'],
     ['1980-01-06', 'uncertain'],
   ];
   for (const [birthDate, expectedStatus] of cases) {

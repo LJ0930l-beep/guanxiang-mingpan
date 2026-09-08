@@ -16,7 +16,7 @@ import { useApp } from '@/state/app-context';
 export default function SettingsRoute() {
   const router = useRouter();
   const { ready, authenticated } = useRequireAuth();
-  const { signOut, clearLocalData, createLocalBackup, previewLocalBackup, restoreLocalBackup, createEncryptedLocalBackup, previewEncryptedLocalBackup, restoreEncryptedLocalBackup, profiles, readings, storageBlockedKeys } = useApp();
+  const { signOut, clearLocalData, createLocalBackup, createReadOnlyStorageExport, previewLocalBackup, restoreLocalBackup, createEncryptedLocalBackup, previewEncryptedLocalBackup, restoreEncryptedLocalBackup, profiles, readings, storageBlockedKeys } = useApp();
   const [error, setError] = useState('');
   const [backupBusy, setBackupBusy] = useState(false);
   const [backupPassword, setBackupPassword] = useState('');
@@ -79,6 +79,19 @@ export default function SettingsRoute() {
       const text = await createEncryptedLocalBackup(backupPassword);
       const mode = await exportBackupFile(text, { encrypted: true });
       Alert.alert(mode === 'downloaded' ? '加密备份已下载' : '加密备份已准备好', '请将文件与备份密码分开保存；应用不会替你找回密码。');
+    } catch (operationError) {
+      setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
+    } finally {
+      setBackupBusy(false);
+    }
+  };
+
+  const exportReadOnlyStorage = async () => {
+    setError('');
+    setBackupBusy(true);
+    try {
+      const mode = await exportBackupFile(await createReadOnlyStorageExport());
+      Alert.alert(mode === 'downloaded' ? '只读原始值已下载' : '只读原始值已准备好', '该文件仅用于升级恢复或提交诊断，不会尝试覆盖未来版本数据。');
     } catch (operationError) {
       setError(operationError instanceof Error ? operationError.message : UI_STATE_COPY.failure.body);
     } finally {
@@ -174,6 +187,7 @@ export default function SettingsRoute() {
             <ActionButton accessibilityLabel="导入加密本机备份文件" disabled={clearBlocked || backupBusy} onPress={importEncryptedBackup} style={styles.backupButton} variant="quiet">导入加密备份</ActionButton>
           </View>
           <Text style={styles.backupWarning}>普通备份是可读 JSON；加密备份采用 scrypt + AES-256-GCM。请把文件和密码分开保管。</Text>
+          {clearBlocked && <ActionButton accessibilityLabel="导出未来版本数据的只读原始值" disabled={backupBusy} onPress={exportReadOnlyStorage} style={styles.backupButton} variant="quiet">导出只读原始值</ActionButton>}
         </View>
         <ActionButton accessibilityLabel="清除本机全部数据" disabled={clearBlocked} onPress={confirmClear} style={styles.clearButton} variant="quiet">清除本机全部数据</ActionButton>
       </View>

@@ -17,7 +17,8 @@ const ELEMENT_LABELS: Record<string, string> = {
 const STATUS_LABELS: Record<StrengthAssessment['status'], string> = {
   strong: '偏强',
   weak: '偏弱',
-  balanced: '接近平衡',
+  conflict: '支持与限制并存',
+  balanced: '规则验证的平衡',
   uncertain: '待定',
 };
 
@@ -36,8 +37,11 @@ function unique(values: string[]): string[] {
 
 function refsAtLeast(nodes: EvidenceNode[], preferred: string[], fallback: string[], min = 2, max = 5): string[] {
   const valid = new Set(nodes.map((node) => node.id));
-  const selected = unique([...preferred, ...fallback]).filter((id) => valid.has(id));
-  return selected.slice(0, Math.max(min, Math.min(max, selected.length)));
+  // Evidence references are claims, not decoration. Never pad a block with
+  // the first nodes in the graph merely to hit a display count.
+  void fallback;
+  void min;
+  return unique(preferred).filter((id) => valid.has(id)).slice(0, max);
 }
 
 function nodeLabels(nodes: EvidenceNode[], refs: string[], empty = '当前没有额外的独立证据节点。'): string {
@@ -107,7 +111,7 @@ export function buildBaziExplanation(input: {
   const exposureNodes = nodes.filter((node) => node.type === 'exposure.stem');
   const elementNodes = nodes.filter((node) => node.type.startsWith('element.'));
   const relationNodes = nodes.filter((node) => node.type === 'relation.edge');
-  const fallbackRefs = nodes.slice(0, 5).map((node) => node.id);
+  const fallbackRefs: string[] = [];
   const strengthRefs = refsAtLeast(nodes, strengthResult?.evidenceRefs ?? assessment.supportingEvidenceRefs, fallbackRefs);
   const strengthCounterRefs = unique(assessment.opposingEvidenceRefs).slice(0, 5);
   const seasonRefs = refsAtLeast(nodes, seasonNode ? [seasonNode.id] : [], [...assessment.supportingEvidenceRefs, ...fallbackRefs]);
@@ -118,6 +122,11 @@ export function buildBaziExplanation(input: {
   const summaryRefs = refsAtLeast(nodes, [...assessment.supportingEvidenceRefs, ...assessment.opposingEvidenceRefs], [...seasonRefs, ...relationRefs]);
   const summaryCounterRefs = unique(assessment.opposingEvidenceRefs).slice(0, 5);
   const status = STATUS_LABELS[assessment.status];
+  const candidateUse = assessment.status === 'strong'
+    ? '候选取用入口：先观察泄耗或制约方向；这只是待复核候选，不是流派定论。'
+    : assessment.status === 'weak'
+      ? '候选取用入口：先观察生扶方向；这只是待复核候选，不是流派定论。'
+      : '候选取用暂不定：支持与限制证据尚未满足当前规则的验证条件。';
   const seasonInfluence = String(seasonNode?.facts.influence ?? 'neutral');
   const seasonLabel = INFLUENCE_LABELS[seasonInfluence] ?? '中性';
   const elementCounts = Object.entries(elementNodes.reduce<Record<string, number>>((counts, node) => {
@@ -156,7 +165,7 @@ export function buildBaziExplanation(input: {
       [
         `为什么这样看：${strengthResult?.conclusion ?? `当前结构显示日主${status}。`}`,
         `支持侧主要包括：${supportingText}`,
-        `限制与反向检查包括：${opposingText}`,
+        `限制与反向检查包括：${opposingText}；${candidateUse}`,
         `这意味着什么：${assessment.status === 'uncertain' ? '目前更适合保留待定标签，先观察哪些证据会改变判断。' : '当前状态可作为后续阅读的入口，但仍要连同其他模块证据一起理解。'}`,
       ],
       strengthRefs,
@@ -247,7 +256,7 @@ export function buildBaziExplanation(input: {
       [
         `当前综合方向：日主状态先按${status}阅读，月令分类为${seasonLabel}，再结合根气、透干和关系节点复核。`,
         `支持因素：${supportingText}`,
-        `限制因素：${opposingText}`,
+        `限制因素：${opposingText}；${candidateUse}`,
         '这意味着什么：这是一份可回查的结构说明，不替用户决定婚姻、职业、医疗、法律或投资等现实行动。',
       ],
       summaryRefs,

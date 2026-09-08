@@ -9,16 +9,9 @@ export const ASTROLOGY_EXPLANATION_VERSION = 'astrology-explanation-v1' as const
 const COMMON_CAVEAT = '占星解释只描述盘面位置与结构，不把星象翻译成确定事件或现实决策。';
 
 function refsFor(graph: AstrologyEvidenceGraph, preferred: string[], min = 2, max = 5): string[] {
-  const ids = new Set<string>();
-  for (const id of preferred) {
-    if (graph.nodes.some((node) => node.id === id)) ids.add(id);
-    if (ids.size >= max) break;
-  }
-  for (const node of graph.nodes) {
-    if (ids.size >= min) break;
-    ids.add(node.id);
-  }
-  return [...ids].slice(0, max);
+  const valid = new Set(graph.nodes.map((node) => node.id));
+  void min;
+  return [...new Set(preferred)].filter((id) => valid.has(id)).slice(0, max);
 }
 
 function nodes(graph: AstrologyEvidenceGraph, type: string): string[] {

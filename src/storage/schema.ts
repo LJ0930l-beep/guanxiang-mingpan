@@ -446,6 +446,7 @@ export function snapshotMetaFromPayload(payload: ChartPayload): ChartSnapshotMet
     calculationSettings: payload.calculationSettings,
     calculationSettingsOrigin: 'current',
     inputSnapshot: payload.inputSnapshot,
+    ...(payload.inputFingerprint ? { inputFingerprint: payload.inputFingerprint } : {}),
   };
 }
 
@@ -497,6 +498,8 @@ function migrateReading(value: unknown): SavedReading | null {
           seed: rawPayload.seed ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.seed : 'legacy-unknown'),
           date: rawPayload.date ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.date : generatedAt),
           seedScope: rawPayload.seedScope ?? (inputSnapshot.type === 'liuyao' ? inputSnapshot.seedScope : 'legacy'),
+          ...(typeof rawPayload.castingMethod === 'string' ? { castingMethod: rawPayload.castingMethod } : {}),
+          ...(Array.isArray(rawPayload.manualYaos) ? { manualYaos: rawPayload.manualYaos } : {}),
         }
       : {}),
     ...(explanationSnapshot ? { explanation: explanationSnapshot } : {}),
@@ -514,6 +517,11 @@ function migrateReading(value: unknown): SavedReading | null {
           ? rawSnapshotMeta.calculationSettingsOrigin
           : migratedOrigin,
         inputSnapshot: migrateInputSnapshot(rawSnapshotMeta.inputSnapshot) ?? inputSnapshot,
+        ...(typeof rawSnapshotMeta.inputFingerprint === 'string'
+          ? { inputFingerprint: rawSnapshotMeta.inputFingerprint }
+          : typeof rawPayload.inputFingerprint === 'string'
+            ? { inputFingerprint: rawPayload.inputFingerprint }
+            : {}),
       } as ChartSnapshotMeta
     : {
         ...snapshotMetaFromPayload(payload),

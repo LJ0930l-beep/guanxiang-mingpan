@@ -66,6 +66,16 @@ export interface LiuyaoInputSnapshot {
   seed: string;
   date: string;
   seedScope: string;
+  /** How the six lines were obtained. Legacy records omit this field. */
+  castingMethod?: 'auto' | 'interactive' | 'manual' | 'time' | 'number';
+  /** Exact user-entered/coin-toss facts, when the method was not auto. */
+  manualYaos?: {
+    position: number;
+    yinYang: '阴' | '阳';
+    isChanging: boolean;
+    /** Coin total: 6 old yin, 7 young yang, 8 young yin, 9 old yang. */
+    value?: 6 | 7 | 8 | 9;
+  }[];
 }
 
 export interface LegacyInputSnapshot {
@@ -85,6 +95,8 @@ export interface ChartSnapshotMeta {
   /** Old records are explicitly labeled instead of being silently reinterpreted. */
   calculationSettingsOrigin?: 'current' | 'legacy-default' | 'legacy-true-solar-v1' | 'legacy-unknown';
   inputSnapshot: ChartInputSnapshot;
+  /** Stable fingerprint of the full calculation input and settings. */
+  inputFingerprint?: string;
 }
 
 export interface ChartMeta extends ChartSnapshotMeta {
@@ -123,6 +135,8 @@ export interface BaziChartView extends ChartMeta {
 export interface LiuyaoLineView {
   position: number;
   yinYang: '阴' | '阳';
+  /** Exact six/ seven/ eight/ nine coin total when the casting method records it. */
+  value?: 6 | 7 | 8 | 9;
   liuQin: string;
   liuShen: string;
   naJia: string;
@@ -140,6 +154,8 @@ export interface LiuyaoChartView extends ChartMeta {
   seed: string;
   date: string;
   seedScope: string;
+  castingMethod?: LiuyaoInputSnapshot['castingMethod'];
+  manualYaos?: LiuyaoInputSnapshot['manualYaos'];
   hexagramName: string;
   changedHexagramName?: string;
   hexagramGong: string;

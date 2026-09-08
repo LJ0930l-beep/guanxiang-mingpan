@@ -26,14 +26,15 @@ test('P4-D 紫微 Explanation V1 只引用标准化证据', () => {
   const snapshot = result.explanation;
   assert.ok(snapshot);
   assert.equal(snapshot.explanationVersion, ZIWEI_EXPLANATION_VERSION);
-  assert.deepEqual(snapshot.blocks.map((block) => block.category), ['overview', 'life-palace', 'body-palace', 'mutagens', 'focus-palaces', 'summary']);
+  assert.deepEqual(snapshot.blocks.map((block) => block.category), ['overview', 'life-palace', 'body-palace', 'three-square-four-correctness', 'mutagens', 'focus-palaces', 'summary']);
   const evidenceIds = new Set(result.evidenceGraph.nodes.map((node) => node.id));
   for (const block of snapshot.blocks) {
     assert.ok(block.summary.length >= 20 && block.summary.length <= 80, `${block.category} summary length`);
     assert.ok(block.paragraphs.length >= 2 && block.paragraphs.length <= 4, `${block.category} paragraph count`);
-    assert.ok(block.evidenceRefs.length >= 2 && block.evidenceRefs.length <= 5, `${block.category} evidence count`);
+    assert.ok(block.evidenceRefs.length <= 5, `${block.category} evidence count`);
     assert.equal(block.evidenceRefs.every((ref) => evidenceIds.has(ref)), true);
     assert.equal(block.glossaryRefs.every((ref) => Boolean(getGlossaryTerm(ref))), true);
+    if (block.category === 'mutagens') assert.equal(block.evidenceRefs.every((ref) => result.evidenceGraph.nodes.find((node) => node.id === ref)?.type === 'mutagen.edge'), true);
     assert.equal(block.paragraphs.join(' ').match(/一定|必然|注定|必有|疾病|死亡|投资收益|成功|失败/) ?? null, null);
   }
 });

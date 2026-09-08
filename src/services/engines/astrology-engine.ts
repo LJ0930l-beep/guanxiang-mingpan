@@ -22,6 +22,7 @@ import {
   ENGINE_VERSIONS,
   explicitBirthCoordinates,
   generatedAt,
+  inputFingerprint,
 } from '@/services/chart-engine-shared';
 import { ChartInputError, withChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
@@ -302,13 +303,16 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
       }, { engineVersion: ENGINE_VERSIONS.astrology, snapshotVersion: CHART_SNAPSHOT_VERSION });
       const evidenceGraph = buildAstrologyEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.astrology });
       const generated = generatedAt(options);
+      const inputSnapshot = birthInputSnapshot(profile, undefined, settings);
+      const fingerprint = inputFingerprint({ module: 'astrology', inputSnapshot, calculationSettings: settings });
       return {
         module: 'astrology',
         snapshotVersion: CHART_SNAPSHOT_VERSION,
         generatedAt: generated,
         engineVersion: ENGINE_VERSIONS.astrology,
         calculationSettings: settings,
-        inputSnapshot: birthInputSnapshot(profile, undefined, settings),
+        inputSnapshot,
+        inputFingerprint: fingerprint,
         completeness: 'complete',
         caveats: ['基础版只解释核心落座与主要相位，不输出确定性事件预测。'],
         calculationMode: 'exact',
@@ -354,6 +358,8 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
       astrologyPolicy,
     });
     const generated = generatedAt(options);
+    const inputSnapshot = birthInputSnapshot(profile, undefined, settings);
+    const fingerprint = inputFingerprint({ module: 'astrology', inputSnapshot, calculationSettings: settings });
     const caveats = [
       '出生时辰未知，采用 Asia/Shanghai 当地正午 12:00:00 作为内部锚点；度数仅为日期级近似。',
       '已用当日日首 00:00:00 与日末 23:59:59 检查全天星座稳定性；可能跨星座的快速天体不展示。',
@@ -366,7 +372,8 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
       generatedAt: generated,
       engineVersion: ENGINE_VERSIONS.astrology,
       calculationSettings: settings,
-      inputSnapshot: birthInputSnapshot(profile, undefined, settings),
+      inputSnapshot,
+      inputFingerprint: fingerprint,
       completeness: 'partial',
       caveats,
       calculationMode: 'approximate',

@@ -5,7 +5,7 @@ import { resolveCityCoordinates } from '@/data/china-cities';
 import { createLocalBackupText, parseLocalBackupText } from '@/storage/backup';
 import { applyImportPlan, buildImportPreview, type ImportMode, type ImportPreview } from '@/storage/import-plan';
 import { createEncryptedLocalBackupText, parseEncryptedLocalBackupText } from '@/storage/encrypted-backup';
-import { transactionalReplace } from '@/storage/transaction';
+import { transactionalRemove, transactionalReplace } from '@/storage/transaction';
 import { createBaziHistorySnapshot } from '@/domains/bazi/interpretation/history';
 import {
   decodeStorageValue,
@@ -17,7 +17,6 @@ import {
   migrateUser,
   removeStorageValue,
   snapshotMetaFromPayload,
-  writeStorageValue,
 } from '@/storage/schema';
 import type { BirthProfile, Gender, LocalUser, ReadingFeedback, ReadingFeedbackStatus, SavedReading } from '@/types/domain';
 import type { ChartPayload } from '@/types/charts';
@@ -77,6 +76,8 @@ interface AppContextValue {
   clearReadings: () => Promise<void>;
   clearLocalData: () => Promise<void>;
   createLocalBackup: () => string;
+  /** Export raw storage without attempting to decode or rewrite future keys. */
+  createReadOnlyStorageExport: () => Promise<string>;
   previewLocalBackup: (raw: string, mode?: ImportMode) => ImportPreview;
   restoreLocalBackup: (raw: string, mode?: ImportMode) => Promise<void>;
   createEncryptedLocalBackup: (password: string) => Promise<string>;
@@ -102,16 +103,43 @@ export function AppProvider({ children }: PropsWithChildren) {
   const [profiles, setProfiles] = useState<BirthProfile[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [readings, setReadings] = useState<SavedReading[]>([]);
+  const userRef = useRef<LocalUser | null>(null);
+  const profilesRef = useRef<BirthProfile[]>([]);
+  const selectedProfileIdRef = useRef<string | null>(null);
   const readingsRef = useRef<SavedReading[]>([]);
   const [storageBlockedKeys, setStorageBlockedKeys] = useState<string[]>([]);
   const blockedStorageKeysRef = useRef<Set<string>>(new Set());
+  const mutationQueueRef = useRef<Promise<void>>(Promise.resolve());
 
-  const setStoredValue = <T,>(key: string, value: T) => writeStorageValue(
-    key,
-    value,
-    blockedStorageKeysRef.current,
-    (storageKey, encodedValue) => AsyncStorage.setItem(storageKey, encodedValue),
-  );
+  const enqueueMutation = <T,>(operation: () => Promise<T>): Promise<T> => {
+    const run = mutationQueueRef.current.then(operation, operation);
+    mutationQueueRef.current = run.then(() => undefined, () => undefined);
+    return run;
+  };
+
+  const persistEntries = async (entries: [string, unknown][]) => {
+    entries.forEach(([key]) => assertStorageWritable(key, blockedStorageKeysRef.current));
+    await transactionalReplace(
+      entries.map(([key, value]) => [key, encodeStorageValue(value)] as [string, string]),
+      {
+        getItem: (key) => AsyncStorage.getItem(key),
+        setItem: (key, value) => AsyncStorage.setItem(key, value),
+        removeItem: (key) => AsyncStorage.removeItem(key),
+      },
+    );
+  };
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
+
+  useEffect(() => {
+    profilesRef.current = profiles;
+  }, [profiles]);
+
+  useEffect(() => {
+    selectedProfileIdRef.current = selectedProfileId;
+  }, [selectedProfileId]);
 
   useEffect(() => {
     readingsRef.current = readings;
@@ -140,6 +168,10 @@ export function AppProvider({ children }: PropsWithChildren) {
         ]);
         blockedStorageKeysRef.current = blockedKeys;
         setStorageBlockedKeys([...blockedKeys]);
+        userRef.current = userState.value;
+        profilesRef.current = profilesState.value;
+        selectedProfileIdRef.current = selectedProfileState.value;
+        readingsRef.current = readingsState.value;
         setUser(userState.value);
         setProfiles(profilesState.value);
         setSelectedProfileId(selectedProfileState.value);
@@ -161,7 +193,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     };
   }, []);
 
-  const signInWithPhone = async (phone: string, code: string): Promise<SignInResult> => {
+  const signInWithPhone = (phone: string, code: string): Promise<SignInResult> => enqueueMutation(async () => {
     const normalizedPhone = phone.replace(/\s/g, '');
     if (!/^1\d{10}$/.test(normalizedPhone)) {
       return { ok: false, message: '请输入正确的 11 位手机号。' };
@@ -170,37 +202,36 @@ export function AppProvider({ children }: PropsWithChildren) {
       return { ok: false, message: '请输入 6 位验证码。' };
     }
 
-    assertStorageWritable(STORAGE.user, blockedStorageKeysRef.current);
     const nextUser: LocalUser = {
       id: `phone_${normalizedPhone}`,
       displayName: `${normalizedPhone.slice(0, 3)}****${normalizedPhone.slice(-4)}`,
       phone: normalizedPhone,
       provider: 'phone',
     };
+    await persistEntries([[STORAGE.user, nextUser]]);
+    userRef.current = nextUser;
     setUser(nextUser);
-    await setStoredValue(STORAGE.user, nextUser);
     return { ok: true };
-  };
+  });
 
-  const signInWithProvider = async (provider: 'apple' | 'wechat') => {
-    assertStorageWritable(STORAGE.user, blockedStorageKeysRef.current);
+  const signInWithProvider = (provider: 'apple' | 'wechat') => enqueueMutation(async () => {
     const nextUser: LocalUser = {
       id: createId(provider),
       displayName: provider === 'apple' ? 'Apple 用户' : '微信用户',
       provider,
     };
+    await persistEntries([[STORAGE.user, nextUser]]);
+    userRef.current = nextUser;
     setUser(nextUser);
-    await setStoredValue(STORAGE.user, nextUser);
-  };
+  });
 
-  const signOut = async () => {
+  const signOut = () => enqueueMutation(async () => {
     await removeStorageValue(STORAGE.user, blockedStorageKeysRef.current, (key) => AsyncStorage.removeItem(key));
+    userRef.current = null;
     setUser(null);
-  };
+  });
 
-  const addProfile = async (input: NewProfileInput) => {
-    assertStorageWritable(STORAGE.profiles, blockedStorageKeysRef.current);
-    assertStorageWritable(STORAGE.selectedProfile, blockedStorageKeysRef.current);
+  const addProfile = (input: NewProfileInput) => enqueueMutation(async () => {
     const timestamp = new Date().toISOString();
     const city = resolveCityCoordinates(input.birthCity);
     const profile: BirthProfile = {
@@ -219,19 +250,20 @@ export function AppProvider({ children }: PropsWithChildren) {
       createdAt: timestamp,
       updatedAt: timestamp,
     };
-    const nextProfiles = [profile, ...profiles];
+    const nextProfiles = [profile, ...profilesRef.current];
+    await persistEntries([
+      [STORAGE.profiles, nextProfiles],
+      [STORAGE.selectedProfile, profile.id],
+    ]);
+    profilesRef.current = nextProfiles;
+    selectedProfileIdRef.current = profile.id;
     setProfiles(nextProfiles);
     setSelectedProfileId(profile.id);
-    await Promise.all([
-      setStoredValue(STORAGE.profiles, nextProfiles),
-      setStoredValue(STORAGE.selectedProfile, profile.id),
-    ]);
     return profile;
-  };
+  });
 
-  const updateProfile = async (profileId: string, input: NewProfileInput) => {
-    assertStorageWritable(STORAGE.profiles, blockedStorageKeysRef.current);
-    const current = profiles.find((profile) => profile.id === profileId);
+  const updateProfile = (profileId: string, input: NewProfileInput) => enqueueMutation(async () => {
+    const current = profilesRef.current.find((profile) => profile.id === profileId);
     if (!current) throw new Error('找不到要更新的命主。');
     const timestamp = new Date().toISOString();
     const city = resolveCityCoordinates(input.birthCity);
@@ -250,39 +282,39 @@ export function AppProvider({ children }: PropsWithChildren) {
       longitude: city?.longitude,
       updatedAt: timestamp,
     };
-    const nextProfiles = profiles.map((profile) => profile.id === profileId ? updated : profile);
-    await setStoredValue(STORAGE.profiles, nextProfiles);
+    const nextProfiles = profilesRef.current.map((profile) => profile.id === profileId ? updated : profile);
+    await persistEntries([[STORAGE.profiles, nextProfiles]]);
+    profilesRef.current = nextProfiles;
     setProfiles(nextProfiles);
     return updated;
-  };
+  });
 
-  const deleteProfile = async (profileId: string) => {
-    assertStorageWritable(STORAGE.profiles, blockedStorageKeysRef.current);
-    assertStorageWritable(STORAGE.selectedProfile, blockedStorageKeysRef.current);
-    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
-    const nextProfiles = profiles.filter((profile) => profile.id !== profileId);
-    if (nextProfiles.length === profiles.length) throw new Error('找不到要删除的命主。');
+  const deleteProfile = (profileId: string) => enqueueMutation(async () => {
+    const currentProfiles = profilesRef.current;
+    const nextProfiles = currentProfiles.filter((profile) => profile.id !== profileId);
+    if (nextProfiles.length === currentProfiles.length) throw new Error('找不到要删除的命主。');
     const nextReadings = readingsRef.current.filter((reading) => reading.profileId !== profileId);
-    const nextSelectedProfileId = selectedProfileId === profileId ? nextProfiles[0]?.id ?? null : selectedProfileId;
-    await Promise.all([
-      setStoredValue(STORAGE.profiles, nextProfiles),
-      setStoredValue(STORAGE.selectedProfile, nextSelectedProfileId),
-      setStoredValue(STORAGE.readings, nextReadings),
+    const nextSelectedProfileId = selectedProfileIdRef.current === profileId ? nextProfiles[0]?.id ?? null : selectedProfileIdRef.current;
+    await persistEntries([
+      [STORAGE.profiles, nextProfiles],
+      [STORAGE.selectedProfile, nextSelectedProfileId],
+      [STORAGE.readings, nextReadings],
     ]);
+    profilesRef.current = nextProfiles;
+    selectedProfileIdRef.current = nextSelectedProfileId;
     setProfiles(nextProfiles);
     setSelectedProfileId(nextSelectedProfileId);
     readingsRef.current = nextReadings;
     setReadings(nextReadings);
-  };
+  });
 
-  const selectProfile = async (profileId: string) => {
-    assertStorageWritable(STORAGE.selectedProfile, blockedStorageKeysRef.current);
+  const selectProfile = (profileId: string) => enqueueMutation(async () => {
+    await persistEntries([[STORAGE.selectedProfile, profileId]]);
+    selectedProfileIdRef.current = profileId;
     setSelectedProfileId(profileId);
-    await setStoredValue(STORAGE.selectedProfile, profileId);
-  };
+  });
 
-  const saveReading: AppContextValue['saveReading'] = async ({ profile, title, summary, payload }) => {
-    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+  const saveReading: AppContextValue['saveReading'] = ({ profile, title, summary, payload }) => enqueueMutation(async () => {
     const baziSnapshot = createBaziHistorySnapshot(payload);
     const reading: SavedReading = {
       id: createId('reading'),
@@ -318,28 +350,28 @@ export function AppProvider({ children }: PropsWithChildren) {
       ...(payload.explanation ? { explanationSnapshot: payload.explanation } : {}),
       payload,
     };
-    const nextReadings = [reading, ...readingsRef.current].slice(0, 100);
+    // Persist the full history before publishing it to React state. There is
+    // intentionally no silent cap: old readings are part of the feedback loop.
+    const nextReadings = [reading, ...readingsRef.current];
+    await persistEntries([[STORAGE.readings, nextReadings]]);
     readingsRef.current = nextReadings;
     setReadings(nextReadings);
-    await setStoredValue(STORAGE.readings, nextReadings);
     return reading;
-  };
+  });
 
-  const toggleFavorite = async (readingId: string) => {
-    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+  const toggleFavorite = (readingId: string) => enqueueMutation(async () => {
     const currentReadings = readingsRef.current;
     const current = currentReadings.find((reading) => reading.id === readingId);
     if (!current) throw new Error('找不到要收藏的排盘记录。');
     const favorite = !current.favorite;
     const nextReadings = currentReadings.map((reading) => reading.id === readingId ? { ...reading, favorite } : reading);
-    await setStoredValue(STORAGE.readings, nextReadings);
+    await persistEntries([[STORAGE.readings, nextReadings]]);
     readingsRef.current = nextReadings;
     setReadings(nextReadings);
     return favorite;
-  };
+  });
 
-  const addFeedback = async (readingId: string, input: NewFeedbackInput) => {
-    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+  const addFeedback = (readingId: string, input: NewFeedbackInput) => enqueueMutation(async () => {
     if (!['confirmed', 'partial', 'not-yet', 'contradicted'].includes(input.status)) throw new Error('反馈状态无效。');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.observedAt)) throw new Error('反馈日期请使用 YYYY-MM-DD 格式。');
     const note = input.note.trim();
@@ -357,14 +389,13 @@ export function AppProvider({ children }: PropsWithChildren) {
       ...(normalizeFeedbackLinks(input.linkedEvidenceIds) ? { linkedEvidenceIds: normalizeFeedbackLinks(input.linkedEvidenceIds) } : {}),
     };
     const nextReadings = currentReadings.map((reading) => reading.id === readingId ? { ...reading, feedback: [feedback, ...reading.feedback] } : reading);
-    await setStoredValue(STORAGE.readings, nextReadings);
+    await persistEntries([[STORAGE.readings, nextReadings]]);
     readingsRef.current = nextReadings;
     setReadings(nextReadings);
     return feedback;
-  };
+  });
 
-  const updateFeedback = async (readingId: string, feedbackId: string, input: NewFeedbackInput) => {
-    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+  const updateFeedback = (readingId: string, feedbackId: string, input: NewFeedbackInput) => enqueueMutation(async () => {
     if (!['confirmed', 'partial', 'not-yet', 'contradicted'].includes(input.status)) throw new Error('反馈状态无效。');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(input.observedAt)) throw new Error('反馈日期请使用 YYYY-MM-DD 格式。');
     const note = input.note.trim();
@@ -385,65 +416,88 @@ export function AppProvider({ children }: PropsWithChildren) {
     const nextReadings = currentReadings.map((reading) => reading.id === readingId
       ? { ...reading, feedback: reading.feedback.map((feedback) => feedback.id === feedbackId ? updated : feedback) }
       : reading);
-    await setStoredValue(STORAGE.readings, nextReadings);
+    await persistEntries([[STORAGE.readings, nextReadings]]);
     readingsRef.current = nextReadings;
     setReadings(nextReadings);
     return updated;
-  };
+  });
 
-  const deleteFeedback = async (readingId: string, feedbackId: string) => {
-    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+  const deleteFeedback = (readingId: string, feedbackId: string) => enqueueMutation(async () => {
     const currentReadings = readingsRef.current;
     const current = currentReadings.find((reading) => reading.id === readingId);
     if (!current) throw new Error('找不到要反馈的排盘记录。');
     const nextFeedback = current.feedback.filter((feedback) => feedback.id !== feedbackId);
     if (nextFeedback.length === current.feedback.length) throw new Error('找不到要删除的反馈。');
     const nextReadings = currentReadings.map((reading) => reading.id === readingId ? { ...reading, feedback: nextFeedback } : reading);
-    await setStoredValue(STORAGE.readings, nextReadings);
+    await persistEntries([[STORAGE.readings, nextReadings]]);
     readingsRef.current = nextReadings;
     setReadings(nextReadings);
-  };
+  });
 
-  const deleteReading = async (readingId: string) => {
-    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
+  const deleteReading = (readingId: string) => enqueueMutation(async () => {
     const currentReadings = readingsRef.current;
     const nextReadings = currentReadings.filter((reading) => reading.id !== readingId);
     if (nextReadings.length === currentReadings.length) throw new Error('找不到要删除的排盘记录。');
-    await setStoredValue(STORAGE.readings, nextReadings);
+    await persistEntries([[STORAGE.readings, nextReadings]]);
     readingsRef.current = nextReadings;
     setReadings(nextReadings);
-  };
+  });
 
-  const clearReadings = async () => {
-    assertStorageWritable(STORAGE.readings, blockedStorageKeysRef.current);
-    await setStoredValue(STORAGE.readings, []);
+  const clearReadings = () => enqueueMutation(async () => {
+    await persistEntries([[STORAGE.readings, []]]);
     readingsRef.current = [];
     setReadings([]);
-  };
+  });
 
-  const clearLocalData = async () => {
+  const clearLocalData = () => enqueueMutation(async () => {
     Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
-    await AsyncStorage.multiRemove(Object.values(STORAGE));
+    await transactionalRemove(Object.values(STORAGE), {
+      getItem: (key) => AsyncStorage.getItem(key),
+      setItem: (key, value) => AsyncStorage.setItem(key, value),
+      removeItem: (key) => AsyncStorage.removeItem(key),
+    });
     blockedStorageKeysRef.current = new Set();
     setStorageBlockedKeys([]);
+    userRef.current = null;
+    profilesRef.current = [];
+    selectedProfileIdRef.current = null;
     setUser(null);
     setProfiles([]);
     setSelectedProfileId(null);
     readingsRef.current = [];
     setReadings([]);
-  };
+  });
 
   const createLocalBackup = () => {
     Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
-    return createLocalBackupText({ user, profiles, selectedProfileId, readings: readingsRef.current });
+    return createLocalBackupText({ user: userRef.current, profiles: profilesRef.current, selectedProfileId: selectedProfileIdRef.current, readings: readingsRef.current });
+  };
+
+  const createReadOnlyStorageExport = async () => {
+    const rawEntries = await Promise.all(Object.values(STORAGE).map(async (key) => [
+      key,
+      await AsyncStorage.getItem(key),
+    ] as const));
+    return JSON.stringify({
+      exportVersion: 1,
+      exportedAt: new Date().toISOString(),
+      readOnly: true,
+      blockedKeys: [...blockedStorageKeysRef.current],
+      entries: Object.fromEntries(rawEntries),
+    }, null, 2);
   };
 
   const createEncryptedLocalBackup = async (password: string) => {
     Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
-    return createEncryptedLocalBackupText({ user, profiles, selectedProfileId, readings: readingsRef.current }, password);
+    return createEncryptedLocalBackupText({ user: userRef.current, profiles: profilesRef.current, selectedProfileId: selectedProfileIdRef.current, readings: readingsRef.current }, password);
   };
 
-  const currentArchiveData = (): LocalBackupData => ({ user, profiles, selectedProfileId, readings: readingsRef.current });
+  const currentArchiveData = (): LocalBackupData => ({
+    user: userRef.current,
+    profiles: profilesRef.current,
+    selectedProfileId: selectedProfileIdRef.current,
+    readings: readingsRef.current,
+  });
 
   const previewLocalBackup = (raw: string, mode: ImportMode = 'replace') => {
     const backup = parseLocalBackupText(raw);
@@ -463,38 +517,44 @@ export function AppProvider({ children }: PropsWithChildren) {
     });
   };
 
-  const restoreLocalBackup = async (raw: string, mode: ImportMode = 'replace') => {
+  const restoreLocalBackup = (raw: string, mode: ImportMode = 'replace') => enqueueMutation(async () => {
     const backup = parseLocalBackupText(raw);
     Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
     const data = applyImportPlan(currentArchiveData(), backup.data, mode);
     await writeArchiveData(data);
     blockedStorageKeysRef.current = new Set();
     setStorageBlockedKeys([]);
+    userRef.current = data.user;
+    profilesRef.current = data.profiles;
+    selectedProfileIdRef.current = data.selectedProfileId;
     setUser(data.user);
     setProfiles(data.profiles);
     setSelectedProfileId(data.selectedProfileId);
     readingsRef.current = data.readings;
     setReadings(data.readings);
-  };
+  });
 
   const previewEncryptedLocalBackup = async (raw: string, password: string, mode: ImportMode = 'replace') => {
     const backup = await parseEncryptedLocalBackupText(raw, password);
     return buildImportPreview(currentArchiveData(), backup.data, mode);
   };
 
-  const restoreEncryptedLocalBackup = async (raw: string, password: string, mode: ImportMode = 'replace') => {
+  const restoreEncryptedLocalBackup = (raw: string, password: string, mode: ImportMode = 'replace') => enqueueMutation(async () => {
     const backup = await parseEncryptedLocalBackupText(raw, password);
     Object.values(STORAGE).forEach((key) => assertStorageWritable(key, blockedStorageKeysRef.current));
     const data = applyImportPlan(currentArchiveData(), backup.data, mode);
     await writeArchiveData(data);
     blockedStorageKeysRef.current = new Set();
     setStorageBlockedKeys([]);
+    userRef.current = data.user;
+    profilesRef.current = data.profiles;
+    selectedProfileIdRef.current = data.selectedProfileId;
     setUser(data.user);
     setProfiles(data.profiles);
     setSelectedProfileId(data.selectedProfileId);
     readingsRef.current = data.readings;
     setReadings(data.readings);
-  };
+  });
 
   const selectedProfile = useMemo(
     () => profiles.find((profile) => profile.id === selectedProfileId) ?? profiles[0] ?? null,
@@ -524,6 +584,7 @@ export function AppProvider({ children }: PropsWithChildren) {
     clearReadings,
     clearLocalData,
     createLocalBackup,
+    createReadOnlyStorageExport,
     previewLocalBackup,
     restoreLocalBackup,
     createEncryptedLocalBackup,

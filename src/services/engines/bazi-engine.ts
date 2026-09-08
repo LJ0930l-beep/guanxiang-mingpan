@@ -10,7 +10,7 @@ import { buildBaziEvidenceGraph } from '@/domains/bazi/evidence/index';
 import { buildBaziInterpretation } from '@/domains/bazi/interpretation/rules';
 import { buildBaziExplanation } from '@/domains/bazi/explanation/index';
 import type { BaziChartView } from '@/types/charts';
-import { assertPublicBirthDateRange, baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { assertPublicBirthDateRange, baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, inputFingerprint, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import { withChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
@@ -186,6 +186,8 @@ export function calculateBaziView(
     const interpretation = buildBaziInterpretation(normalizedChart, evidenceGraph);
     const generated = generatedAt(options);
     const explanation = buildBaziExplanation({ evidenceGraph, interpretation, generatedAt: generated });
+    const inputSnapshot = birthInputSnapshot(profile, gender, settings, historicalDstResolution);
+    const fingerprint = inputFingerprint({ module: 'bazi', inputSnapshot, calculationSettings: settings });
 
     return {
     module: 'bazi',
@@ -206,7 +208,8 @@ export function calculateBaziView(
     strengthAssessment: evidenceGraph.strengthAssessment!,
     interpretation,
     explanation,
-    inputSnapshot: birthInputSnapshot(profile, gender, settings, historicalDstResolution),
+    inputSnapshot,
+    inputFingerprint: fingerprint,
     completeness: 'complete',
     caveats: [
       '基础版展示结构证据，不直接给出吉凶定论。',

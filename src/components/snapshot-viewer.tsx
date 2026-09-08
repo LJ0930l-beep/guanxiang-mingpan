@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ExplanationLayer } from '@/components/explanation-layer';
+import { ChartRenderer } from '@/components/chart-renderer';
 import type { BaziInterpretationDiff } from '@/domains/bazi/interpretation/history';
 import { buildBaziTrueSolarEvidenceDisplay } from '@/domains/bazi/true-solar-presentation';
 import { listGlossaryTerms } from '@/domains/explanation/glossary';
@@ -125,6 +126,7 @@ export function SnapshotViewer({ reading, diff, onRunBaziDiff }: SnapshotViewerP
 
       <Section label="L3 · 保存时结果">
         {resultRows(model).map(([label, value]) => <Row key={label} label={label} value={value} />)}
+        <ChartRenderer payload={model.payload} />
         <View style={styles.subsection}><Text style={styles.subsectionLabel}>基础观察</Text></View>
         {focus.map((item, index) => <Text key={`${item}-${index}`} style={styles.observation}>{index + 1}. {item}</Text>)}
       </Section>
@@ -187,8 +189,8 @@ export function SnapshotViewer({ reading, diff, onRunBaziDiff }: SnapshotViewerP
             <View key={feedback.id} style={styles.feedbackItem}>
             <View style={styles.feedbackTop}><Text style={styles.feedbackStatus}>{feedback.status}</Text><Text style={styles.feedbackDate}>{feedback.observedAt}</Text>{!!feedback.updatedAt && <Text style={styles.feedbackDate}>更新 {feedback.updatedAt.slice(0, 10)}</Text>}</View>
             <Text style={styles.feedbackNote}>{feedback.note}</Text>
-            {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLink}>user-linked Interpretation: {feedback.linkedInterpretationIds.join(', ')}</Text>}
-            {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLink}>user-linked Evidence: {feedback.linkedEvidenceIds.join(', ')}</Text>}
+            {!!feedback.linkedInterpretationIds?.length && <Text style={styles.feedbackLink}>已关联 {feedback.linkedInterpretationIds.length} 条解读（用户复盘标记）</Text>}
+            {!!feedback.linkedEvidenceIds?.length && <Text style={styles.feedbackLink}>已关联 {feedback.linkedEvidenceIds.length} 条依据（用户复盘标记）</Text>}
           </View>
         ))}
       </Section>

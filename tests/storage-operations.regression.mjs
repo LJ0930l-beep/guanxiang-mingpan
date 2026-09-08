@@ -6,6 +6,7 @@ import TestRenderer, { act } from 'react-test-renderer';
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 import { __storage } from '../scripts/test-shims/async-storage.mjs';
+import AsyncStorage from '../scripts/test-shims/async-storage.mjs';
 import { calculateBaziView } from '../src/services/chart-engine.ts';
 import { AppProvider, useApp } from '../src/state/app-context.tsx';
 import { STORAGE_SCHEMA_VERSION } from '../src/storage/schema.ts';
@@ -229,4 +230,59 @@ test('新八字记录显式保存 Phase 2 深度快照而不是只保存展示�
   await act(async () => {
     renderer.unmount();
   });
+});
+
+test('R01 历史记录不再静默截断，101 条记录全部可回查', async () => {
+  __storage.clear();
+  const { app, renderer } = await mountApp();
+  for (let index = 0; index < 101; index += 1) {
+    await act(async () => {
+      await app.saveReading({
+        ...validReadingForPersistence,
+        title: `记录-${index}`,
+        payload: { ...validReadingForPersistence.payload, generatedAt: `2026-01-${String((index % 28) + 1).padStart(2, '0')}T00:00:00.000Z` },
+      });
+    });
+  }
+  await new Promise((resolve) => setImmediate(resolve));
+  await act(async () => renderer.unmount());
+  const restored = await mountApp();
+  assert.equal(restored.app.readings.length, 101);
+  assert.equal(JSON.parse(__storage.get(READINGS_KEY)).value.length, 101);
+  await act(async () => restored.renderer.unmount());
+});
+
+test('R01 本地写入失败时原始磁盘与内存记录都保持不变', async () => {
+  __storage.clear();
+  const { app, renderer } = await mountApp();
+  let saved;
+  await act(async () => { saved = await app.saveReading(validReadingForPersistence); });
+  const beforeRaw = __storage.get(READINGS_KEY);
+  const beforeIds = JSON.parse(beforeRaw).value.map((reading) => reading.id);
+  const originalSetItem = AsyncStorage.setItem;
+  AsyncStorage.setItem = async (key, value) => {
+    if (key === READINGS_KEY) throw new Error('injected storage failure');
+    return originalSetItem(key, value);
+  };
+  await assert.rejects(() => app.saveReading({ ...validReadingForPersistence, title: '不会发布到内存' }));
+  AsyncStorage.setItem = originalSetItem;
+  assert.equal(__storage.get(READINGS_KEY), beforeRaw);
+  await act(async () => renderer.unmount());
+  const restored = await mountApp();
+  assert.deepEqual(restored.app.readings.map((reading) => reading.id), beforeIds);
+  assert.equal(restored.app.readings.some((reading) => reading.title === '不会发布到内存'), false);
+  await act(async () => restored.renderer.unmount());
+});
+
+test('R01 future schema 可导出原始值而不触发解码或覆盖', async () => {
+  __storage.clear();
+  const future = JSON.stringify({ schemaVersion: STORAGE_SCHEMA_VERSION + 1, value: [{ id: 'future-reading' }] });
+  __storage.set(READINGS_KEY, future);
+  const { app, renderer } = await mountApp();
+  const raw = JSON.parse(await app.createReadOnlyStorageExport());
+  assert.equal(raw.readOnly, true);
+  assert.equal(raw.entries[READINGS_KEY], future);
+  assert.ok(raw.blockedKeys.includes(READINGS_KEY));
+  assert.equal(__storage.get(READINGS_KEY), future);
+  await act(async () => renderer.unmount());
 });

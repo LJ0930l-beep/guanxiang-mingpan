@@ -1,7 +1,7 @@
 import * as iztro from 'iztro/dist/iztro.min.js';
 
 import type { ZiweiChartView } from '@/types/charts';
-import { assertGregorianDate, assertPublicBirthDateRange, calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { assertGregorianDate, assertPublicBirthDateRange, calculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, inputFingerprint, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
 import { withChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
@@ -90,6 +90,8 @@ export function calculateZiweiView(
     const normalizedChart = normalizeZiweiChart(result, source);
     const evidenceGraph = buildZiweiEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.ziwei });
     const generated = generatedAt(options);
+    const inputSnapshot = birthInputSnapshot(profile, gender, settings);
+    const fingerprint = inputFingerprint({ module: 'ziwei', inputSnapshot, calculationSettings: settings });
 
     return {
     module: 'ziwei',
@@ -97,7 +99,8 @@ export function calculateZiweiView(
     generatedAt: generated,
     engineVersion: ENGINE_VERSIONS.ziwei,
     calculationSettings: settings,
-    inputSnapshot: birthInputSnapshot(profile, gender, settings),
+    inputSnapshot,
+    inputFingerprint: fingerprint,
     completeness: 'complete',
     caveats: ['不同流派在安星与四化规则上存在差异，本版固定算法版本以便复盘。'],
     solarDate: result.solarDate,
@@ -113,7 +116,7 @@ export function calculateZiweiView(
     explanation: buildZiweiExplanation({ chart: normalizedChart, evidenceGraph, generatedAt: generated }),
     mutagens,
     focus: [
-      `命宫落「${lifePalace?.stemBranch ?? result.earthlyBranchOfSoulPalace}」，${lifePalace?.stars.length ? `主星为 ${lifePalace.stars.join('、')}` : '本宫无十四主星坐守'}。`,
+      `命宫定位：命宫位于「${lifePalace?.name ?? '命宫'}（${lifePalace?.stemBranch ?? result.earthlyBranchOfSoulPalace}）」，${lifePalace?.stars.length ? `主星为 ${lifePalace.stars.join('、')}` : '本宫无十四主星坐守'}。`,
       `身宫落在「${bodyPalace?.name ?? result.earthlyBranchOfBodyPalace}」，命主 ${result.soul}，身主 ${result.body}。`,
       mutagens.length ? `生年四化：${mutagens.join('；')}。` : '生年四化资料暂未返回。',
     ],

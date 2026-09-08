@@ -185,8 +185,9 @@ test('六爻固定种子保持卦名、干支时间和六爻证据稳定', async
     question,
     target,
     seed: fixedCalculation.seed,
-    date: fixedCalculation.date,
+    date: '2026-01-01T20:00:00',
     seedScope: 'guanxiang-local-v1',
+    castingMethod: 'auto',
   });
   assert.equal(result.question, question);
   assert.equal(result.hexagramName, '离为火');

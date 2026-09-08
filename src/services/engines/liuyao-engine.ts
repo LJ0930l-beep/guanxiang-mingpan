@@ -1,7 +1,7 @@
-import { calculateLiuyao } from 'taibu-core/liuyao';
+import { calculateLiuyao, findHexagram } from 'taibu-core/liuyao';
 
 import type { LiuyaoChartView } from '@/types/charts';
-import { calculationSettings, CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generatedAt, LIUYAO_SEED_SCOPE, normalizeLiuyaoDate, normalizeLiuyaoSeed, strengthLabels } from '@/services/chart-engine-shared';
+import { calculationSettings, CHART_SNAPSHOT_VERSION, ENGINE_VERSIONS, generatedAt, inputFingerprint, LIUYAO_SEED_SCOPE, normalizeLiuyaoDate, normalizeLiuyaoSeed, strengthLabels } from '@/services/chart-engine-shared';
 import { withAsyncChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
@@ -9,6 +9,12 @@ import { buildLiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 import { buildLiuyaoExplanation } from '@/domains/liuyao/explanation/index';
 
 const LIUYAO_TARGETS = ['父母', '兄弟', '官鬼', '妻财', '子孙'] as const;
+type LiuyaoCoinValue = 6 | 7 | 8 | 9;
+
+function expectedCoinValue(yinYang: '阴' | '阳', isChanging: boolean): LiuyaoCoinValue {
+  if (yinYang === '阳') return isChanging ? 9 : 7;
+  return isChanging ? 6 : 8;
+}
 
 function assertLiuyaoEngineResult(value: unknown): void {
   if (value === null || typeof value !== 'object') throw new Error('六爻引擎未返回完整盘面。');
@@ -70,11 +76,52 @@ export async function calculateLiuyaoView(
   const settings = calculationSettings(options);
   const calculationDate = normalizeLiuyaoDate(date, settings.timezone);
   const seedScope = LIUYAO_SEED_SCOPE;
+  const requestedMethod = options?.liuyao?.method ?? 'auto';
+  const manualYaos = options?.liuyao?.manualYaos;
+  if (requestedMethod === 'manual' || requestedMethod === 'interactive') {
+    if (!manualYaos || manualYaos.length !== 6) throw new Error('手工六爻需要完整录入六条爻。');
+    const positions = new Set(manualYaos.map((line) => line.position));
+    if (positions.size !== 6 || manualYaos.some((line) => line.position < 1 || line.position > 6 || !['阴', '阳'].includes(line.yinYang))) {
+      throw new Error('手工六爻的爻位必须为 1–6，且阴阳字段完整。');
+    }
+    if (manualYaos.some((line) => line.value !== undefined && ![6, 7, 8, 9].includes(line.value))) {
+      throw new Error('手工六爻的投掷值必须为 6、7、8 或 9。');
+    }
+    if (manualYaos.some((line) => line.value !== undefined && line.value !== expectedCoinValue(line.yinYang, line.isChanging))) {
+      throw new Error('手工六爻的投掷值与阴阳、动静事实不一致。');
+    }
+  }
   return withAsyncChartEngineErrorBoundary('liuyao', async () => {
+    const recordedManualYaos = manualYaos
+      ?.slice()
+      .sort((a, b) => a.position - b.position)
+      .map((line) => ({
+        ...line,
+        value: line.value ?? expectedCoinValue(line.yinYang, line.isChanging),
+      }));
+    const selectedBaseCode = manualYaos
+      ? recordedManualYaos!.map((line) => line.yinYang === '阳' ? '1' : '0').join('')
+      : undefined;
+    const selectedChangedCode = manualYaos
+      ? recordedManualYaos!.map((line) => (line.yinYang === '阳') !== line.isChanging ? '1' : '0').join('')
+      : undefined;
+    const method = requestedMethod === 'manual' || requestedMethod === 'interactive' ? 'select' : requestedMethod;
+    // taibu-core's select contract accepts the canonical Chinese hexagram
+    // name, while the UI records the six line facts. Resolve the code through
+    // the package's own data so manual/interactive casting does not silently
+    // fall back or fail with an opaque "not found" error.
+    const selectedBaseName = selectedBaseCode ? findHexagram(selectedBaseCode)?.name : undefined;
+    const selectedChangedName = selectedChangedCode ? findHexagram(selectedChangedCode)?.name : undefined;
+    if (method === 'select' && (!selectedBaseName || !selectedChangedName && selectedChangedCode)) {
+      throw new Error('手工六爻无法匹配到标准卦象，请检查六条爻的阴阳与动静。');
+    }
     const result = await calculateLiuyao({
       question,
       yongShenTargets: [target as '父母' | '兄弟' | '官鬼' | '妻财' | '子孙'],
-      method: 'auto',
+      method,
+      ...(selectedBaseName ? { hexagramName: selectedBaseName } : {}),
+      ...(selectedChangedName ? { changedHexagramName: selectedChangedName } : {}),
+      ...(options?.liuyao?.numbers ? { numbers: options.liuyao.numbers } : {}),
       date: calculationDate,
       seed,
       seedScope,
@@ -87,6 +134,7 @@ export async function calculateLiuyaoView(
       .map((line) => ({
       position: line.position,
       yinYang: line.type === 1 ? ('阳' as const) : ('阴' as const),
+      ...(recordedManualYaos ? { value: recordedManualYaos.find((manual) => manual.position === line.position)?.value } : {}),
       liuQin: line.liuQin,
       liuShen: line.liuShen,
       naJia: line.naJia,
@@ -100,6 +148,18 @@ export async function calculateLiuyaoView(
     const moving = lines.filter((line) => line.isChanging);
     const time = result.ganZhiTime;
     const generated = generatedAt(options);
+    const inputSnapshot = {
+      type: 'liuyao' as const,
+      timezone: settings.timezone,
+      question,
+      target,
+      seed,
+      date: calculationDate,
+      seedScope,
+      castingMethod: requestedMethod,
+      ...(recordedManualYaos ? { manualYaos: recordedManualYaos } : {}),
+    };
+    const fingerprint = inputFingerprint({ module: 'liuyao', inputSnapshot, calculationSettings: settings });
     const normalizedChart = normalizeLiuyaoChart({
     question,
     yongShenTarget: target,
@@ -121,13 +181,16 @@ export async function calculateLiuyaoView(
     generatedAt: generated,
     engineVersion: ENGINE_VERSIONS.liuyao,
     calculationSettings: settings,
-    inputSnapshot: { type: 'liuyao', timezone: settings.timezone, question, target, seed, date, seedScope },
+    inputSnapshot,
+    inputFingerprint: fingerprint,
     completeness: 'complete',
     caveats: ['一次起卦对应一个具体问题；基础版保留盘面证据，不代替现实决策。'],
     question,
     seed,
     date,
     seedScope,
+    castingMethod: requestedMethod,
+    ...(recordedManualYaos ? { manualYaos: recordedManualYaos } : {}),
     hexagramName: result.hexagramName,
     changedHexagramName: result.changedHexagramName,
     hexagramGong: `${result.hexagramGong}宫 · ${result.hexagramElement}行`,

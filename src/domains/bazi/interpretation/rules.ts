@@ -39,7 +39,8 @@ function nodesById(graph: BaziEvidenceGraph): Map<string, EvidenceNode> {
 function strengthConclusion(assessment: StrengthAssessment): string {
   if (assessment.status === 'strong') return '依据当前月令、根气与支持证据，日主一侧的证据更占优势。';
   if (assessment.status === 'weak') return '依据当前月令与克泄耗证据，日主一侧的支持不足。';
-  if (assessment.status === 'balanced') return '当前盘面同时存在支持与反对证据，暂以接近平衡呈现。';
+  if (assessment.status === 'conflict') return '当前盘面同时存在支持与反对证据，先标记为冲突，不把证据并存直接当作平衡。';
+  if (assessment.status === 'balanced') return '当前盘面经显式规则节点验证为支持与反对力量接近平衡。';
   return '当前证据不足或存在规则敏感点，暂不强行归入身强或身弱。';
 }
 
@@ -132,11 +133,11 @@ export function buildBaziInterpretation(
       ruleVersion: BAZI_INTERPRETATION_VERSION,
     });
   }
-  if (assessment.status === 'balanced' || assessment.status === 'uncertain') {
+  if (assessment.status === 'balanced' || assessment.status === 'conflict' || assessment.status === 'uncertain') {
     structureTags.push({
       id: 'structure:evidence-sensitive',
       code: 'evidence-sensitive',
-      label: assessment.status === 'balanced' ? '支持与反对证据并列' : '证据不足或规则敏感',
+      label: assessment.status === 'balanced' ? '规则验证的平衡' : assessment.status === 'conflict' ? '支持与限制证据冲突' : '证据不足或规则敏感',
       confidence: assessment.confidence,
       evidenceRefs: [...assessment.supportingEvidenceRefs, ...assessment.opposingEvidenceRefs],
       caveats: assessment.caveats,

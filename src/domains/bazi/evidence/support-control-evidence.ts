@@ -60,6 +60,10 @@ export function buildStrengthAssessment(
   const hasSupport = seasonRole === 'support' || hasAnyRoot || supportExposureRefs.length > 0;
   const hasOpposition = seasonRole === 'opposing' || opposingExposureRefs.length > 0;
   const conflict = hasSupport && hasOpposition;
+  // "Both sides exist" is a conflict state, not a balance proof. A balanced
+  // status is reserved for an explicit, versioned rule node produced by a
+  // future weighted-strength rule.
+  const validatedBalance = nodes.some((node) => node.type === 'strength.balance-validation' && node.facts.validated === true);
   const decisionPath: StrengthDecisionStep[] = [
     {
       id: 'strength:season',
@@ -116,14 +120,19 @@ export function buildStrengthAssessment(
     status = 'weak';
     confidence = opposingExposureRefs.length > 0 ? 'high' : 'medium';
     decisive = unique([...(season ? [season.id] : []), ...opposingExposureRefs]);
-  } else if (conflict) {
+  } else if (validatedBalance) {
     status = 'balanced';
+    confidence = 'medium';
+    decisive = unique([...(season ? [season.id] : []), ...roots.slice(0, 1).map((node) => node.id), ...opposingExposureRefs.slice(0, 1)]);
+  } else if (conflict) {
+    status = 'conflict';
     confidence = 'medium';
     decisive = unique([...(season ? [season.id] : []), ...roots.slice(0, 1).map((node) => node.id), ...opposingExposureRefs.slice(0, 1)]);
   }
   const caveats: string[] = [];
   if (!hasAnyRoot) caveats.push('尚未找到与日主同元素的藏干根证据。');
-  if (conflict) caveats.push('盘面同时存在支持与反对证据，当前状态保留为平衡，不强行二分。');
+  if (conflict) caveats.push('盘面同时存在支持与反对证据；当前只能标为冲突，不能把证据并存直接当作平衡。');
+  if (validatedBalance) caveats.push('平衡标签来自显式规则验证节点；若规则版本变化，应重新复核。');
   if (seasonRole === 'neutral') caveats.push('月令关系未形成直接支持或反对，结论置信度降低。');
   if (relations.length > 0) caveats.push('合冲刑害已进入关系图谱；本批次只记录修正入口，不单独宣告吉凶。');
   return {

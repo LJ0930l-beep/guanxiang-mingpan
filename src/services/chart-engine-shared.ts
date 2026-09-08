@@ -139,6 +139,37 @@ export interface CalculationOptions {
   timezone?: CalculationTimezone;
   /** P1-A records the Bazi rule slots; P1-C/P1-D will make non-default values effective. */
   bazi?: Partial<BaziCalculationSettings>;
+  /** Advanced Liuyao casting facts; omitted means deterministic auto mode. */
+  liuyao?: {
+    method?: 'auto' | 'interactive' | 'manual' | 'time' | 'number';
+    manualYaos?: {
+      position: number;
+      yinYang: '阴' | '阳';
+      isChanging: boolean;
+      value?: 6 | 7 | 8 | 9;
+    }[];
+    numbers?: number[];
+    hexagramName?: string;
+    changedHexagramName?: string;
+  };
+}
+
+function stableValue(value: unknown): string {
+  if (value === undefined) return 'undefined';
+  if (value === null || typeof value !== 'object') return JSON.stringify(value) ?? 'null';
+  if (Array.isArray(value)) return `[${value.map(stableValue).join(',')}]`;
+  const record = value as Record<string, unknown>;
+  return `{${Object.keys(record).sort().map((key) => `${JSON.stringify(key)}:${stableValue(record[key])}`).join(',')}}`;
+}
+
+/** Small dependency-free deterministic fingerprint for replay/staleness checks. */
+export function inputFingerprint(input: unknown): string {
+  let hash = 2166136261;
+  for (const char of stableValue(input)) {
+    hash ^= char.charCodeAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a-${(hash >>> 0).toString(16).padStart(8, '0')}`;
 }
 
 export function calculationSettings(
