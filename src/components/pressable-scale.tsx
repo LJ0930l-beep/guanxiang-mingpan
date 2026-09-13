@@ -1,5 +1,5 @@
 import { PropsWithChildren, useEffect, useState } from 'react';
-import { AccessibilityInfo, Animated, Easing, Platform, Pressable, PressableProps, StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { AccessibilityInfo, Animated, Platform, Pressable, PressableProps, StyleProp, ViewStyle } from 'react-native';
 
 interface PressableScaleProps extends PropsWithChildren<PressableProps> {
   style?: StyleProp<ViewStyle>;
@@ -57,13 +57,10 @@ export function PressableScale({ children, style, scaleTo = 0.97, onPressIn, onP
         springTo(1);
         onPressOut?.(event);
       }}>
-      <Animated.View style={[style, !reduceMotion && styles.animated, { transform: reduceMotion ? [] : [{ scale }] }]}>
+      <Animated.View style={[style, { transform: reduceMotion ? [] : [{ scale }] }]}>
         {children}
       </Animated.View>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  animated: { transitionDuration: '80ms' },
-});
