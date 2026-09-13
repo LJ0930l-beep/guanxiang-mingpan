@@ -2,10 +2,12 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  ARCHIVE_PAGE_SIZE,
   DEFAULT_ARCHIVE_FILTER_STATE,
   compareArchiveReadings,
   filterArchiveReadings,
   groupArchiveReadings,
+  paginateArchiveReadings,
 } from '../src/domains/archive/query.ts';
 
 const now = new Date('2026-08-15T04:00:00.000Z');
@@ -105,4 +107,35 @@ test('P3-B 对比只允许同一命主同一模块，且只报告只读字段差
   assert.deepEqual(comparison.fields.map((field) => field.key), ['title', 'dayMaster', 'focus', 'strength', 'interpretation', 'evidenceCount']);
   assert.equal(compareArchiveReadings(left, reading({ id: 'other-profile', profileId: 'profile-b' })).allowed, false);
   assert.equal(compareArchiveReadings(left, reading({ id: 'other-module', module: 'liuyao' })).allowed, false);
+});
+
+test('记录分页只约束渲染数量，1000 条记录全部可检索且不丢失', () => {
+  const all = Array.from({ length: 1000 }, (_, index) => reading({ id: `p-${index}`, title: `记录 ${index}` }));
+
+  const firstPage = paginateArchiveReadings(all, 1);
+  assert.equal(firstPage.items.length, ARCHIVE_PAGE_SIZE);
+  assert.equal(firstPage.total, 1000);
+  assert.equal(firstPage.shown, ARCHIVE_PAGE_SIZE);
+  assert.equal(firstPage.hasMore, true);
+  assert.equal(firstPage.items[0].id, 'p-0');
+
+  // Cumulative paging keeps the filtered order stable while growing the head.
+  const grown = paginateArchiveReadings(all, 3);
+  assert.equal(grown.shown, ARCHIVE_PAGE_SIZE * 3);
+  assert.equal(grown.items[ARCHIVE_PAGE_SIZE].id, `p-${ARCHIVE_PAGE_SIZE}`);
+
+  const full = paginateArchiveReadings(all, 40);
+  assert.equal(full.shown, 1000);
+  assert.equal(full.hasMore, false);
+  assert.equal(full.items[999].id, 'p-999');
+
+  // Search/filter results are paginated identically over the full data set.
+  const filtered = filterArchiveReadings(all, { ...DEFAULT_ARCHIVE_FILTER_STATE, query: '记录 99' });
+  const pagedFiltered = paginateArchiveReadings(filtered, 1);
+  assert.ok(pagedFiltered.items.length >= 1 && pagedFiltered.items.length <= 1000);
+  assert.equal(pagedFiltered.total, filtered.length);
+
+  // Invalid page input degrades to the first page instead of throwing.
+  assert.equal(paginateArchiveReadings(all, 0).shown, ARCHIVE_PAGE_SIZE);
+  assert.equal(paginateArchiveReadings(all, Number.NaN).shown, ARCHIVE_PAGE_SIZE);
 });

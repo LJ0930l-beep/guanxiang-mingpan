@@ -17,6 +17,7 @@ import {
   DEFAULT_ARCHIVE_FILTER_STATE,
   filterArchiveReadings,
   groupArchiveReadings,
+  paginateArchiveReadings,
   type ArchiveFilterState,
 } from '@/domains/archive/query';
 import {
@@ -70,17 +71,28 @@ export function RecordsScreen() {
   const [diffByReadingId, setDiffByReadingId] = useState<Record<string, ReturnType<typeof diffBaziInterpretations>>>({});
   const [diffError, setDiffError] = useState('');
   const recordsReadOnly = storageBlockedKeys.includes('@guanxiang/readings');
+  const [visiblePageCount, setVisiblePageCount] = useState(1);
   const visibleReadings = useMemo(() => filterArchiveReadings(readings, archiveFilter), [archiveFilter, readings]);
-  const readingGroups = useMemo(() => groupArchiveReadings(visibleReadings, archiveFilter.groupBy), [archiveFilter.groupBy, visibleReadings]);
+  // Display-level paging only: storage keeps every record, and search and
+  // filters always run over the full filtered set before this head slice.
+  const pagedReadings = useMemo(
+    () => paginateArchiveReadings(visibleReadings, visiblePageCount),
+    [visiblePageCount, visibleReadings],
+  );
+  const readingGroups = useMemo(() => groupArchiveReadings(pagedReadings.items, archiveFilter.groupBy), [archiveFilter.groupBy, pagedReadings.items]);
   const compareLeft = compareIds.length === 2 ? readings.find((reading) => reading.id === compareIds[0]) : undefined;
   const compareRight = compareIds.length === 2 ? readings.find((reading) => reading.id === compareIds[1]) : undefined;
   const compareResult = compareLeft && compareRight ? compareArchiveReadings(compareLeft, compareRight) : undefined;
 
   const updateArchiveFilter = (patch: Partial<ArchiveFilterState>) => {
     setArchiveFilter((current) => ({ ...current, ...patch }));
+    setVisiblePageCount(1);
   };
 
-  const clearArchiveFilter = () => setArchiveFilter(DEFAULT_ARCHIVE_FILTER_STATE);
+  const clearArchiveFilter = () => {
+    setArchiveFilter(DEFAULT_ARCHIVE_FILTER_STATE);
+    setVisiblePageCount(1);
+  };
 
   const toggleCompare = (readingId: string) => {
     setCompareError('');
@@ -463,6 +475,16 @@ export function RecordsScreen() {
                 })}
               </View>
             ))}
+            {pagedReadings.hasMore && (
+              <Pressable
+                accessibilityHint="每页 30 条；更多记录仍保存在本机，可继续加载或使用筛选查找。"
+                accessibilityLabel={`显示更多记录，当前显示 ${pagedReadings.shown} 条，共 ${pagedReadings.total} 条`}
+                accessibilityRole="button"
+                onPress={() => setVisiblePageCount((current) => current + 1)}
+                style={({ pressed }) => [styles.loadMore, pressed && styles.pressed]}>
+                <Text style={styles.loadMoreText}>显示更多记录（{pagedReadings.shown}/{pagedReadings.total}）</Text>
+              </Pressable>
+            )}
           </View>
         )}
       </ScrollView>
@@ -483,6 +505,8 @@ const styles = StyleSheet.create({
   description: { maxWidth: 560, marginTop: spacing.x3, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 13, lineHeight: 21 },
   clearButton: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: 'rgba(216, 137, 120, 0.42)', borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   clearButtonText: { color: '#E4A89A', fontFamily: fontFamilies.body, fontSize: 11 },
+  loadMore: { minHeight: layout.minTouch, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, marginTop: spacing.x3 },
+  loadMoreText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 12 },
   filterButton: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   filterButtonActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },
   filterButtonText: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 11 },

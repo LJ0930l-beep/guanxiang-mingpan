@@ -100,6 +100,30 @@ export function filterArchiveReadings(
   });
 }
 
+export const ARCHIVE_PAGE_SIZE = 30 as const;
+
+export interface ArchivePage<T> {
+  /** The cumulative head of the list to display, ordered as filtered. */
+  items: T[];
+  /** Full filtered count; paging never removes records from the data set. */
+  total: number;
+  /** How many records are currently displayed. */
+  shown: number;
+  hasMore: boolean;
+}
+
+/**
+ * Display-level paging for the archive list. The storage layer already keeps
+ * every record (F01 removed the silent cap), so this only bounds how many
+ * cards render at once; search and filters always run over the full set.
+ */
+export function paginateArchiveReadings<T>(readings: T[], page: number, pageSize: number = ARCHIVE_PAGE_SIZE): ArchivePage<T> {
+  const safeSize = Number.isFinite(pageSize) && pageSize >= 1 ? Math.floor(pageSize) : ARCHIVE_PAGE_SIZE;
+  const safePage = Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1;
+  const items = readings.slice(0, safePage * safeSize);
+  return { items, total: readings.length, shown: items.length, hasMore: items.length < readings.length };
+}
+
 export function groupArchiveReadings(readings: SavedReading[], groupBy: ArchiveGroupBy): ArchiveReadingGroup[] {
   if (groupBy === 'none') return readings.length > 0 ? [{ key: 'all', label: '', readings }] : [];
   const groups = new Map<string, SavedReading[]>();
