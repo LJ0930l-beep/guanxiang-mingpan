@@ -41,6 +41,8 @@ declare module 'lunar-javascript' {
 
   interface LunarValue {
     getJieQiTable(): Record<string, SolarTermValue>;
+    /** 立春精确的年干支（以节气时刻为准）。 */
+    getYearInGanZhiExact(): string;
   }
 
   export const Solar: {

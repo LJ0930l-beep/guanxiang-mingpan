@@ -41,6 +41,8 @@ export interface BaziCalculationSettings {
   trueSolarTimeVersion: BaziSolarTimeVersion;
   locationDatasetVersion: string;
   calendarResolverVersion: string;
+  /** Optional selected dayun comparison year (bazi-dayun-v1); absent = no comparison. */
+  liunianYear?: number;
 }
 
 export const DEFAULT_BAZI_CALCULATION_SETTINGS: BaziCalculationSettings = {

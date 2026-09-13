@@ -137,7 +137,7 @@ export interface CalculationOptions {
   date?: string;
   /** Civil-time timezone for all calculations. The first release fixes this to Asia/Shanghai. */
   timezone?: CalculationTimezone;
-  /** P1-A records the Bazi rule slots; P1-C/P1-D will make non-default values effective. */
+  /** P1-A records the Bazi rule slots; P1-C/P1-D make non-default values effective. */
   bazi?: Partial<BaziCalculationSettings>;
   /** Advanced Liuyao casting facts; omitted means deterministic auto mode. */
   liuyao?: {
@@ -205,6 +205,13 @@ export function baziCalculationSettings(options?: CalculationOptions): BaziCalcu
   if (!isBaziHistoricalDstPolicy(base.historicalDstPolicy)) {
     throw new Error('历史夏令时规则版本无效。');
   }
+  if (base.liunianYear !== undefined) {
+    // Mirrors BAZI_LIUNIAN_YEAR_MIN/MAX without importing the dayun module
+    // (which would pull the lunar engine into every chart module).
+    if (!Number.isInteger(base.liunianYear) || base.liunianYear < 1900 || base.liunianYear > 2099) {
+      throw new Error('流年对照年份必须在 1900-2099 之间。');
+    }
+  }
   return base;
 }
 
@@ -239,6 +246,9 @@ export function birthInputSnapshot(
   if (settings.historicalDstPolicy) snapshot.historicalDstPolicy = settings.historicalDstPolicy;
   if (historicalDstResolution) snapshot.historicalDstResolution = historicalDstResolution;
   if (settings.astrologyPolicy) snapshot.astrologyPolicy = settings.astrologyPolicy;
+  if ((settings as BaziCalculationSettings).liunianYear !== undefined) {
+    snapshot.liunianYear = (settings as BaziCalculationSettings).liunianYear;
+  }
   return snapshot;
 }
 

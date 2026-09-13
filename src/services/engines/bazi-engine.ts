@@ -5,6 +5,7 @@ import { createBaziCalculationEvidence } from '@/domains/bazi/evidence';
 import { resolveBaziCalendar } from '@/domains/bazi/calendar-resolver';
 import { resolveBaziHistoricalDst } from '@/domains/bazi/historical-dst';
 import { resolveTrueSolarTime } from '@/domains/bazi/true-solar-time';
+import { buildBaziTimeLayer } from '@/domains/bazi/dayun';
 import { normalizeBaziChart } from '@/domains/bazi/model/normalized-chart';
 import { buildBaziEvidenceGraph } from '@/domains/bazi/evidence/index';
 import { buildBaziInterpretation } from '@/domains/bazi/interpretation/rules';
@@ -178,6 +179,28 @@ export function calculateBaziView(
       };
     });
     const relations = result.relations.slice(0, 6).map((item) => item.description);
+    // Basic dayun/liunian facts live on the payload (not in the explanation
+    // snapshot contract) so the saved record stays replayable without
+    // rewriting historical interpretation versions.  Range-edge dates can sit
+    // outside the solar-term data table, so the additive layer degrades with
+    // an explicit note instead of failing a previously valid chart.
+    let timeLayer: ReturnType<typeof buildBaziTimeLayer> | undefined;
+    let timeLayerNote: string | undefined;
+    try {
+      timeLayer = buildBaziTimeLayer({
+        gender,
+        yearStem: result.fourPillars.year.stem,
+        monthStem: result.fourPillars.month.stem,
+        monthBranch: result.fourPillars.month.branch,
+        dayStem: result.fourPillars.day.stem,
+        natalBranches: order.map(([key]) => ({ key, branch: result.fourPillars[key].branch })),
+        birthDate: calculationProfile.birthDate,
+        effectiveCivilTime: `${calculationProfile.birthDate}T${calculationProfile.birthTime}`,
+        ...(settings.liunianYear !== undefined ? { liunianYear: settings.liunianYear } : {}),
+      });
+    } catch {
+      timeLayerNote = '大运对照暂不可用：当前出生日期超出了基础起运计算的数据覆盖范围。';
+    }
     const normalizedChart = normalizeBaziChart(result, {
       engineVersion: ENGINE_VERSIONS.bazi,
       snapshotVersion: CHART_SNAPSHOT_VERSION,
@@ -214,6 +237,8 @@ export function calculateBaziView(
     caveats: [
       '基础版展示结构证据，不直接给出吉凶定论。',
       'P1-A～P1-D 已记录并应用日界线、节气、位置数据与历法解析版本；流派选择仍待后续批次。',
+      ...(timeLayer ? timeLayer.caveats : []),
+      ...(timeLayerNote ? [timeLayerNote] : []),
       ...(historicalDstResolution.applied ? [historicalDstResolution.note] : []),
       ...(trueSolarResolution.applied ? [trueSolarResolution.note] : []),
     ],
@@ -221,6 +246,7 @@ export function calculateBaziView(
     pillars,
     kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongZhi.join('、')}`,
     relations,
+    timeLayer,
     focus: [
       `日主为「${result.dayMaster}」，基础解读以日柱为观察中心。`,
       relations.length ? `当前可见的柱间关系包括：${relations.slice(0, 2).join('；')}。` : '当前盘面未检出需要优先标注的柱间合冲刑害。',

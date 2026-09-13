@@ -10,7 +10,7 @@ import type { ChartPayload } from '@/types/charts';
  * from the current profile, so an old record remains an immutable snapshot.
  */
 export function ChartRenderer({ payload, compact = false }: { payload: ChartPayload; compact?: boolean }) {
-  const { pillars, lines, palaces, factors, aspects } = buildChartRenderModel(payload);
+  const { pillars, lines, palaces, factors, aspects, timeLayer } = buildChartRenderModel(payload);
   return (
     <View accessibilityLabel={`${payload.module}完整盘面`} style={[styles.root, compact && styles.compact]}>
       {payload.module === 'bazi' && (
@@ -27,6 +27,17 @@ export function ChartRenderer({ payload, compact = false }: { payload: ChartPayl
               </View>
             ))}
           </View>
+          {timeLayer && (
+            <View style={styles.timeLayerBlock}>
+              <Text style={styles.timeLayerTitle}>大运 · {timeLayer.directionLabel ?? ''}</Text>
+              {timeLayer.qiYun && <Text style={styles.timeLayerMeta}>起运 {timeLayer.qiYun.years}年{timeLayer.qiYun.months}月{timeLayer.qiYun.days}日（{timeLayer.qiYun.date}）</Text>}
+              {timeLayer.dayuns.map((entry) => (
+                <Text key={entry.index} style={styles.timeLayerRow}>{entry.index}运 {entry.ganZhi} {entry.startAge}-{entry.endAge}岁 · {entry.startDate}起</Text>
+              ))}
+              {timeLayer.liunian && <Text style={styles.timeLayerRow}>流年 {timeLayer.liunian.year}：{timeLayer.liunian.yearGanZhi} · {timeLayer.liunian.yearStemTenGod}{timeLayer.liunian.coveredByDayun ? ` · 第${timeLayer.liunian.coveredByDayun.index}运${timeLayer.liunian.coveredByDayun.ganZhi}覆盖` : ''}</Text>}
+              <Text style={styles.timeLayerMeta}>大运与流年为结构事实（bazi-dayun-v1），不构成运势、吉凶或应期结论。</Text>
+            </View>
+          )}
         </>
       )}
       {payload.module === 'liuyao' && (
@@ -88,4 +99,8 @@ const styles = StyleSheet.create({
   primary: { color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 11 },
   secondary: { color: palette.patina, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 14 },
   missing: { color: palette.patina, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
+  timeLayerBlock: { borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, padding: spacing.x2, gap: 2 },
+  timeLayerTitle: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 11 },
+  timeLayerRow: { color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 10, lineHeight: 15 },
+  timeLayerMeta: { color: palette.patina, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 14 },
 });

@@ -1,5 +1,6 @@
 import type { DivinationModule, Gender } from '@/types/domain';
 import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
+import type { BaziTimeLayer } from '@/domains/bazi/dayun';
 import type { BaziHistoricalDstPolicy, BaziHistoricalDstResolution } from '@/domains/bazi/historical-dst';
 import type { NormalizedBaziChart } from '@/domains/bazi/model/normalized-chart';
 import type { BaziEvidenceGraph, StrengthAssessment } from '@/domains/bazi/evidence/index';
@@ -58,6 +59,8 @@ export interface BirthInputSnapshot {
   historicalDstResolution?: BaziHistoricalDstResolution;
   /** Versioned Astrology precision and location policy; absent on legacy records. */
   astrologyPolicy?: AstrologyCalculationPolicy;
+  /** User-selected dayun comparison year; exact Bazi charts only. */
+  liunianYear?: number;
 }
 
 export interface LiuyaoInputSnapshot {
@@ -134,6 +137,8 @@ export interface BaziChartView extends ChartMeta {
   kongWang: string;
   relations: string[];
   focus: string[];
+  /** Basic dayun plan and optional selected-year comparison; exact charts only. */
+  timeLayer?: BaziTimeLayer;
 }
 
 export interface LiuyaoLineView {

@@ -456,12 +456,14 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
   const [busy, setBusy] = useState(false);
   const [saveState, setSaveState] = useState<'idle' | 'saved' | 'failed'>('idle');
   const [inputChanged, setInputChanged] = useState(false);
+  const [liunianText, setLiunianText] = useState('');
+  const liunianYear = /^\d{4}$/.test(liunianText.trim()) ? Number(liunianText.trim()) : undefined;
   const run = async () => {
     setBusy(true);
     try {
       setError('');
       setSaveState('idle');
-      const next = calculateBaziView(profile, gender, { bazi: { dayBoundary, trueSolarTime, solarTimeModel: trueSolarTime ? solarTimeModel : 'none' } });
+      const next = calculateBaziView(profile, gender, { bazi: { dayBoundary, trueSolarTime, solarTimeModel: trueSolarTime ? solarTimeModel : 'none', ...(liunianYear !== undefined ? { liunianYear } : {}) } });
       setResult(next);
       setInputChanged(false);
       try {
@@ -495,6 +497,16 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
       {!profile.gender && <GenderSelector onChange={(value) => { setGender(value); if (result) setInputChanged(true); }} value={gender} />}
       <BaziDayBoundarySelector onChange={(value) => { setDayBoundary(value); if (result) setInputChanged(true); }} value={dayBoundary} />
       <BaziTrueSolarSelector enabled={trueSolarTime} locationKnown={profile.longitude != null} model={solarTimeModel} onEnabledChange={(value) => { setTrueSolarTime(value); if (result) setInputChanged(true); }} onModelChange={(value) => { setSolarTimeModel(value); if (result) setInputChanged(true); }} />
+      <Text style={styles.fieldLabel}>流年对照年份（选填）</Text>
+      <TextInput
+        accessibilityLabel="流年对照年份"
+        keyboardType="numbers-and-punctuation"
+        onChangeText={(value) => { setLiunianText(value); if (result) setInputChanged(true); }}
+        placeholder="例如 2024；留空则只排大运"
+        placeholderTextColor="#65736D"
+        style={styles.textInput}
+        value={liunianText}
+      />
       <Text style={styles.workspaceDescription}>以保存的历法、日期与时辰排出天干地支、十神、藏干、纳音及柱间关系。</Text>
       <ErrorNotice message={error} onRetry={run} />
       {inputChanged && <StatePanel body="输入已变化；当前结果仍是上一次输入的快照，请重新排盘后再保存。" state="partial" testID="reading-input-stale" title="结果需要重新计算" />}
@@ -537,6 +549,31 @@ function BaziResult({ result }: { result: BaziChartView }) {
         <Text style={styles.evidenceLabel}>真太阳时</Text>
         <Text style={styles.evidenceValue}>{trueSolarDisplay.summary}</Text>
       </View>
+      {result.timeLayer && (
+        <View style={styles.dayunPanel} testID="bazi-time-layer">
+          <Text style={styles.resultSectionTitle}>大运 · {result.timeLayer.directionLabel}</Text>
+          <Text style={styles.factorValue}>起运 {result.timeLayer.qiYun.years}年{result.timeLayer.qiYun.months}月{result.timeLayer.qiYun.days}日（{result.timeLayer.qiYun.date}）· 依据节气 {result.timeLayer.qiYun.anchorTerm}（{result.timeLayer.qiYun.anchorTermTime}）</Text>
+          <Text style={styles.factorValue}>{result.timeLayer.ageConvention}</Text>
+          <View style={styles.dayunGrid}>
+            {result.timeLayer.dayuns.map((entry) => (
+              <View key={entry.index} style={styles.dayunCell}>
+                <Text style={styles.dayunGanZhi}>{entry.ganZhi}</Text>
+                <Text style={styles.dayunMeta}>{entry.startAge}-{entry.endAge}岁</Text>
+                <Text style={styles.dayunMeta}>{entry.startDate}起</Text>
+              </View>
+            ))}
+          </View>
+          {result.timeLayer.liunian && (
+            <View style={styles.dayunLiunian}>
+              <Text style={styles.dayunLiunianTitle}>流年 {result.timeLayer.liunian.year} · {result.timeLayer.liunian.yearGanZhi}</Text>
+              <Text style={styles.factorValue}>流年天干十神：{result.timeLayer.liunian.yearStemTenGod}{result.timeLayer.liunian.coveredByDayun ? ` · 第${result.timeLayer.liunian.coveredByDayun.index}运（${result.timeLayer.liunian.coveredByDayun.ganZhi}）覆盖` : ` · ${result.timeLayer.liunian.coverageNote ?? '不在大运覆盖范围内'}`}</Text>
+              {result.timeLayer.liunian.branchRelations.length > 0 && <Text style={styles.factorValue}>与原局地支：{result.timeLayer.liunian.branchRelations.map((item) => `${item.targetPillar}${item.targetBranch}${item.kind}`).join('、')}</Text>}
+              {result.timeLayer.liunian.branchRelations.length === 0 && <Text style={styles.factorValue}>与原局地支未检出已支持的六合/六冲关系。</Text>}
+            </View>
+          )}
+          {result.timeLayer.caveats.map((caveat) => <Text key={caveat} style={styles.interpretationCaveat}>提示：{caveat}</Text>)}
+        </View>
+      )}
       <ExplanationLayer evidenceNodes={result.evidenceGraph.nodes} glossaryTerms={listGlossaryTerms('bazi')} snapshot={result.explanation} />
       <BaziInterpretationExplorer result={result} />
       <BaziEvidencePanel result={result} />
@@ -1014,6 +1051,13 @@ const styles = StyleSheet.create({
   pillarTenGod: { marginTop: spacing.x2, color: palette.brass, fontFamily: fontFamilies.body, fontSize: 11 },
   pillarDetail: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 15, textAlign: 'center' },
   evidenceStrip: { marginTop: spacing.x4, flexDirection: 'row', alignItems: 'center', gap: spacing.x4, borderTopWidth: 1, borderBottomWidth: 1, borderColor: palette.hairline, paddingVertical: spacing.x3 },
+  dayunPanel: { marginTop: spacing.x4, borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, backgroundColor: 'rgba(8, 26, 22, 0.68)', padding: spacing.x4 },
+  dayunGrid: { marginTop: spacing.x3, flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2 },
+  dayunCell: { minWidth: 88, flexGrow: 1, alignItems: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingVertical: spacing.x2, paddingHorizontal: spacing.x1 },
+  dayunGanZhi: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 18 },
+  dayunMeta: { marginTop: 2, color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9 },
+  dayunLiunian: { marginTop: spacing.x3, borderTopWidth: 1, borderColor: palette.hairline, paddingTop: spacing.x3 },
+  dayunLiunianTitle: { color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 15 },
   evidenceLabel: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 11 },
   evidenceValue: { flex: 1, color: palette.ricePaper, fontFamily: fontFamilies.data, fontSize: 11 },
   evidencePanel: { marginTop: spacing.x4, borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.input, backgroundColor: 'rgba(8, 26, 22, 0.68)' },
