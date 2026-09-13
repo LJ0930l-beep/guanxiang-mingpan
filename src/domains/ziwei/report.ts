@@ -59,7 +59,7 @@ export function buildZiweiReport(view: ZiweiChartView): ChartReport {
       heading: '三方四正与阅读路线',
       paragraphs: [
         life
-          ? `命宫${life.name}的三方四正为：本宫${life.name}、对宫${chart.palaces.find((palace) => palace.id === life.oppositePalaceRefId)?.name ?? '未记录'}，以及三方${(life.trinePalaceRefIds ?? []).map((id) => chart.palaces.find((palace) => palace.id === id)?.name).filter(Boolean).join('、') || '未记录'}；判断命宫主题时四宫必须合看。`
+          ? `${palaceFullName(life.name)}的三方四正为：本宫${life.name}、对宫${chart.palaces.find((palace) => palace.id === life.oppositePalaceRefId)?.name ?? '未记录'}，以及三方${(life.trinePalaceRefIds ?? []).map((id) => chart.palaces.find((palace) => palace.id === id)?.name).filter(Boolean).join('、') || '未记录'}；判断命宫主题时四宫必须合看。`
           : '命宫未记录，无法生成三方四正路线。',
         '建议路线：命宫定风格 → 四化找资源与消耗 → 财帛/官禄看现实场景 → 夫妻/福德看关系与内在 → 各宫对宫补充对照。',
       ],
@@ -75,8 +75,8 @@ export function buildZiweiReport(view: ZiweiChartView): ChartReport {
   ];
   return {
     version: 'chart-report-v1',
-    title: `${view.fiveElement} · 命宫${life?.name ?? '?'}（${life?.stemBranch ?? '?'}）紫微报告`,
-    summary: `命宫${life?.name ?? '?'}坐${(life?.majorStarRefs ?? []).map((id) => chart.stars.find((star) => star.id === id)?.name).filter(Boolean).join('、') || '空宫'}；四化集中处见“生年四化逐条解读”。`,
+    title: `${view.fiveElement} · ${palaceFullName(life?.name ?? '命宫')}（${life?.stemBranch ?? '?'}）紫微报告`,
+    summary: `${palaceFullName(life?.name ?? '命宫')}坐${(life?.majorStarRefs ?? []).map((id) => chart.stars.find((star) => star.id === id)?.name).filter(Boolean).join('、') || '空宫'}；四化集中处见“生年四化逐条解读”。`,
     sections,
   };
 }

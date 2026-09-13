@@ -2,6 +2,18 @@
 
 面向中国大陆年轻用户的本地命盘与复盘工具。首版覆盖八字、六爻、紫微斗数和西方本命盘；基础排盘与规则型解读永久免费，不接入 AI、不展示广告。
 
+## 界面速览
+
+以下截图均来自本地运行的 Web 版，命主为演示用虚构资料。
+
+| 首页 · 观象台 | 八字整体报告 |
+|---|---|
+| ![首页观象台](docs/assets/ui-home.png) | ![八字整体报告](docs/assets/ui-bazi-report.png) |
+| **大运与流年对照** | **紫微十二宫盘面** |
+| ![大运与流年对照](docs/assets/ui-bazi-dayun.png) | ![紫微十二宫盘面](docs/assets/ui-ziwei-board.png) |
+| **紫微整体报告** | **记录与复盘** |
+| ![紫微整体报告](docs/assets/ui-ziwei-report.png) | ![记录与复盘](docs/assets/ui-records.png) |
+
 ## 当前里程碑
 
 已实现：
