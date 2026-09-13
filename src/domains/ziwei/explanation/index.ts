@@ -2,8 +2,9 @@ import { createExplanationSnapshot } from '@/domains/explanation/snapshot';
 import { GLOSSARY_VERSION, type ExplanationBlock, type ExplanationConfidence, type ExplanationSnapshot } from '@/domains/explanation/types';
 import type { ZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 import type { NormalizedZiweiChart } from '@/domains/ziwei/model/normalized-chart';
+import { describeMutagenEdge, palaceTheme, starTrait } from '@/domains/ziwei/interpretation/knowledge';
 
-export const ZIWEI_EXPLANATION_VERSION = 'ziwei-explanation-v2' as const;
+export const ZIWEI_EXPLANATION_VERSION = 'ziwei-explanation-v3' as const;
 
 type BuildInput = {
   chart: NormalizedZiweiChart;
@@ -57,6 +58,18 @@ function starDetails(chart: NormalizedZiweiChart, refId: string | undefined): st
   return names.length ? names.join('、') : '未见十四主星坐守';
 }
 
+/** Split the per-edge mutagen readings across at most two paragraphs. */
+function mutagenParagraphs(chart: NormalizedZiweiChart): string[] {
+  const readings = chart.mutagenEdges.map((edge) => describeMutagenEdge(chart, edge));
+  if (!readings.length) {
+    return ['没有四化节点时，解释层不会猜测或补造四化。', '这意味着什么：缺少生年四化时，本版不能生成化象主题解读，只能按宫位与星曜事实阅读。'];
+  }
+  const first = readings.slice(0, 2).join(' ');
+  const second = readings.slice(2).join(' ');
+  const guide = '以上每句都由星曜特质、化象倾向与宫位主题三段事实拼成；先读化忌落宫（消耗点），再看化禄落宫（资源点），结合宫位主题安排观察重点。';
+  return second ? [first, second, guide] : [first, guide];
+}
+
 function makeBlock(
   category: string,
   title: string,
@@ -95,14 +108,27 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
   const threeSquareRefs = refsFor(evidenceGraph, evidenceGraph.nodes.filter((node) => node.type === 'palace.relation').map((node) => node.id));
   const relationRef = evidenceGraph.nodes.find((node) => node.type === 'life-body.relation')?.id;
   const palaceRefs = refsFor(evidenceGraph, evidenceGraph.nodes.filter((node) => node.type === 'palace.position').map((node) => node.id));
+  const lifePalaceNode = chart.palaces.find((palace) => palace.id === chart.lifePalaceRefId);
+  const opposite = chart.palaces.find((palace) => palace.id === lifePalaceNode?.oppositePalaceRefId)?.name;
+  const trines = (lifePalaceNode?.trinePalaceRefIds ?? [])
+    .map((id) => chart.palaces.find((palace) => palace.id === id)?.name)
+    .filter((name): name is string => Boolean(name));
+  const lifeStarReadings = (lifePalaceNode?.majorStarRefs ?? [])
+    .map((id) => chart.stars.find((star) => star.id === id))
+    .filter((star): star is NonNullable<typeof star> => Boolean(star))
+    .map((star) => `${star.name}：${starTrait(star.name)}${star.brightness ? `（亮度${star.brightness}）` : ''}。`)
+    .join('');
+  const mutagenSummary = chart.mutagenEdges.length
+    ? `本盘四化：${chart.mutagenEdges.map((edge) => `${edge.starName}化${edge.mutagen}入${palaceName(chart, edge.palaceRefId)}`).join('、')}。`
+    : '当前盘面没有返回可核对的四化落宫事实。';
   const blocks: ExplanationBlock[] = [
     makeBlock(
       'overview',
       '先看盘面骨架',
-      `本盘命宫坐标为${lifePosition}，身宫坐标为${bodyPosition}，先定位十二宫与主星。`,
+      `本盘命宫坐标为${lifePosition}，身宫坐标为${bodyPosition}，五行局${chart.fiveElement}。`,
       [
         `本次排盘固定记录了${chart.palaces.length}个宫位、${chart.stars.length}颗星曜及其位置。`,
-        `命宫与身宫是阅读入口，后续解释会把每个判断回连到具体宫位和星曜事实。`,
+        `命宫与身宫是阅读入口：命宫看性格底色与起点，身宫看后天投入的方向；后续解释会把每个判断回连到具体宫位和星曜事实。`,
       ],
       refsFor(evidenceGraph, [...lifeRefs, ...bodyRefs, ...(relationRef ? [relationRef] : [])]),
       ['glossary:ziwei:palace-position', 'glossary:ziwei:life-palace', 'glossary:ziwei:body-palace'],
@@ -111,10 +137,11 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     makeBlock(
       'life-palace',
       '命宫位置',
-      `命宫定位于${lifePosition}（宫名：${lifePalace}），主星记录为${starNames(chart, chart.lifePalaceRefId)}，可从此处展开。`,
+      `命宫定位于${lifePosition}（宫名：${lifePalace}），主星记录为${starNames(chart, chart.lifePalaceRefId)}。`,
       [
+        `命宫在结构上关联${palaceTheme(lifePalace)}；本宫主星决定这份主题以什么风格展开。`,
         `命宫的天干地支与星曜清单来自标准化宫位模型，而不是页面临时拼接。`,
-        '这意味着什么：命宫可以作为继续查看主星、亮度和四化引用的坐标，但不会单独生成现实结论。',
+        '命宫可以作为继续查看主星、亮度和四化引用的坐标，但不会单独生成现实结论。',
       ],
       lifeRefs,
       ['glossary:ziwei:life-palace', 'glossary:ziwei:main-star'],
@@ -124,19 +151,19 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
       '身宫位置',
       `身宫定位于${bodyPosition}（宫名：${bodyPalace}），命主与身主字段一并保留作复盘坐标。`,
       [
+        `身宫在结构上提示后天投入与在意的领域，与命宫的先天底色互为对照。`,
         `身宫位置通过稳定宫位 ID 保存，可与命宫位置和星曜引用做复盘对照。`,
-        `这意味着什么：身宫是盘面中的另一条观察坐标，需结合命宫与其他证据阅读。`,
       ],
       bodyRefs,
       ['glossary:ziwei:body-palace', 'glossary:ziwei:palace-position'],
     ),
     makeBlock(
       'star-combinations',
-      '主星与组合',
-      `命宫主星组合为${starDetails(chart, chart.lifePalaceRefId)}，只按本次算法落点展示。`,
+      '命宫主星解读',
+      `命宫主星组合为${starDetails(chart, chart.lifePalaceRefId)}，按星曜特质展开。`,
       [
-        `命宫主星、亮度与四化字段来自星曜落点节点：${starDetails(chart, chart.lifePalaceRefId)}。`,
-        '主星组合可以作为继续查阅主题的入口；具体流派含义必须连同安星、亮度和四化规则一起复核。',
+        lifeStarReadings || '命宫未记录十四主星；空宫按所选流派是否借对宫星曜阅读，本版不擅自补齐。',
+        '同宫多星时倾向互相调和或互相牵制，先读主星再读辅星；亮度影响特质发挥的稳定度。',
         '当前没有把星曜名称自动翻译成职业、婚姻或性格断语，也不会用缺失星曜补齐组合。',
       ],
       refsFor(evidenceGraph, evidenceGraph.nodes
@@ -148,10 +175,10 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     makeBlock(
       'three-square-four-correctness',
       '三方四正',
-      '每个宫位都保留对宫与三方宫位坐标，先看关联位置，再回到星曜事实。',
+      `命宫${lifePalace}的对宫为${opposite ?? '未记录'}，三方为${trines.join('、') || '未记录'}。`,
       [
+        `阅读${lifePalace}主题时，四个宫位要一起看：本宫给出风格，对宫给出对照面，三方给出配合与压力。`,
         '三方四正节点只记录宫位之间的坐标关系，不把关联自动翻译成吉凶。',
-        '这意味着什么：展开某个宫位时，可以同时核对它的对宫和三方宫位，避免只看单宫。',
       ],
       threeSquareRefs,
       ['glossary:ziwei:palace-position', 'glossary:ziwei:life-palace'],
@@ -159,12 +186,9 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     ),
     makeBlock(
       'mutagens',
-      '四化落点',
-      chart.mutagenEdges.length ? `盘面记录了${chart.mutagenEdges.length}条四化落宫事实，可逐条展开核对。` : '当前盘面没有返回可核对的四化落宫事实。',
-      [
-        chart.mutagenEdges.length ? '四化解释只描述星曜、化象与落宫之间的记录关系。' : '没有四化节点时，解释层不会猜测或补造四化。',
-        '这意味着什么：四化是继续追踪宫位证据的入口，而不是独立的确定性预测。',
-      ],
+      '四化落点解读',
+      mutagenSummary,
+      mutagenParagraphs(chart),
       mutagenRefs,
       ['glossary:ziwei:four-transform', 'glossary:ziwei:palace-position'],
       chart.mutagenEdges.length ? 'medium' : 'low',
@@ -173,10 +197,10 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     makeBlock(
       'focus-palaces',
       '十二宫导航',
-      `十二宫按固定顺序展开，点击宫位即可回到对应落点和星曜证据。`,
+      `十二宫各有关联主题，点击宫位可查看主题、星曜与四化落点解读。`,
       [
         '宫位卡片先展示位置、主星、辅星和大限字段，解释层只引用同一组标准化证据。',
-        '这意味着什么：你可以从命宫、身宫或四化落点出发，逐宫复盘，而不必接受一条不可检查的总断。',
+        '例如财帛宫看资源往来模式，官禄宫看事业方向与做事场景；逐宫复盘时不必接受一条不可检查的总断。',
       ],
       palaceRefs,
       ['glossary:ziwei:palace-position', 'glossary:ziwei:main-star'],
@@ -184,10 +208,10 @@ export function buildZiweiExplanation({ chart, evidenceGraph, generatedAt }: Bui
     makeBlock(
       'summary',
       '本盘小结',
-      `先确认${lifePalace}（${lifePosition}）与${bodyPalace}（${bodyPosition}），再按四化与星曜落点逐层展开。`,
+      `先读命宫${lifePalace}（${lifePosition}）主星，再追四化落宫与身宫${bodyPalace}的对照。`,
       [
-        `本版小结只汇总已计算的宫位、星曜和命身关系，不跨出盘面事实作事件承诺。`,
-        '这意味着什么：保存快照后，可以在未来版本中对照解释版本和证据引用是否发生变化。',
+        `建议阅读顺序：命宫主星定风格 → 四化落点找资源与消耗的集中处 → 身宫${bodyPalace}看后天投入 → 三方四正补结构。`,
+        '本版小结只汇总已计算的宫位、星曜和命身关系，不跨出盘面事实作事件承诺。',
       ],
       refsFor(evidenceGraph, [...lifeRefs, ...bodyRefs, ...(relationRef ? [relationRef] : [])]),
       ['glossary:ziwei:life-palace', 'glossary:ziwei:body-palace', 'glossary:ziwei:four-transform'],

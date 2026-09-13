@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/action-button';
 import { AnimatedReveal } from '@/components/animated-reveal';
+import { AmbientRing } from '@/components/ambient-ring';
+import { PulseDot } from '@/components/pulse-dot';
 import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
 import { ExplanationLayer } from '@/components/explanation-layer';
@@ -32,6 +34,7 @@ import {
 } from '@/services/chart-engine';
 import { useApp } from '@/state/app-context';
 import { listGlossaryTerms } from '@/domains/explanation/glossary';
+import { describePalaceContext, palaceTheme } from '@/domains/ziwei/interpretation/knowledge';
 import type {
   AstrologyChartView,
   BaziChartView,
@@ -759,7 +762,7 @@ function LiuyaoResult({ result }: { result: LiuyaoChartView }) {
             <View style={styles.yaoMark}>
               {line.yinYang === '阳' ? <View style={styles.yangLine} /> : <View style={styles.yinLine}><View style={styles.yinHalf} /><View style={styles.yinHalf} /></View>}
             </View>
-            <Text style={styles.yaoChange}>{line.isChanging ? '动' : '静'}</Text>
+            <View style={styles.yaoChangeWrap}>{line.isChanging && <PulseDot color="#D8A05F" />}<Text style={styles.yaoChange}>{line.isChanging ? '动' : '静'}</Text></View>
             <View style={styles.yaoCopy}><Text style={styles.yaoPrimary}>{line.liuShen} · {line.liuQin} · {line.naJia}{line.wuXing}</Text><Text style={styles.yaoSecondary}>{line.isShiYao ? '世爻 · ' : line.isYingYao ? '应爻 · ' : ''}{line.strength ?? '状态待核'}{line.evidence.length ? ` · ${line.evidence.join('、')}` : ''}</Text></View>
           </AnimatedReveal>
         ))}
@@ -842,6 +845,7 @@ function ZiweiResult({ result }: { result: ZiweiChartView }) {
   return (
     <View style={styles.resultArea}>
       <View style={styles.ziweiSummary}>
+        <View pointerEvents="none" style={styles.ambientAnchor}><AmbientRing size={148} /></View>
         <View><Text style={styles.resultEyebrow}>五行局</Text><Text style={styles.resultTitle}>{result.fiveElement}</Text></View>
         <View><Text style={styles.resultEyebrow}>命主 / 身主</Text><Text style={styles.ziweiMetaValue}>{result.lifeMasterStar} / {result.bodyMasterStar}</Text></View>
         <View><Text style={styles.resultEyebrow}>农历</Text><Text style={styles.ziweiMetaValue}>{result.lunarDate}</Text></View>
@@ -854,7 +858,11 @@ function ZiweiResult({ result }: { result: ZiweiChartView }) {
       <View style={styles.palaceBoard}>
         {result.palaces.map((palace, index) => (
           <AnimatedReveal delay={(index % 6) * 55} key={`${palace.name}-${palace.stemBranch}`} style={[styles.palaceCard, wide ? styles.palaceCardWide : styles.palaceCardNarrow]}>
-            <Pressable accessibilityLabel={`查看${palace.name}及三方四正`} accessibilityRole="button" onPress={() => setSelectedPalace((current) => current === palace.name ? null : palace.name)}>
+            <Pressable
+              accessibilityLabel={`查看${palace.name}及三方四正`}
+              accessibilityRole="button"
+              onPress={() => setSelectedPalace((current) => current === palace.name ? null : palace.name)}
+              style={({ pressed }) => [styles.palacePressable, pressed && styles.pressed]}>
             <View style={styles.palaceTop}><Text style={styles.palaceName}>{palace.name}</Text><Text style={styles.palaceBranch}>{palace.stemBranch}{palace.isBodyPalace ? ' · 身' : ''}</Text></View>
             <Text style={styles.palaceStars}>{palace.stars.length ? palace.stars.join('  ') : '空宫'}</Text>
             <Text style={styles.palaceMinor}>{palace.minorStars.join(' · ') || '辅星从略'}</Text>
@@ -864,7 +872,19 @@ function ZiweiResult({ result }: { result: ZiweiChartView }) {
         ))}
       </View>
       <ChartRenderer payload={result} compact />
-      {selected && <View style={styles.selectedPalace}><Text style={styles.resultSectionTitle}>{selected.name} · 三方四正</Text><Text style={styles.factorValue}>对宫：{selectedOpposite?.name ?? '未记录'} · 三方：{selectedTrines.join('、') || '未记录'}</Text><Text style={styles.factorValue}>主星：{selected.majorStarRefs.map((id) => result.normalizedChart.stars.find((star) => star.id === id)?.name).filter((name): name is string => Boolean(name)).join('、') || '无主星'}</Text></View>}
+      {selected && (
+        <AnimatedReveal key={selected.id} delay={0} distance={8}>
+          <View style={[styles.selectedPalace, selected.id === result.normalizedChart.lifePalaceRefId && styles.selectedPalaceLife]}>
+            <Text style={styles.resultSectionTitle}>{selected.name} · {palaceTheme(selected.name)}</Text>
+            <Text style={styles.factorValue}>对宫：{selectedOpposite?.name ?? '未记录'} · 三方：{selectedTrines.join('、') || '未记录'}</Text>
+            <Text style={styles.factorValue}>主星：{selected.majorStarRefs.map((id) => result.normalizedChart.stars.find((star) => star.id === id)?.name).filter((name): name is string => Boolean(name)).join('、') || '无主星（按流派可借对宫）'}</Text>
+            {describePalaceContext(result.normalizedChart, selected.id).map((paragraph) => (
+              <Text key={paragraph.slice(0, 24)} style={styles.palaceReading}>{paragraph}</Text>
+            ))}
+            <Text style={styles.interpretationCaveat}>提示：以上为星曜特质、化象倾向与宫位主题的结构组合，不同流派解读可能不同，不构成现实事件结论。</Text>
+          </View>
+        </AnimatedReveal>
+      )}
       <View style={styles.mutagenRow}>{result.mutagens.map((item, index) => <Text key={`${item}-${index}`} style={styles.mutagenTag}>{item}</Text>)}</View>
       <FocusList items={result.focus} />
       <Caveats items={result.caveats} />
@@ -938,6 +958,7 @@ function AstrologyResult({ result }: { result: AstrologyChartView }) {
     <View style={styles.resultArea}>
       <View style={styles.astroHero}>
         <View style={[styles.astroWheel, { width: wheelSize, height: wheelSize, borderRadius: wheelSize / 2 }]}>
+          <View pointerEvents="none" style={styles.ambientAnchor}><AmbientRing size={Math.round(wheelSize * 0.82)} duration={32000} /></View>
           <View style={[styles.astroWheelMiddle, { borderRadius: wheelSize }]} />
           <View style={[styles.astroWheelInner, { borderRadius: wheelSize }]}><Text style={styles.astroCenterSign}>{result.sunSign.replace('座', '')}</Text><Text style={styles.astroCenterMeta}>太阳星座</Text></View>
           {Array.from({ length: 12 }).map((_, index) => <View key={index} style={[styles.zodiacTick, { transform: [{ rotate: `${index * 30}deg` }, { translateY: -(wheelSize / 2 - 9) }] }]} />)}
@@ -1163,6 +1184,11 @@ const styles = StyleSheet.create({
   palaceMinor: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 9, lineHeight: 15 },
   palaceDecade: { marginTop: 'auto', color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
   selectedPalace: { marginTop: spacing.x4, borderLeftWidth: 2, borderLeftColor: palette.brass, paddingLeft: spacing.x3 },
+  selectedPalaceLife: { borderLeftColor: '#E4C089' },
+  palacePressable: { flex: 1 },
+  palaceReading: { marginTop: spacing.x2, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
+  ambientAnchor: { position: 'absolute', top: '50%', left: '50%', width: 0, height: 0, zIndex: 0 },
+  yaoChangeWrap: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4 },
   mutagenRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x2, marginTop: spacing.x4 },
   mutagenTag: { color: palette.paleBrass, fontFamily: fontFamilies.body, fontSize: 10, borderWidth: 1, borderColor: palette.hairlineStrong, borderRadius: radii.pill, paddingHorizontal: spacing.x3, paddingVertical: spacing.x2 },
   astroHero: { alignItems: 'center', gap: spacing.x5 },

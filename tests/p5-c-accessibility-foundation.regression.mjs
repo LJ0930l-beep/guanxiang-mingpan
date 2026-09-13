@@ -21,7 +21,13 @@ test('P5-C 共享按钮暴露 busy/disabled 状态并隐藏重复的 loading 指
 test('P5-C 动效监听系统 Reduce Motion 变化并在清理时停止', () => {
   const animatedReveal = source('src/components/animated-reveal.tsx');
 
-  assert.match(animatedReveal, /const \[reduceMotion, setReduceMotion\] = useState\(true\)/);
+  // 2026-09-14 semantic change: motion plays by default and freezes at full
+  // visibility only after the platform confirms reduce-motion; the preference
+  // query failure path falls back to playing the reveal once instead of
+  // leaving panels permanently static on web.
+  assert.match(animatedReveal, /const \[reduceMotion, setReduceMotion\] = useState\(false\)/);
+  assert.match(animatedReveal, /applyMotionPreference\(enabled\)/);
+  assert.match(animatedReveal, /applyMotionPreference\(false\)/);
   assert.match(animatedReveal, /reduceMotionChanged/);
   assert.match(animatedReveal, /subscription\.remove\(\)/);
   assert.match(animatedReveal, /animation\?\.stop\(\)/);

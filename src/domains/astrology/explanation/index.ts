@@ -1,10 +1,11 @@
 import { createExplanationSnapshot } from '@/domains/explanation/snapshot';
 import { GLOSSARY_VERSION, type ExplanationBlock, type ExplanationConfidence, type ExplanationSnapshot } from '@/domains/explanation/types';
 import type { AstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
+import { describeCoreTriad } from '@/domains/astrology/interpretation/knowledge';
 import type { NormalizedAstrologyChart } from '@/domains/astrology/model/normalized-chart';
 import type { AstrologyCalculationPolicy } from '@/domains/astrology/policy';
 
-export const ASTROLOGY_EXPLANATION_VERSION = 'astrology-explanation-v1' as const;
+export const ASTROLOGY_EXPLANATION_VERSION = 'astrology-explanation-v2' as const;
 
 const COMMON_CAVEAT = '占星解释只描述盘面位置与结构，不把星象翻译成确定事件或现实决策。';
 
@@ -90,6 +91,7 @@ export function buildAstrologyExplanation({
         ? `太阳落${sun?.sign ?? '日期内跨星座，未显示'}，月亮${moonDescription}，只描述经过全天稳定性检查的日期级事实。`
         : `太阳落${sun?.sign ?? '未返回'}，月亮${moon?.sign ?? '未返回'}，只先描述两条落座事实。`,
       [
+        describeCoreTriad(sun?.sign, moon?.sign),
         dateLevelApproximate
           ? '太阳与月亮的日期级字段只在当天首尾星座一致时保留，锚点度数仍是近似值。'
           : '太阳与月亮是本命盘中的核心天体字段，解释层直接引用落座和经度节点。',

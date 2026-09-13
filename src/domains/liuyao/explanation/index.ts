@@ -3,9 +3,36 @@ import { GLOSSARY_VERSION, type ExplanationBlock, type ExplanationConfidence, ty
 import type { LiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 import type { NormalizedLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 
-export const LIUYAO_EXPLANATION_VERSION = 'liuyao-explanation-v2' as const;
+export const LIUYAO_EXPLANATION_VERSION = 'liuyao-explanation-v3' as const;
 
 const COMMON_CAVEAT = '六爻解释只描述当前问题、取用和盘面结构，不承诺结果或具体时间。';
+
+/** Structural reading of the selected yongshen's strength/movement/void state. */
+function yongShenReading(chart: NormalizedLiuyaoChart): string {
+  const selected = chart.yongShen?.[0]?.selected;
+  if (!selected) return '引擎未返回具体用神爻位，保持待定，不为完整感补造取用结论。';
+  const parts = [`用神${selected.liuQin}${selected.position ? `取${selected.position}爻（${selected.naJia}）` : ''}`];
+  if (selected.strengthLabel === '旺' || selected.strengthLabel === '相') {
+    parts.push(`当前状态为「${selected.strengthLabel}」，结构上属于有力，所问之事的对应面具备支撑。`);
+  } else if (selected.strengthLabel === '休' || selected.strengthLabel === '囚' || selected.strengthLabel === '死') {
+    parts.push(`当前状态为「${selected.strengthLabel}」，结构上偏弱，对应面缺乏即时支撑，需要等待生扶条件出现。`);
+  } else if (selected.strengthLabel) {
+    parts.push(`状态标记为「${selected.strengthLabel}」，按当前规则不作进一步强弱推断。`);
+  }
+  parts.push(selected.movementLabel === '动'
+    ? '用神发动，表示对应面已出现变动迹象，走向要结合变爻与本卦结构一起看。'
+    : '用神安静，表示对应面暂无明显变动迹象，观察重点放在月日对它的生克上。');
+  if (selected.kongWangState) parts.push('用神落空亡：结构上提示对应面暂时落空、反馈迟滞，是后续复盘的首要观察点。');
+  return parts.join('');
+}
+
+/** Structural reading of the shi/ying axis from saved line facts. */
+function shiYingReading(chart: NormalizedLiuyaoChart): string {
+  const shi = chart.lines.find((line) => line.isShiYao);
+  const ying = chart.lines.find((line) => line.isYingYao);
+  if (!shi || !ying) return '世爻或应爻位置未保存，无法生成对照描述。';
+  return `世爻在第${shi.position}爻（${shi.liuQin}·${shi.naJia}，${shi.strength ?? '状态待核'}），应爻在第${ying.position}爻（${ying.liuQin}·${ying.naJia}，${ying.strength ?? '状态待核'}）。世爻通常作求测方参照、应爻作对方或环境参照；两边六亲与旺衰的对比是复盘时的结构参照，不单独给出吉凶。`;
+}
 
 function refsFor(graph: LiuyaoEvidenceGraph, preferred: string[], min = 2, max = 5): string[] {
   const valid = new Set(graph.nodes.map((node) => node.id));
@@ -56,6 +83,8 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
   const yongShenDetails = idsOf(evidenceGraph, 'yongshen.detail');
   const timeRecommendations = idsOf(evidenceGraph, 'time.recommendation');
   const selectedGroups = chart.yongShen ?? [];
+  const shi = chart.lines.find((line) => line.isShiYao);
+  const ying = chart.lines.find((line) => line.isYingYao);
   const selectedText = selectedGroups
     .map((group) => `${group.targetLiuQin}${group.selected.position ? `取${group.selected.position}爻` : '未定具体爻位'}（${group.selectionStatus}，${group.selected.strengthLabel}，${group.selected.movementLabel}）`)
     .join('；');
@@ -79,6 +108,7 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
       [
         '用神方向来自起卦时的用户选择，证据层同时保留六亲、纳甲和五行字段。',
         `当前可核对的取用候选：${selectedText || '引擎未返回具体爻位，保持待定。'}。`,
+        yongShenReading(chart),
         '这意味着什么：取用是观察入口，复盘时仍应检查它是否贴合问题语境。',
       ],
       refsFor(evidenceGraph, [yongShen, ...yongShenDetails, ...strength].filter((item): item is string => Boolean(item))),
@@ -88,9 +118,9 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
     makeBlock(
       'shi-ying',
       '世应结构',
-      '世爻与应爻作为参照坐标保存，先核对位置再观察其余证据。',
+      shi ? `世爻在第${shi.position}爻、应爻在第${ying?.position ?? '?'}爻，作为盘面参照坐标保存。` : '世应坐标已保存，先核对位置再观察其余证据。',
       [
-        '世应节点记录爻位关系，和每一爻的旺衰、六亲及纳甲字段相互独立。',
+        shiYingReading(chart),
         '这意味着什么：世应提供盘面参照，不单独输出支持或反对某个现实结果的结论。',
       ],
       refsFor(evidenceGraph, [shiYing, ...strength].filter((item): item is string => Boolean(item))),
@@ -102,6 +132,9 @@ export function buildLiuyaoExplanation({ chart, evidenceGraph, generatedAt }: { 
       moving.length ? `本卦记录${moving.length}个动爻，变卦字段为${chart.changedHexagramName ?? '未返回'}，可逐条核对。` : '本次未记录动爻，变卦字段保持为空。',
       [
         moving.length ? `动爻节点与本卦、变卦结构节点相互引用；${chart.lines.filter((line) => line.isChanging).map((line) => `${line.position}爻${line.changed ? `变为${line.changed.naJia}${line.changed.wuXing}` : '的变后事实未保存'}`).join('、')}。` : '静卦不会补写动爻或变卦，复盘应回到世应、时间和旺衰字段。',
+        moving.length
+          ? `变化走向：${chart.lines.filter((line) => line.isChanging && line.changeAnalysis).map((line) => `${line.position}爻${line.changeAnalysis?.description ?? ''}`).join('；') || '引擎未返回化变类型描述，仅保留变后纳甲与五行事实。'}。动爻是所问之事的变动启动点，变爻给出走向线索，但它仍是结构描述。`
+          : '静卦表示本次盘面没有标出变动启动点；观察重点放在用神旺衰与月日生克上。',
         '这意味着什么：动变只说明盘面结构如何变化，不对现实结果或具体时间作保证。',
       ],
       refsFor(evidenceGraph, [...moving, structure].filter((item): item is string => Boolean(item))),

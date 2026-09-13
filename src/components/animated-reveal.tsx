@@ -9,7 +9,11 @@ interface AnimatedRevealProps extends PropsWithChildren {
 
 export function AnimatedReveal({ children, delay = 0, distance = 12, style }: AnimatedRevealProps) {
   const [progress] = useState(() => new Animated.Value(0));
-  const [reduceMotion, setReduceMotion] = useState(true);
+  // Motion plays by default and is frozen at full visibility only once the
+  // platform confirms the reduce-motion preference.  Starting from `true`
+  // left panels permanently static on platforms where the preference query
+  // never resolves.
+  const [reduceMotion, setReduceMotion] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -34,9 +38,15 @@ export function AnimatedReveal({ children, delay = 0, distance = 12, style }: An
       animation.start();
     };
 
-    AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-      applyMotionPreference(enabled);
-    });
+    try {
+      AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+        applyMotionPreference(enabled);
+      }).catch(() => {
+        applyMotionPreference(false);
+      });
+    } catch {
+      applyMotionPreference(false);
+    }
 
     const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', applyMotionPreference);
 
