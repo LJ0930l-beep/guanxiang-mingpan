@@ -1,5 +1,44 @@
 # Dependency security notes
 
+## 2026-09-14 处置闭环基线
+
+Command:
+
+```bash
+npm audit --omit=dev
+npm run security:audit
+```
+
+Current lockfile result after a semver-compatible `npm audit fix --omit=dev`
+(no `--force`, lockfile-only transitive bumps within existing ranges):
+
+- Critical: 0
+- High: 4
+- Moderate: 15
+- Low: 0
+- Total: 19
+
+Prior baselines for comparison: 2026-09-03 交付为 0 critical / 9 high / 17
+moderate（26 total）；2026-09-08 复盘时审计库滚动更新为 10 high（27 total）。
+
+处置方式按开发执行书（2026-09-08 第 14 节）落地：
+
+1. 兼容修复：非强制的 `npm audit fix --omit=dev` 已将可在现有 semver 范围内
+   修复的公告全部升级（10 high → 4 high）。升级后完整门禁重跑通过：
+   typecheck、lint、`npm test` 251/251、`build:web` 14 routes、
+   `verify:web` 深链与 SW 迁移验证。
+2. 剩余 high 全部位于 Metro 构建期工具链（`metro`、`metro-config`、
+   `metro-transform-worker` 及其传递依赖 `image-size`），不进入 dist/ 生产包
+   或 iPhone 运行时。
+3. 门禁升级：`scripts/production-audit.mjs` 现在要求每一条 high/critical
+   公告在 `docs/security-advisory-dispositions.json` 处置账本中登记
+   依赖路径、是否进入交付物、可达性、决策、责任人与复核期限；缺失或登记
+   不完整时门禁失败。当前为 4/4 已登记（decision=accepted，责任人
+   安全负责人，复核期限为下次 Expo SDK 升级或 2026-12-31）。
+
+该基线仍不是"生产风险清零"的声明；moderate 公告保持可见，在 SDK 升级或
+复核期限到来时随账本一并复审。
+
 ## 2026-08-14 production baseline
 
 Command:

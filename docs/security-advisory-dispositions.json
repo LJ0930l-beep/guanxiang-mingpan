@@ -1,0 +1,71 @@
+{
+  "version": "security-advisory-dispositions.v1",
+  "updatedAt": "2026-09-14",
+  "policy": "发布默认阻断未处置的 critical 与 high 生产依赖公告（npm audit --omit=dev）。每一条 high/critical 必须在本账本中登记依赖路径、是否进入最终交付物、可达性、兼容修复与复核期限；否则 scripts/production-audit.mjs 门禁失败。moderate 公告保持可见，不进入阻断，但在复核时一并审视。",
+  "baseline": {
+    "afterCompatibleFix": "2026-09-14：npm audit fix --omit=dev（未使用 --force）后为 0 critical / 4 high / 15 moderate；此前基线为 0 critical / 10 high / 17 moderate。",
+    "history": [
+      "2026-09-03 交付基线：0 critical / 9 high / 17 moderate（26 total）",
+      "2026-09-08 复盘基线：0 critical / 10 high / 17 moderate（27 total，审计库滚动更新）",
+      "2026-09-14 兼容升级后：0 critical / 4 high / 15 moderate（19 total）"
+    ]
+  },
+  "dispositions": [
+    {
+      "package": "metro",
+      "severity": "high",
+      "vulnerableRange": "0.22.1 - 0.83.7 || 0.84.0 - 0.84.4 || 0.85.0 - 0.87.0",
+      "installedRange": "0.84.5（经 @expo/metro@56.0.2 引入，当前版本的公告经由 image-size 传递）",
+      "role": "Metro 打包器，构建期工具链",
+      "bundledInRelease": false,
+      "reachability": "unreachable",
+      "analysis": "metro 仅在本地/EAS 构建期运行，不进入 dist/ 生产包或 iPhone 应用运行时；公告本身经由其依赖 image-size 触发。",
+      "decision": "accepted",
+      "owner": "安全负责人（Sol High）",
+      "reviewBy": "下次 Expo SDK 升级时或 2026-12-31（以先到者为准）",
+      "fixPath": "等待 Expo 发布更新 @expo/metro 依赖树后重估；不使用 npm audit fix --force 破坏 SDK 57 锁定。"
+    },
+    {
+      "package": "metro-config",
+      "severity": "high",
+      "vulnerableRange": "<=0.83.7 || 0.84.0 - 0.84.4 || 0.85.0 - 0.87.0",
+      "installedRange": "0.84.5（构建期工具链，经由 metro）",
+      "role": "Metro 配置装载，构建期工具链",
+      "bundledInRelease": false,
+      "reachability": "unreachable",
+      "analysis": "同 metro：仅在构建期使用，公告经由 image-size 传递，不进入交付物。",
+      "decision": "accepted",
+      "owner": "安全负责人（Sol High）",
+      "reviewBy": "下次 Expo SDK 升级时或 2026-12-31（以先到者为准）",
+      "fixPath": "同 metro。"
+    },
+    {
+      "package": "metro-transform-worker",
+      "severity": "high",
+      "vulnerableRange": "0.60.0 - 0.83.7 || 0.84.0 - 0.84.4 || 0.85.0 - 0.87.0",
+      "installedRange": "0.84.5（构建期工具链，经由 metro）",
+      "role": "Metro 转换 worker，构建期工具链",
+      "bundledInRelease": false,
+      "reachability": "unreachable",
+      "analysis": "同 metro：仅在构建期使用，公告经由 image-size 传递，不进入交付物。",
+      "decision": "accepted",
+      "owner": "安全负责人（Sol High）",
+      "reviewBy": "下次 Expo SDK 升级时或 2026-12-31（以先到者为准）",
+      "fixPath": "同 metro。"
+    },
+    {
+      "package": "image-size",
+      "severity": "high",
+      "vulnerableRange": "*",
+      "installedRange": "metro 0.84.5 的传递依赖（构建期）",
+      "role": "构建期图片尺寸读取（Metro 资产处理）",
+      "bundledInRelease": false,
+      "reachability": "unreachable",
+      "analysis": "公告为 ICNS/JXL/HEIF 解析器的死循环 DoS；仓库静态资产仅 PNG 与 Web 图标，Metro 打包路径不会触达受影响的解析器。npm audit fix 已在兼容范围内将本包及其余可修项升级，剩余项需要打破 Expo SDK 57 依赖树才能继续升级，故按例外登记。",
+      "decision": "accepted",
+      "owner": "安全负责人（Sol High）",
+      "reviewBy": "下次 Expo SDK 升级时或 2026-12-31（以先到者为准）",
+      "fixPath": "等待上游 metro 放宽 image-size 版本范围后重估；不使用 npm audit fix --force。"
+    }
+  ]
+}
