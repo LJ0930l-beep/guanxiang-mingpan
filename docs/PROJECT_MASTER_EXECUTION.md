@@ -682,3 +682,28 @@ P5-B2 最小实现批的 DoD 是 source-decision/audit tooling、逐行血缘与
 | 产品负责人（后续 Phase 6/7） | 是否首发接入真实短信/Apple/微信账号、支付、广告、AI、云同步；相应供应商和数据处理授权 | 后续商业/账号能力 |
 
 在上述条件补齐前，发布等级保持 **技术 RC，非公开发布**；不得将工程 PASS 改写为 Level A 全部 PASS。
+
+## 复盘执行书补充批次（2026-09-14）：R04/R08/R10
+
+按《项目复盘与三术解盘闭环开发执行书》（2026-09-08）任务包顺序推进：R01–R03、R05–R07 及 R09 方案已于 2026-09-08 交付（见 `docs/PROJECT_REVIEW_HANDOFF_20260908.md`）；本轮完成 R04 收尾（基础大运/流年对照、未知时辰部分盘）、R08 收尾（生产公告处置闭环、记录分页）与 R10 证据链（补推 CI 与交接文档）。
+
+### 批次记录
+
+| 批次 | 内容 | 提交 | 验收证据 |
+| --- | --- | --- | --- |
+| R10 前置 | 推送积压提交 `16c56e9` 并确认 CI | — | Actions run `34773175393` completed/success，Web Export 实际执行 |
+| R04-1 | 八字基础大运 + 流年对照（`bazi-dayun-v1`） | 见 git log | `tests/bazi-dayun.regression.mjs` 6/6；解释八块合同不变 |
+| R04-2 | 未知时辰八字部分盘（`bazi-partial-chart-policy.v1`） | `6ed09ec` | `tests/bazi-partial-chart.regression.mjs` 6/6；紫微维持阻止策略 |
+| R08-1 | 生产公告处置闭环 | `bbf3413`、`4e8a75f` | 兼容升级后 0 critical / 4 high / 15 moderate；处置账本 4/4；audit 门禁升级 |
+| R08-2 | 记录列表分页（1000 条可检索） | `2d184c4` | `tests/archive-query.regression.mjs` 分页用例 |
+
+### 本轮质量门
+
+- 统一 `npm test` **252/252**（239 → 252）；typecheck、lint、security:scan、security:audit（0 critical / 4 high / 15 moderate，账本 4/4）、`build:web`（14 routes）、`verify:web`（深链 + SW 迁移）全部 PASS。
+- 最终推送后的 CI 结论以后续 Actions run 为准，验收时须核对 final SHA 对应 run 的 Web Export 实际执行。
+
+### 发布矩阵变化
+
+- P5-E（Release Security）：从 BLOCKED 调整为 **PASS（工程）+ 外部签字保留**：high/critical 公告已逐项登记处置（责任人、复核期限），工程门禁闭环；安全负责人书面接受仍按外部条件保留。
+- M1 时间层：新增"基础大运与流年对照（工程基线，待专业复核）"与"未知时辰八字部分盘（`bazi-partial-chart-policy.v1`）"两项已完成能力；流派选择、全国城市覆盖不变。
+- 其余 blocker（P5-B 城市数据、P5-F 合规、P5-G 公开部署、P5-H 真机签名、P5-I 商店）与后续商业/账号决策不变，见 `docs/OWNER_DECISIONS_PENDING.md`。

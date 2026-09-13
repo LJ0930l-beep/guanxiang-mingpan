@@ -112,3 +112,30 @@ npm run verify:web
 - Word 交接：`docs/PROJECT_REVIEW_HANDOFF_20260908.docx`
 - 生产依赖审计：`docs/PRODUCTION_AUDIT_20260908.md`
 - Qwen 离线方案：`docs/QWEN35_9B_OFFLINE_EVAL_PLAN_20260908.md`
+
+## 补充批次交付（2026-09-14）
+
+本轮按开发执行书任务包顺序完成 R04 收尾、R08 收尾与 R10 证据链收口，均为本地确定性工程，不接入 AI、支付或真实账号。
+
+### 执行顺序与证据
+
+1. **R10 证据链第一步**：积压提交 `16c56e9`（上一轮三术复盘修复）已推送远端，GitHub Actions run `34773175393` 为 `completed/success`，Web Export 实际执行。上一轮交接中"尚未推送远端"的缺口已关闭。
+2. **R04-1 八字基础大运与流年对照**（`bazi-dayun-v1`）：新增 `src/domains/bazi/dayun.ts`。起运方向为阳年男/阴年女顺行、阴年男/阳年女逆行；起运折算采用通行三日折一年口径（1 天=4 月、1 时辰=10 日折算到日），起运算法、方向、年龄口径、锚定节气与边界全部写入 payload `timeLayer` 元数据。流年对照支持用户选定 1900-2099 年份，按立春精确取干支（lunar-javascript `getYearInGanZhiExact`），输出流年干支、流年干十神（显式十神映射表）与流年支对原局的六合/六冲事实，并标注覆盖的大运。出生日期超出节气数据覆盖范围时显式降级并提示，不中断排盘。解释快照八块合同不变；`liunianYear` 进入设置、输入快照与指纹。回归：`tests/bazi-dayun.regression.mjs`（6 项，含 TZ deepEqual）。
+3. **R04-2 未知时辰八字部分盘**（`bazi-partial-chart-policy.v1`）：按执行书第 7 节授权改变旧版阻止策略并记录产品决策（`src/domains/policy/bazi-partial-chart.ts`）。未知时辰不再阻断八字，而是提供年、月、日三柱部分盘：00:00/12:00/23:59 三个民用锚点各跑完整修正管线（历法、历史夏令时、真太阳时、午夜日界线），正午锚点为展示基准，跨锚点移动的柱输出为显式候选范围（节气当日产生年/月候选，历史夏令时远西经度产生日柱候选）。时柱不补造，正午仅为计算锚点；`normalizeBaziChart` 以 `includePillars` 裁剪缺失柱及其关联关系；强弱证据链与八块解释在三柱上继续成立并标注"资料不足"。紫微仍维持 `requireExactBirth` 阻止策略；部分盘不提供大运对照。策略、锚点与日界线进入设置、输入快照与指纹。回归：`tests/bazi-partial-chart.regression.mjs`（6 项，含 TZ deepEqual），并按授权更新 `tests/chart-engine.regression.mjs` 的缺失时辰断言。
+4. **R08-1 依赖漏洞处置闭环**：先执行非强制 `npm audit fix --omit=dev`（仅锁文件内 semver 兼容升级，未用 `--force`），生产公告从 10 high / 17 moderate 降至 **0 critical / 4 high / 15 moderate**；剩余 high 全部为 Metro 构建期工具链（metro、metro-config、metro-transform-worker 及其传递依赖 image-size），不进入生产交付物。新增 `docs/security-advisory-dispositions.json` 处置账本（v1 合同）与 `scripts/production-audit.mjs` 门禁升级：任何 high/critical 公告缺少带责任人、决策与复核期限的登记即失败，当前 4/4 已登记。
+5. **R08-2 记录分页**：`paginateArchiveReadings` + `ARCHIVE_PAGE_SIZE`（30）落地展示层分页，记录页新增无障碍"显示更多"控件；搜索与筛选始终作用于全量记录，存储层不裁剪（F01 保持）。回归：`tests/archive-query.regression.mjs` 新增 1000 条分页用例。
+
+### 本轮质量门（本地实测）
+
+- `npm test`：**252/252**，0 失败 0 跳过（239 基线 + 大运 6 + 部分盘 6 + 分页 1）
+- `npm run typecheck`、`npm run lint`：PASS
+- `npm run security:scan`：PASS（7 个配置根目录无密钥命中）
+- `npm run security:audit`：PASS，`0 critical / 4 high / 15 moderate`，处置账本 4/4 已登记
+- `npm run build:web`：PASS（14 routes）；`npm run verify:web`：PASS（深链 + SW 迁移）
+
+### 仍然未完成（与执行书一致）
+
+- 专业复核：每术至少 30 个带来源/许可样例、非专业用户可用性测试、流派选择——需要外部专业与负责人输入。
+- 大运/流年的解释含义（而非结构事实）在专业复核前保持工程基线标注，不输出运势结论。
+- Qwen3.5-9B 离线评测仍未执行（evaluation-not-run，方案见 `docs/QWEN35_9B_OFFLINE_EVAL_PLAN_20260908.md`）。
+- 真机/TestFlight、签名、法律主体、城市数据全国覆盖、生产托管与真实账号等外部条件不变，详见 `docs/OWNER_DECISIONS_PENDING.md`。
