@@ -11,6 +11,7 @@ import { buildBaziEvidenceGraph } from '@/domains/bazi/evidence/index';
 import { buildBaziInterpretation } from '@/domains/bazi/interpretation/rules';
 import { buildBaziExplanation } from '@/domains/bazi/explanation/index';
 import { BAZI_PARTIAL_CHART_ANCHOR, BAZI_PARTIAL_CHART_POLICY, BAZI_PARTIAL_CHART_DECISION } from '@/domains/policy/bazi-partial-chart';
+import { buildBaziReport } from '@/domains/bazi/report';
 import type { BaziChartView } from '@/types/charts';
 import { assertPublicBirthDateRange, baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, inputFingerprint, requireGender } from '@/services/chart-engine-shared';
 import { withChartEngineErrorBoundary } from '@/services/chart-errors';
@@ -229,7 +230,7 @@ function calculatePartialBaziView(
       }];
     });
 
-    return {
+    const chartView: BaziChartView = {
     module: 'bazi',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generated,
@@ -282,6 +283,7 @@ function calculatePartialBaziView(
       '大运与流年对照需要准确时辰，本部分盘暂不提供。',
     ],
     };
+    return { ...chartView, report: buildBaziReport(chartView) };
   });
 }
 
@@ -387,7 +389,7 @@ export function calculateBaziView(
     const inputSnapshot = birthInputSnapshot(profile, gender, settings, historicalDstResolution);
     const fingerprint = inputFingerprint({ module: 'bazi', inputSnapshot, calculationSettings: settings });
 
-    return {
+    const chartView: BaziChartView = {
     module: 'bazi',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generated,
@@ -428,5 +430,6 @@ export function calculateBaziView(
       '旺衰与取用需要结合月令、根气、透干和组合继续判断，基础版不把单一五行数量当作结论。',
     ],
     };
+    return { ...chartView, report: buildBaziReport(chartView) };
   });
 }

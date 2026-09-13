@@ -8,7 +8,7 @@ export const LIUYAO_EXPLANATION_VERSION = 'liuyao-explanation-v3' as const;
 const COMMON_CAVEAT = '六爻解释只描述当前问题、取用和盘面结构，不承诺结果或具体时间。';
 
 /** Structural reading of the selected yongshen's strength/movement/void state. */
-function yongShenReading(chart: NormalizedLiuyaoChart): string {
+export function yongShenReading(chart: NormalizedLiuyaoChart): string {
   const selected = chart.yongShen?.[0]?.selected;
   if (!selected) return '引擎未返回具体用神爻位，保持待定，不为完整感补造取用结论。';
   const parts = [`用神${selected.liuQin}${selected.position ? `取${selected.position}爻（${selected.naJia}）` : ''}`];
@@ -27,7 +27,7 @@ function yongShenReading(chart: NormalizedLiuyaoChart): string {
 }
 
 /** Structural reading of the shi/ying axis from saved line facts. */
-function shiYingReading(chart: NormalizedLiuyaoChart): string {
+export function shiYingReading(chart: NormalizedLiuyaoChart): string {
   const shi = chart.lines.find((line) => line.isShiYao);
   const ying = chart.lines.find((line) => line.isYingYao);
   if (!shi || !ying) return '世爻或应爻位置未保存，无法生成对照描述。';

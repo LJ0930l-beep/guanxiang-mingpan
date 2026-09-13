@@ -8,6 +8,7 @@ import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeZiweiChart } from '@/domains/ziwei/model/normalized-chart';
 import { buildZiweiEvidenceGraph } from '@/domains/ziwei/evidence/index';
 import { buildZiweiExplanation } from '@/domains/ziwei/explanation/index';
+import { buildZiweiReport } from '@/domains/ziwei/report';
 import { assertZiweiLunarDate } from '@/domains/ziwei/lunar-input';
 
 function assertZiweiEngineResult(value: unknown): asserts value is {
@@ -93,7 +94,7 @@ export function calculateZiweiView(
     const inputSnapshot = birthInputSnapshot(profile, gender, settings);
     const fingerprint = inputFingerprint({ module: 'ziwei', inputSnapshot, calculationSettings: settings });
 
-    return {
+    const chartView: ZiweiChartView = {
     module: 'ziwei',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generated,
@@ -121,5 +122,6 @@ export function calculateZiweiView(
       mutagens.length ? `生年四化：${mutagens.join('；')}。` : '生年四化资料暂未返回。',
     ],
     };
+    return { ...chartView, report: buildZiweiReport(chartView) };
   });
 }

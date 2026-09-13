@@ -20,6 +20,7 @@ import { Atmosphere } from '@/components/atmosphere';
 import { BottomDock } from '@/components/bottom-dock';
 import { ExplanationLayer } from '@/components/explanation-layer';
 import { ChartRenderer } from '@/components/chart-renderer';
+import { ChartReportPanel } from '@/components/chart-report';
 import { ModuleSigil } from '@/components/module-sigil';
 import { StatePanel } from '@/components/state-panel';
 import { fontFamilies, layout, palette, radii, spacing } from '@/constants/guanxiang';
@@ -526,6 +527,7 @@ function BaziResult({ result }: { result: BaziChartView }) {
   return (
       <View style={styles.resultArea}>
       <View style={styles.resultHeading}><View><Text style={styles.resultEyebrow}>四柱命盘{result.completeness === 'partial' ? ' · 部分盘' : ''}</Text><Text style={styles.resultTitle}>{result.dayMaster}日主</Text></View><Text style={styles.engineTag}>{result.engineVersion}</Text></View>
+      <ChartReportPanel report={result.report} />
       <View style={styles.pillarGrid}>
         {result.pillars.map((pillar, index) => (
           <AnimatedReveal delay={index * 90} key={pillar.key} style={styles.pillarCard}>
@@ -755,6 +757,7 @@ function LiuyaoResult({ result }: { result: LiuyaoChartView }) {
         <View style={styles.changedHexagram}><Text style={styles.resultEyebrow}>变卦</Text><Text style={styles.hexagramName}>{result.changedHexagramName ?? '无变卦'}</Text></View>
       </View>
       <Text style={styles.questionEcho}>“{result.question}”</Text>
+      <ChartReportPanel report={result.report} />
       <View style={styles.yaoResultStack}>
         {result.lines.map((line, index) => (
           <AnimatedReveal delay={index * 75} key={line.position} style={styles.yaoResultRow}>
@@ -850,6 +853,7 @@ function ZiweiResult({ result }: { result: ZiweiChartView }) {
         <View><Text style={styles.resultEyebrow}>命主 / 身主</Text><Text style={styles.ziweiMetaValue}>{result.lifeMasterStar} / {result.bodyMasterStar}</Text></View>
         <View><Text style={styles.resultEyebrow}>农历</Text><Text style={styles.ziweiMetaValue}>{result.lunarDate}</Text></View>
       </View>
+      <ChartReportPanel report={result.report} />
       <ExplanationLayer
         snapshot={result.explanation}
         evidenceNodes={result.evidenceGraph.nodes}
@@ -956,6 +960,7 @@ function AstrologyResult({ result }: { result: AstrologyChartView }) {
   const radius = wheelSize * 0.39;
   return (
     <View style={styles.resultArea}>
+      <ChartReportPanel report={result.report} />
       <View style={styles.astroHero}>
         <View style={[styles.astroWheel, { width: wheelSize, height: wheelSize, borderRadius: wheelSize / 2 }]}>
           <View pointerEvents="none" style={styles.ambientAnchor}><AmbientRing size={Math.round(wheelSize * 0.82)} duration={32000} /></View>

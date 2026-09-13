@@ -50,6 +50,11 @@ export const MUTAGEN_MEANINGS: Record<string, string> = {
   忌: '阻力与消耗的集中点，结构上提示执着与收尾成本，需要显式管理',
 };
 
+/** 命宫自带“宫”字，其余宫名不带；拼完整宫名时统一处理。 */
+export function palaceFullName(name: string): string {
+  return name.endsWith('宫') ? name : `${name}宫`;
+}
+
 function palaceOf(chart: NormalizedZiweiChart, refId: string | undefined): NormalizedZiweiPalace | undefined {
   return chart.palaces.find((palace) => palace.id === refId);
 }
@@ -70,7 +75,7 @@ export function mutagenMeaning(mutagen: string): string {
 export function describeMutagenEdge(chart: NormalizedZiweiChart, edge: ZiweiMutagenEdge): string {
   const palace = palaceOf(chart, edge.palaceRefId);
   const star = chart.stars.find((item) => item.id === edge.starRefId);
-  const palaceLabel = palace ? `${palace.name}宫（${palace.stemBranch}）` : '未落宫记录';
+  const palaceLabel = palace ? `${palaceFullName(palace.name)}（${palace.stemBranch}）` : '未落宫记录';
   const brightness = star?.brightness ? `，亮度${star.brightness}` : '';
   return `${edge.starName}化${edge.mutagen}落入${palaceLabel}：${edge.starName}${starTrait(edge.starName)}${brightness}；化${edge.mutagen}是${mutagenMeaning(edge.mutagen)}；该宫关联${palaceTheme(palace?.name ?? '')}。`;
 }

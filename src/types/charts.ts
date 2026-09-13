@@ -2,6 +2,7 @@ import type { DivinationModule, Gender } from '@/types/domain';
 import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
 import type { BaziTimeLayer } from '@/domains/bazi/dayun';
 import type { BAZI_PARTIAL_CHART_POLICY } from '@/domains/policy/bazi-partial-chart';
+import type { ChartReport } from '@/domains/report/types';
 import type { BaziHistoricalDstPolicy, BaziHistoricalDstResolution } from '@/domains/bazi/historical-dst';
 import type { NormalizedBaziChart } from '@/domains/bazi/model/normalized-chart';
 import type { BaziEvidenceGraph, StrengthAssessment } from '@/domains/bazi/evidence/index';
@@ -166,7 +167,8 @@ export interface BaziChartView extends ChartMeta {
   /** Pillars deliberately absent (unknown hour); present only on partial charts. */
   missingPillars?: BaziPillarView['key'][];
   /** Unknown-hour policy facts and in-day candidate ranges; partial charts only. */
-  partialChart?: BaziPartialChartFacts;
+  partialChart?: BaziPartialChartFacts;  /** Versioned whole-chart report generated with this snapshot. */
+  report?: ChartReport;
 }
 
 export interface LiuyaoLineView {
@@ -213,7 +215,8 @@ export interface LiuyaoChartView extends ChartMeta {
   yongShen?: LiuyaoYongShenGroup[];
   timeRecommendations?: LiuyaoTimeRecommendation[];
   castingFacts?: LiuyaoCastingFacts;
-  focus: string[];
+  focus: string[];  /** Versioned whole-chart report generated with this snapshot. */
+  report?: ChartReport;
 }
 
 export interface ZiweiPalaceView {
@@ -238,7 +241,8 @@ export interface ZiweiChartView extends ChartMeta {
   normalizedChart: NormalizedZiweiChart;
   evidenceGraph: ZiweiEvidenceGraph;
   mutagens: string[];
-  focus: string[];
+  focus: string[];  /** Versioned whole-chart report generated with this snapshot. */
+  report?: ChartReport;
 }
 
 export interface AstrologyFactorView {
@@ -271,7 +275,8 @@ export interface AstrologyChartView extends ChartMeta {
   aspects: AstrologyAspectView[];
   normalizedChart: NormalizedAstrologyChart;
   evidenceGraph: AstrologyEvidenceGraph;
-  focus: string[];
+  focus: string[];  /** Versioned whole-chart report generated with this snapshot. */
+  report?: ChartReport;
 }
 
 export type ChartPayload =

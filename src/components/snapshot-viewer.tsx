@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { ExplanationLayer } from '@/components/explanation-layer';
 import { ChartRenderer } from '@/components/chart-renderer';
+import { ChartReportPanel } from '@/components/chart-report';
 import type { BaziInterpretationDiff } from '@/domains/bazi/interpretation/history';
 import { buildBaziTrueSolarEvidenceDisplay } from '@/domains/bazi/true-solar-presentation';
 import { listGlossaryTerms } from '@/domains/explanation/glossary';
@@ -131,6 +132,7 @@ export function SnapshotViewer({ reading, diff, onRunBaziDiff }: SnapshotViewerP
 
       <Section label="L3 · 保存时结果">
         {resultRows(model).map(([label, value]) => <Row key={label} label={label} value={value} />)}
+        <ChartReportPanel report={(model.payload as { report?: Parameters<typeof ChartReportPanel>[0]['report'] }).report} />
         <ChartRenderer payload={model.payload} />
         <View style={styles.subsection}><Text style={styles.subsectionLabel}>基础观察</Text></View>
         {focus.map((item, index) => <Text key={`${item}-${index}`} style={styles.observation}>{index + 1}. {item}</Text>)}

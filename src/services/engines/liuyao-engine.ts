@@ -7,6 +7,7 @@ import type { CalculationOptions } from '@/services/chart-engine-shared';
 import { normalizeLiuyaoChart } from '@/domains/liuyao/model/normalized-chart';
 import { buildLiuyaoEvidenceGraph } from '@/domains/liuyao/evidence/index';
 import { buildLiuyaoExplanation } from '@/domains/liuyao/explanation/index';
+import { buildLiuyaoReport } from '@/domains/liuyao/report';
 import { LIUYAO_CASTING_RULE_VERSION } from '@/domains/liuyao/casting';
 
 const LIUYAO_TARGETS = ['父母', '兄弟', '官鬼', '妻财', '子孙'] as const;
@@ -256,7 +257,7 @@ export async function calculateLiuyaoView(
     }, { engineVersion: ENGINE_VERSIONS.liuyao, snapshotVersion: CHART_SNAPSHOT_VERSION });
     const evidenceGraph = buildLiuyaoEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.liuyao });
 
-    return {
+    const chartView: LiuyaoChartView = {
     module: 'liuyao',
     snapshotVersion: CHART_SNAPSHOT_VERSION,
     generatedAt: generated,
@@ -291,5 +292,6 @@ export async function calculateLiuyaoView(
       `本次以「${target}」为用神方向；页面同时保留纳甲、六亲、六神、世应、空亡与旺衰证据。`,
     ],
     };
+    return { ...chartView, report: buildLiuyaoReport(chartView) };
   });
 }

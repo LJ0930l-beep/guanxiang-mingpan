@@ -3,6 +3,7 @@ import { Horoscope, Origin } from 'circular-natal-horoscope-js/dist/index.js';
 import { resolveCityCoordinates, type CityCoordinate } from '@/data/china-cities';
 import { buildAstrologyEvidenceGraph } from '@/domains/astrology/evidence/index';
 import { buildAstrologyExplanation } from '@/domains/astrology/explanation/index';
+import { buildAstrologyReport } from '@/domains/astrology/report';
 import { normalizeAstrologyChart } from '@/domains/astrology/model/normalized-chart';
 import {
   createAstrologyCalculationPolicy,
@@ -305,7 +306,7 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
       const generated = generatedAt(options);
       const inputSnapshot = birthInputSnapshot(profile, undefined, settings);
       const fingerprint = inputFingerprint({ module: 'astrology', inputSnapshot, calculationSettings: settings });
-      return {
+      const chartView: AstrologyChartView = {
         module: 'astrology',
         snapshotVersion: CHART_SNAPSHOT_VERSION,
         generatedAt: generated,
@@ -332,6 +333,7 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
           `盘面检出 ${horoscope.Aspects.all.length} 组主要相位；基础版优先展示容许度较小的结构。`,
         ],
       };
+      return { ...chartView, report: buildAstrologyReport(chartView) };
     }
 
     const dayStart = makeHoroscope(parts, location, { hour: 0, minute: 0, second: 0 }, false);
@@ -366,7 +368,7 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
       '日级近似不计算上升、天顶、十二宫位、角点和主要相位。',
       '基础版只解释核心落座与主要相位，不输出确定性事件预测。',
     ];
-    return {
+    const chartView: AstrologyChartView = {
       module: 'astrology',
       snapshotVersion: CHART_SNAPSHOT_VERSION,
       generatedAt: generated,
@@ -396,5 +398,6 @@ export function calculateAstrologyView(profile: BirthProfile, options?: Calculat
         `日级近似已比较当天首尾，${STANDARD_BODY_KEYS.length - stableBodyKeys.length} 个时间敏感天体未显示。`,
       ],
     };
+    return { ...chartView, report: buildAstrologyReport(chartView) };
   });
 }
