@@ -34,7 +34,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.x3,
     color: palette.ashGreen,
     fontFamily: fontFamilies.body,
-    fontSize: 13,
+    fontSize: 15,
     letterSpacing: 2,
   },
   body: {
@@ -42,8 +42,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.x2,
     color: palette.ashGreen,
     fontFamily: fontFamilies.body,
-    fontSize: 11,
-    lineHeight: 18,
+    fontSize: 13,
+    lineHeight: 20,
     textAlign: 'center',
   },
 });

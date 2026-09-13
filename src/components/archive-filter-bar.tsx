@@ -129,14 +129,14 @@ export function ArchiveFilterBar({ filter, profiles, onChange, onClear }: Archiv
 const styles = StyleSheet.create({
   container: { marginTop: spacing.x5, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.card, backgroundColor: 'rgba(8,26,22,0.66)', padding: spacing.x3 },
   searchRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.x2 },
-  searchInput: { flex: 1, minHeight: layout.minTouch, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 12, paddingHorizontal: spacing.x3 },
+  searchInput: { flex: 1, minHeight: layout.minTouch, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 14, paddingHorizontal: spacing.x3 },
   filterLine: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x4 },
   filterColumn: { minWidth: 210, flex: 1 },
-  filterLabel: { marginTop: spacing.x3, marginBottom: spacing.x1, color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9, letterSpacing: 1 },
+  filterLabel: { marginTop: spacing.x3, marginBottom: spacing.x1, color: palette.patina, fontFamily: fontFamilies.data, fontSize: 11, letterSpacing: 1 },
   chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x1 },
   chip: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingHorizontal: spacing.x3 },
   chipActive: { borderColor: palette.hairlineStrong, backgroundColor: palette.brassGlow },
-  chipText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10 },
+  chipText: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12 },
   chipTextActive: { color: palette.paleBrass },
   pressed: { opacity: 0.72 },
 });

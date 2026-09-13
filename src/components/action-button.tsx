@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: fontFamilies.body,
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     letterSpacing: 0.5,
   },

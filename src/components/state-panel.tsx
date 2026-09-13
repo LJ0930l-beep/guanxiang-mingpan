@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(216, 137, 120, 0.48)',
     backgroundColor: 'rgba(120, 48, 36, 0.14)',
   },
-  title: { color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 17 },
-  body: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 20 },
+  title: { color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 18 },
+  body: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 14, lineHeight: 22 },
   action: { marginTop: spacing.x4, alignSelf: 'flex-start', minHeight: layout.minTouch },
 });

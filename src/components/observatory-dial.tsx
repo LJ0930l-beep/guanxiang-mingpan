@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
     color: palette.brass,
     fontFamily: fontFamilies.body,
-    fontSize: 10,
+    fontSize: 12,
     letterSpacing: 3,
     marginLeft: 3,
   },
@@ -172,6 +172,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     color: palette.ashGreen,
     fontFamily: fontFamilies.display,
-    fontSize: 12,
+    fontSize: 14,
   },
 });

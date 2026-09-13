@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   marker: { width: 14, height: 2, borderRadius: 1, backgroundColor: palette.transparent },
   markerActive: { backgroundColor: palette.brass },
-  label: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12, letterSpacing: 1 },
+  label: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 14, letterSpacing: 1 },
   labelActive: { color: palette.ricePaper },
   pressed: { opacity: 0.65 },
 });

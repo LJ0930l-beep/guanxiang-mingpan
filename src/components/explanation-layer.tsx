@@ -114,12 +114,12 @@ export function ExplanationLayer({ snapshot, evidenceNodes, glossaryTerms }: Exp
                   {references.length > 0 && (
                     <View style={styles.evidenceSection}>
                       <Text style={styles.detailKicker}>为什么</Text>
-                      {references.map(({ ref, counter }) => {
+                      {references.map(({ ref, counter }, evidenceIndex) => {
                         const node = evidenceById.get(ref);
                         if (!node) return null;
                         const rawOpen = rawEvidenceId === ref;
                         return (
-                          <View key={`${block.id}-${ref}`} style={styles.evidenceRow}>
+                          <AnimatedReveal delay={evidenceIndex * 40} distance={6} key={`${block.id}-${ref}`} style={styles.evidenceRow}>
                             <View style={styles.evidenceRowCopy}>
                               <Text style={[styles.evidenceKind, counter && styles.evidenceCounter]}>{counter ? '反证' : '依据'}</Text>
                               <Text style={styles.evidenceLabel}>{node.label}</Text>
@@ -128,7 +128,7 @@ export function ExplanationLayer({ snapshot, evidenceNodes, glossaryTerms }: Exp
                               <Text style={styles.evidenceActionText}>{rawOpen ? '收起' : '原始'}</Text>
                             </Pressable>
                             {rawOpen && <View accessibilityRole="text" style={styles.rawEvidence}><Text style={styles.rawText}>{formatFacts(node.facts)}</Text><Text style={styles.rawMeta}>{node.ruleVersion ?? '未记录规则版本'} · {node.source ?? '未记录来源'}</Text></View>}
-                          </View>
+                          </AnimatedReveal>
                         );
                       })}
                     </View>
@@ -154,47 +154,47 @@ const styles = StyleSheet.create({
   emptyPanel: { marginTop: spacing.x6, borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, padding: spacing.x4 },
   heading: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.x3 },
   headingCopy: { flex: 1 },
-  kicker: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9, letterSpacing: 1.4 },
-  title: { marginTop: spacing.x1, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 19 },
-  subtitle: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
-  version: { color: palette.brass, fontFamily: fontFamilies.data, fontSize: 9, paddingTop: spacing.x1 },
-  emptyTitle: { marginTop: spacing.x2, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 16 },
-  emptyText: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
+  kicker: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 11, letterSpacing: 1.4 },
+  title: { marginTop: spacing.x1, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 20 },
+  subtitle: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 13, lineHeight: 20 },
+  version: { color: palette.brass, fontFamily: fontFamilies.data, fontSize: 11, paddingTop: spacing.x1 },
+  emptyTitle: { marginTop: spacing.x2, color: palette.ricePaper, fontFamily: fontFamilies.display, fontSize: 17 },
+  emptyText: { marginTop: spacing.x2, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 13, lineHeight: 20 },
   blockList: { marginTop: spacing.x4, gap: spacing.x2 },
   card: { borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, backgroundColor: 'rgba(255,255,255,0.015)', overflow: 'hidden' },
   cardHeader: { minHeight: layout.minTouch, flexDirection: 'row', alignItems: 'center', gap: spacing.x3, padding: spacing.x3 },
   cardCopy: { flex: 1 },
   cardTitleRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.x2 },
-  cardTitle: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 14 },
-  confidence: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
+  cardTitle: { color: palette.paleBrass, fontFamily: fontFamilies.display, fontSize: 16 },
+  confidence: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 11 },
   confidenceLow: { color: '#D7A071' },
-  summary: { marginTop: spacing.x1, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 18 },
-  toggle: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 10 },
+  summary: { marginTop: spacing.x1, color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 13, lineHeight: 20 },
+  toggle: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 12 },
   details: { borderTopWidth: 1, borderColor: palette.hairline, paddingHorizontal: spacing.x3, paddingBottom: spacing.x3, paddingTop: spacing.x3 },
-  detailKicker: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9, letterSpacing: 1, marginBottom: spacing.x1 },
-  paragraph: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11, lineHeight: 19, marginTop: spacing.x1 },
+  detailKicker: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 11, letterSpacing: 1, marginBottom: spacing.x1 },
+  paragraph: { color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 13, lineHeight: 21, marginTop: spacing.x1 },
   glossarySection: { marginTop: spacing.x3 },
   glossaryRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.x1 },
   glossaryChip: { minHeight: layout.minTouch, justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: 999, paddingHorizontal: spacing.x3 },
   glossaryChipActive: { borderColor: palette.patina, backgroundColor: 'rgba(93,143,128,0.12)' },
-  glossaryChipText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 10 },
+  glossaryChipText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 12 },
   glossaryChipTextActive: { color: palette.ricePaper },
   glossaryDetail: { marginTop: spacing.x2, borderLeftWidth: 1, borderLeftColor: palette.patina, paddingLeft: spacing.x2 },
-  glossaryDefinition: { color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 17 },
-  glossaryCaution: { marginTop: spacing.x1, color: '#C8A38E', fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
+  glossaryDefinition: { color: palette.ricePaper, fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 19 },
+  glossaryCaution: { marginTop: spacing.x1, color: '#C8A38E', fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 18 },
   evidenceSection: { marginTop: spacing.x3 },
   evidenceRow: { borderTopWidth: 1, borderColor: palette.hairline, paddingVertical: spacing.x2 },
   evidenceRowCopy: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.x2, paddingRight: spacing.x6 },
-  evidenceKind: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 9 },
+  evidenceKind: { color: palette.patina, fontFamily: fontFamilies.data, fontSize: 11 },
   evidenceCounter: { color: '#D7A071' },
-  evidenceLabel: { flex: 1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
+  evidenceLabel: { flex: 1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 18 },
   evidenceAction: { minHeight: layout.minTouch, alignSelf: 'flex-start', justifyContent: 'center', marginTop: spacing.x1, paddingHorizontal: spacing.x3 },
-  evidenceActionText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 9 },
+  evidenceActionText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 11 },
   rawEvidence: { marginTop: spacing.x2, borderLeftWidth: 1, borderLeftColor: palette.patina, backgroundColor: 'rgba(93,143,128,0.06)', padding: spacing.x2 },
-  rawText: { color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 9, lineHeight: 15 },
-  rawMeta: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 9 },
-  caveat: { marginTop: spacing.x2, color: '#C8A38E', fontFamily: fontFamilies.body, fontSize: 10, lineHeight: 16 },
+  rawText: { color: palette.ashGreen, fontFamily: fontFamilies.data, fontSize: 11, lineHeight: 17 },
+  rawMeta: { marginTop: spacing.x1, color: palette.ashGreen, fontFamily: fontFamilies.body, fontSize: 11 },
+  caveat: { marginTop: spacing.x2, color: '#C8A38E', fontFamily: fontFamilies.body, fontSize: 12, lineHeight: 18 },
   moreButton: { minHeight: layout.minTouch, marginTop: spacing.x3, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: palette.hairline, borderRadius: radii.input, paddingVertical: spacing.x2 },
-  moreButtonText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 10 },
+  moreButtonText: { color: palette.brass, fontFamily: fontFamilies.body, fontSize: 12 },
   pressed: { opacity: 0.72 },
 });
