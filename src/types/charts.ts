@@ -1,6 +1,7 @@
 import type { DivinationModule, Gender } from '@/types/domain';
 import type { BaziCalculationEvidence, BaziCalculationSettings } from '@/domains/bazi/types';
 import type { BaziTimeLayer } from '@/domains/bazi/dayun';
+import type { BAZI_PARTIAL_CHART_POLICY } from '@/domains/policy/bazi-partial-chart';
 import type { BaziHistoricalDstPolicy, BaziHistoricalDstResolution } from '@/domains/bazi/historical-dst';
 import type { NormalizedBaziChart } from '@/domains/bazi/model/normalized-chart';
 import type { BaziEvidenceGraph, StrengthAssessment } from '@/domains/bazi/evidence/index';
@@ -61,6 +62,10 @@ export interface BirthInputSnapshot {
   astrologyPolicy?: AstrologyCalculationPolicy;
   /** User-selected dayun comparison year; exact Bazi charts only. */
   liunianYear?: number;
+  /** Owner-approved unknown-hour policy; present only on partial Bazi charts. */
+  partialChartPolicy?: string;
+  /** Frozen partial-chart anchor; paired with partialChartPolicy. */
+  partialChartAnchor?: string;
 }
 
 export interface LiuyaoInputSnapshot {
@@ -124,6 +129,25 @@ export interface BaziPillarView {
   naYin?: string;
 }
 
+export interface BaziPartialChartCandidateOption {
+  ganZhi: string;
+  basis: string;
+}
+
+export interface BaziPartialChartCandidate {
+  pillar: 'year' | 'month' | 'day';
+  label: string;
+  options: BaziPartialChartCandidateOption[];
+}
+
+export interface BaziPartialChartFacts {
+  policy: typeof BAZI_PARTIAL_CHART_POLICY | string;
+  anchor: string;
+  missingPillars: ('year' | 'month' | 'day' | 'hour')[];
+  candidates: BaziPartialChartCandidate[];
+  basis: string;
+}
+
 export interface BaziChartView extends ChartMeta {
   module: 'bazi';
   calculationSettings: BaziCalculationSettings;
@@ -139,6 +163,10 @@ export interface BaziChartView extends ChartMeta {
   focus: string[];
   /** Basic dayun plan and optional selected-year comparison; exact charts only. */
   timeLayer?: BaziTimeLayer;
+  /** Pillars deliberately absent (unknown hour); present only on partial charts. */
+  missingPillars?: BaziPillarView['key'][];
+  /** Unknown-hour policy facts and in-day candidate ranges; partial charts only. */
+  partialChart?: BaziPartialChartFacts;
 }
 
 export interface LiuyaoLineView {

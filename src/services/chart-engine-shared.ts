@@ -246,8 +246,11 @@ export function birthInputSnapshot(
   if (settings.historicalDstPolicy) snapshot.historicalDstPolicy = settings.historicalDstPolicy;
   if (historicalDstResolution) snapshot.historicalDstResolution = historicalDstResolution;
   if (settings.astrologyPolicy) snapshot.astrologyPolicy = settings.astrologyPolicy;
-  if ((settings as BaziCalculationSettings).liunianYear !== undefined) {
-    snapshot.liunianYear = (settings as BaziCalculationSettings).liunianYear;
+  const baziSettings = settings as BaziCalculationSettings;
+  if (baziSettings.liunianYear !== undefined) snapshot.liunianYear = baziSettings.liunianYear;
+  if (baziSettings.partialChartPolicy) {
+    snapshot.partialChartPolicy = baziSettings.partialChartPolicy;
+    snapshot.partialChartAnchor = baziSettings.partialChartAnchor;
   }
   return snapshot;
 }

@@ -43,6 +43,10 @@ export interface BaziCalculationSettings {
   calendarResolverVersion: string;
   /** Optional selected dayun comparison year (bazi-dayun-v1); absent = no comparison. */
   liunianYear?: number;
+  /** Owner-approved unknown-hour policy; present only on partial charts. */
+  partialChartPolicy?: string;
+  /** Frozen partial-chart anchor; paired with partialChartPolicy. */
+  partialChartAnchor?: string;
 }
 
 export const DEFAULT_BAZI_CALCULATION_SETTINGS: BaziCalculationSettings = {

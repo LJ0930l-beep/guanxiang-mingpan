@@ -78,6 +78,8 @@ const PILLARS: readonly { key: BaziPillarKey; label: string }[] = [
   { key: 'hour', label: '时柱' },
 ];
 
+const DEFAULT_INCLUDE_PILLARS: readonly BaziPillarKey[] = ['year', 'month', 'day', 'hour'];
+
 const STEM_ELEMENTS: Record<string, BaziElement> = {
   甲: 'wood', 乙: 'wood',
   丙: 'fire', 丁: 'fire',
@@ -154,13 +156,22 @@ function relationPillarKeys(relation: { pillars?: string[] }): BaziPillarKey[] {
 /**
  * Convert the raw adapter result into Guanxiang's stable domain model.
  * The function deliberately does not produce strength or life conclusions.
+ * `includePillars` supports the unknown-hour partial chart: omitted pillars
+ * are absent from the model instead of being fabricated, and relations that
+ * touch an excluded pillar are dropped. The default keeps all four pillars.
  */
 export function normalizeBaziChart(
   raw: BaziOutput,
   source: { engineVersion: string; snapshotVersion: number },
+  options?: { includePillars?: readonly BaziPillarKey[] },
 ): NormalizedBaziChart {
+  const includePillars = options?.includePillars ?? DEFAULT_INCLUDE_PILLARS;
+  if (!includePillars.includes('day') || !includePillars.includes('month')) {
+    throw new Error('八字归一化至少需要月柱与日柱。');
+  }
+  const includedPillars = PILLARS.filter(({ key }) => includePillars.includes(key));
   const dayMaster = raw.dayMaster;
-  const stems: StemRef[] = PILLARS.map(({ key }) => {
+  const stems: StemRef[] = includedPillars.map(({ key }) => {
     const pillar = raw.fourPillars[key];
     return {
       id: stableStemId(key),
@@ -171,7 +182,7 @@ export function normalizeBaziChart(
       tenGod: pillar.tenGod,
     };
   });
-  const branches: BranchRef[] = PILLARS.map(({ key }) => {
+  const branches: BranchRef[] = includedPillars.map(({ key }) => {
     const pillar = raw.fourPillars[key];
     return {
       id: stableBranchId(key),
@@ -180,7 +191,7 @@ export function normalizeBaziChart(
       pillarKey: key,
     };
   });
-  const hiddenStems: HiddenStemRef[] = PILLARS.flatMap(({ key }) => {
+  const hiddenStems: HiddenStemRef[] = includedPillars.flatMap(({ key }) => {
     const branchRefId = stableBranchId(key);
     return raw.fourPillars[key].hiddenStems.map((hidden, order) => ({
       id: `bazi:hidden:${key}:${order}`,
@@ -193,7 +204,7 @@ export function normalizeBaziChart(
       order,
     }));
   });
-  const pillars: NormalizedPillar[] = PILLARS.map(({ key, label }) => ({
+  const pillars: NormalizedPillar[] = includedPillars.map(({ key, label }) => ({
     id: stablePillarId(key),
     key,
     label,
@@ -203,6 +214,7 @@ export function normalizeBaziChart(
   }));
   const relations: RelationEdge[] = (raw.relations ?? []).flatMap((rawRelation) => {
     const pillarKeys = relationPillarKeys(rawRelation);
+    if (!pillarKeys.every((key) => includePillars.includes(key))) return [];
     const pillarRefs = pillarKeys.map(stableBranchId);
     if (pillarRefs.length < 2) return [];
     const type = relationType(rawRelation.type, rawRelation.description);

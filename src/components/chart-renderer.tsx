@@ -10,12 +10,12 @@ import type { ChartPayload } from '@/types/charts';
  * from the current profile, so an old record remains an immutable snapshot.
  */
 export function ChartRenderer({ payload, compact = false }: { payload: ChartPayload; compact?: boolean }) {
-  const { pillars, lines, palaces, factors, aspects, timeLayer } = buildChartRenderModel(payload);
+  const { pillars, lines, palaces, factors, aspects, timeLayer, partialChart } = buildChartRenderModel(payload);
   return (
     <View accessibilityLabel={`${payload.module}完整盘面`} style={[styles.root, compact && styles.compact]}>
       {payload.module === 'bazi' && (
         <>
-          <Text style={styles.caption}>四柱 · {payload.dayMaster}日主</Text>
+          <Text style={styles.caption}>四柱{partialChart ? ' · 部分盘（时辰未提供）' : ''} · {payload.dayMaster}日主</Text>
           <View style={styles.grid}>
             {pillars.length === 0 && <Text style={styles.missing}>历史记录未保存四柱逐柱数据，当前只读展示不会补造或重算。</Text>}
             {pillars.map((pillar) => (
@@ -36,6 +36,16 @@ export function ChartRenderer({ payload, compact = false }: { payload: ChartPayl
               ))}
               {timeLayer.liunian && <Text style={styles.timeLayerRow}>流年 {timeLayer.liunian.year}：{timeLayer.liunian.yearGanZhi} · {timeLayer.liunian.yearStemTenGod}{timeLayer.liunian.coveredByDayun ? ` · 第${timeLayer.liunian.coveredByDayun.index}运${timeLayer.liunian.coveredByDayun.ganZhi}覆盖` : ''}</Text>}
               <Text style={styles.timeLayerMeta}>大运与流年为结构事实（bazi-dayun-v1），不构成运势、吉凶或应期结论。</Text>
+            </View>
+          )}
+          {partialChart && (
+            <View style={styles.timeLayerBlock}>
+              <Text style={styles.timeLayerTitle}>部分盘 · {partialChart.policy}</Text>
+              {partialChart.candidates.map((candidate) => (
+                <Text key={candidate.pillar} style={styles.timeLayerRow}>{candidate.label ?? candidate.pillar}候选：{candidate.options.map((option) => option.ganZhi).join(' / ')}</Text>
+              ))}
+              {partialChart.candidates.length === 0 && <Text style={styles.timeLayerRow}>年月日柱在日内锚点变化下保持稳定。</Text>}
+              <Text style={styles.timeLayerMeta}>未知时辰部分盘只提供年、月、日三柱；时柱不补造，大运与流年对照需要准确时辰。</Text>
             </View>
           )}
         </>

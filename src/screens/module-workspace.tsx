@@ -495,9 +495,10 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
     <WorkspacePanel>
       <View style={styles.workspaceHeading}><View><Text style={styles.workspaceKicker}>PILLAR CALIBRATION</Text><Text style={styles.workspaceTitle}>让四柱依次落位</Text></View><Text style={styles.workspaceMeta}>年 · 月 · 日 · 时</Text></View>
       {!profile.gender && <GenderSelector onChange={(value) => { setGender(value); if (result) setInputChanged(true); }} value={gender} />}
+      {!profile.timeKnown && <StatePanel body="当前命主未提供出生时辰。八字将提供年、月、日三柱部分盘：时柱不补造，大运与流年对照需要准确时辰。" state="partial" testID="bazi-partial-mode" title="未知时辰 · 部分盘" />}
       <BaziDayBoundarySelector onChange={(value) => { setDayBoundary(value); if (result) setInputChanged(true); }} value={dayBoundary} />
       <BaziTrueSolarSelector enabled={trueSolarTime} locationKnown={profile.longitude != null} model={solarTimeModel} onEnabledChange={(value) => { setTrueSolarTime(value); if (result) setInputChanged(true); }} onModelChange={(value) => { setSolarTimeModel(value); if (result) setInputChanged(true); }} />
-      <Text style={styles.fieldLabel}>流年对照年份（选填）</Text>
+      {profile.timeKnown && <View><Text style={styles.fieldLabel}>流年对照年份（选填）</Text>
       <TextInput
         accessibilityLabel="流年对照年份"
         keyboardType="numbers-and-punctuation"
@@ -506,8 +507,8 @@ function BaziWorkspace({ profile }: { profile: BirthProfile }) {
         placeholderTextColor="#65736D"
         style={styles.textInput}
         value={liunianText}
-      />
-      <Text style={styles.workspaceDescription}>以保存的历法、日期与时辰排出天干地支、十神、藏干、纳音及柱间关系。</Text>
+      /></View>}
+      <Text style={styles.workspaceDescription}>{profile.timeKnown ? '以保存的历法、日期与时辰排出天干地支、十神、藏干、纳音及柱间关系。' : '部分盘只排出年、月、日三柱与已支持的结构证据；补充时辰后可得到完整四柱与大运对照。'}</Text>
       <ErrorNotice message={error} onRetry={run} />
       {inputChanged && <StatePanel body="输入已变化；当前结果仍是上一次输入的快照，请重新排盘后再保存。" state="partial" testID="reading-input-stale" title="结果需要重新计算" />}
       <ActionButton accessibilityLabel="排出八字四柱" loading={busy} onPress={run}>{result ? '重新排盘' : '排出四柱'}</ActionButton>
@@ -521,7 +522,7 @@ function BaziResult({ result }: { result: BaziChartView }) {
   const trueSolarDisplay = buildBaziTrueSolarEvidenceDisplay(result.calculationSettings, result.calculationEvidence);
   return (
       <View style={styles.resultArea}>
-      <View style={styles.resultHeading}><View><Text style={styles.resultEyebrow}>四柱命盘</Text><Text style={styles.resultTitle}>{result.dayMaster}日主</Text></View><Text style={styles.engineTag}>{result.engineVersion}</Text></View>
+      <View style={styles.resultHeading}><View><Text style={styles.resultEyebrow}>四柱命盘{result.completeness === 'partial' ? ' · 部分盘' : ''}</Text><Text style={styles.resultTitle}>{result.dayMaster}日主</Text></View><Text style={styles.engineTag}>{result.engineVersion}</Text></View>
       <View style={styles.pillarGrid}>
         {result.pillars.map((pillar, index) => (
           <AnimatedReveal delay={index * 90} key={pillar.key} style={styles.pillarCard}>
@@ -549,6 +550,17 @@ function BaziResult({ result }: { result: BaziChartView }) {
         <Text style={styles.evidenceLabel}>真太阳时</Text>
         <Text style={styles.evidenceValue}>{trueSolarDisplay.summary}</Text>
       </View>
+      {result.partialChart && (
+        <View style={styles.dayunPanel} testID="bazi-partial-panel">
+          <Text style={styles.resultSectionTitle}>部分盘范围与候选</Text>
+          <Text style={styles.factorValue}>{result.partialChart.basis}</Text>
+          <Text style={styles.factorValue}>计算锚点：{result.partialChart.anchor}；缺失柱：{result.partialChart.missingPillars.map((key) => ({ year: '年柱', month: '月柱', day: '日柱', hour: '时柱' }[key])).join('、')}</Text>
+          {result.partialChart.candidates.map((candidate) => (
+            <Text key={candidate.pillar} style={styles.factorValue}>{candidate.label}候选：{candidate.options.map((option) => `${option.ganZhi}（${option.basis}）`).join('；')}</Text>
+          ))}
+          {result.partialChart.candidates.length === 0 && <Text style={styles.factorValue}>年月日柱在日内锚点变化下保持稳定，无候选分歧。</Text>}
+        </View>
+      )}
       {result.timeLayer && (
         <View style={styles.dayunPanel} testID="bazi-time-layer">
           <Text style={styles.resultSectionTitle}>大运 · {result.timeLayer.directionLabel}</Text>

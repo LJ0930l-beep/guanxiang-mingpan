@@ -16,6 +16,7 @@ export interface ChartRenderModel {
     dayuns: { index: number; ganZhi: string; startAge: number; endAge: number; startDate: string; endDate: string }[];
     liunian?: { year: number; yearGanZhi: string; yearStemTenGod: string; coveredByDayun?: { index: number; ganZhi: string } };
   } | null;
+  partialChart: { policy: string; anchor?: string; basis?: string; candidates: { pillar: string; label?: string; options: { ganZhi: string; basis?: string }[] }[] } | null;
 }
 
 /**
@@ -25,6 +26,8 @@ export interface ChartRenderModel {
 export function buildChartRenderModel(payload: ChartPayload): ChartRenderModel {
   const rawTimeLayer = (payload as { timeLayer?: unknown }).timeLayer;
   const timeLayer = (rawTimeLayer && typeof rawTimeLayer === 'object' ? rawTimeLayer : null) as ChartRenderModel['timeLayer'];
+  const rawPartialChart = (payload as { partialChart?: unknown }).partialChart;
+  const partialChart = (rawPartialChart && typeof rawPartialChart === 'object' ? rawPartialChart : null) as ChartRenderModel['partialChart'];
   return {
     pillars: arrayOrEmpty<ChartRenderModel['pillars'][number]>((payload as { pillars?: unknown }).pillars),
     lines: arrayOrEmpty<ChartRenderModel['lines'][number]>((payload as { lines?: unknown }).lines),
@@ -32,6 +35,7 @@ export function buildChartRenderModel(payload: ChartPayload): ChartRenderModel {
     factors: arrayOrEmpty<ChartRenderModel['factors'][number]>((payload as { factors?: unknown }).factors),
     aspects: arrayOrEmpty<ChartRenderModel['aspects'][number]>((payload as { aspects?: unknown }).aspects),
     timeLayer: timeLayer && Array.isArray(timeLayer.dayuns) ? timeLayer : null,
+    partialChart: partialChart && Array.isArray(partialChart.candidates) ? partialChart : null,
   };
 }
 

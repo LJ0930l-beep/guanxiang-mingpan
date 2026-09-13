@@ -10,8 +10,9 @@ import { normalizeBaziChart } from '@/domains/bazi/model/normalized-chart';
 import { buildBaziEvidenceGraph } from '@/domains/bazi/evidence/index';
 import { buildBaziInterpretation } from '@/domains/bazi/interpretation/rules';
 import { buildBaziExplanation } from '@/domains/bazi/explanation/index';
+import { BAZI_PARTIAL_CHART_ANCHOR, BAZI_PARTIAL_CHART_POLICY, BAZI_PARTIAL_CHART_DECISION } from '@/domains/policy/bazi-partial-chart';
 import type { BaziChartView } from '@/types/charts';
-import { assertPublicBirthDateRange, baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, inputFingerprint, requireExactBirth, requireGender } from '@/services/chart-engine-shared';
+import { assertPublicBirthDateRange, baziCalculationSettings, CHART_SNAPSHOT_VERSION, birthInputSnapshot, birthParts, ENGINE_VERSIONS, generatedAt, inputFingerprint, requireGender } from '@/services/chart-engine-shared';
 import { withChartEngineErrorBoundary } from '@/services/chart-errors';
 import type { BirthProfile, Gender } from '@/types/domain';
 import type { CalculationOptions } from '@/services/chart-engine-shared';
@@ -115,13 +116,187 @@ function assertBaziEngineResult(value: unknown): asserts value is ReturnType<typ
   }
 }
 
+const PARTIAL_ANCHOR_TIMES = ['00:00', '12:00', '23:59'] as const;
+const PARTIAL_PILLAR_ORDER = [
+  ['year', '年柱'],
+  ['month', '月柱'],
+  ['day', '日柱'],
+] as const;
+
+/**
+ * Unknown-hour chart under bazi-partial-chart-policy.v1.  Three civil anchors
+ * run the full correction pipeline (calendar, historical DST, true solar,
+ * midnight day boundary); the noon run is the displayed basis and any pillar
+ * that moves across anchors is reported as an explicit candidate range.  The
+ * hour pillar is never fabricated and the dayun time layer stays unavailable.
+ */
+function calculatePartialBaziView(
+  profile: BirthProfile,
+  gender: Gender,
+  options?: CalculationOptions,
+): BaziChartView {
+  const settings = baziCalculationSettings({
+    ...options,
+    bazi: {
+      ...options?.bazi,
+      // The ziEarly convention cannot be established without an hour.
+      dayBoundary: 'midnight',
+      partialChartPolicy: BAZI_PARTIAL_CHART_POLICY,
+      partialChartAnchor: BAZI_PARTIAL_CHART_ANCHOR,
+    },
+  });
+  return withChartEngineErrorBoundary('bazi', () => {
+    assertPublicBirthDateRange(profile.birthDate, profile.calendar);
+    const runs = PARTIAL_ANCHOR_TIMES.map((anchorTime) => {
+      const anchorProfile: BirthProfile = { ...profile, birthTime: anchorTime };
+      const calendarResolution = resolveBaziCalendar(anchorProfile);
+      const solarProfile: BirthProfile = {
+        ...anchorProfile,
+        calendar: 'solar',
+        birthDate: calendarResolution.normalizedSolarDate,
+        birthTime: calendarResolution.normalizedSolarTime.slice(0, 5),
+      };
+      const historicalDstResolution = resolveBaziHistoricalDst(
+        anchorProfile,
+        calendarResolution.conversion.normalizedSolarDateTime,
+        settings,
+      );
+      const historicalDstProfile = historicalDstResolution.applied
+        ? {
+            ...solarProfile,
+            birthDate: historicalDstResolution.effectiveDate,
+            birthTime: historicalDstResolution.effectiveTime.slice(0, 5),
+          }
+        : solarProfile;
+      const trueSolarResolution = resolveTrueSolarTime(historicalDstProfile, settings);
+      const calculationProfile = trueSolarResolution.applied
+        ? {
+            ...historicalDstProfile,
+            birthDate: trueSolarResolution.effectiveDate,
+            birthTime: trueSolarResolution.effectiveTime.slice(0, 5),
+          }
+        : historicalDstProfile;
+      const parts = birthParts(calculationProfile);
+      const dayBoundaryResolution = resolveBaziDayBoundary(calculationProfile, settings);
+      const raw = calculateWithDayBoundary(calculationProfile, parts, gender, dayBoundaryResolution);
+      assertBaziEngineResult(raw);
+      return {
+        anchorTime,
+        raw,
+        calculationProfile,
+        calendarResolution,
+        historicalDstResolution,
+        trueSolarResolution,
+        dayBoundaryResolution,
+      };
+    });
+    const base = runs[1];
+    const result = base.raw;
+    const pillars = PARTIAL_PILLAR_ORDER.map(([key, label]) => {
+      const pillar = result.fourPillars[key];
+      return {
+        key,
+        label,
+        stem: pillar.stem,
+        branch: pillar.branch,
+        tenGod: pillar.tenGod,
+        hiddenStems: pillar.hiddenStems.map((item) => `${item.stem}·${item.tenGod}`),
+        naYin: pillar.naYin,
+      };
+    });
+    const normalizedChart = normalizeBaziChart(result, {
+      engineVersion: ENGINE_VERSIONS.bazi,
+      snapshotVersion: CHART_SNAPSHOT_VERSION,
+    }, { includePillars: ['year', 'month', 'day'] });
+    const evidenceGraph = buildBaziEvidenceGraph(normalizedChart, { engineVersion: ENGINE_VERSIONS.bazi });
+    const interpretation = buildBaziInterpretation(normalizedChart, evidenceGraph);
+    const generated = generatedAt(options);
+    const explanation = buildBaziExplanation({ evidenceGraph, interpretation, generatedAt: generated });
+    const inputSnapshot = birthInputSnapshot(profile, gender, settings, base.historicalDstResolution);
+    const fingerprint = inputFingerprint({ module: 'bazi', inputSnapshot, calculationSettings: settings });
+
+    const candidates = PARTIAL_PILLAR_ORDER.flatMap(([key, label]) => {
+      const seen = new Map<string, string>();
+      for (const run of runs) {
+        const ganZhi = `${run.raw.fourPillars[key].stem}${run.raw.fourPillars[key].branch}`;
+        if (!seen.has(ganZhi)) seen.set(ganZhi, `按民用 ${run.anchorTime} 锚点（已含历法、历史夏令时与真太阳时修正）`);
+      }
+      if (seen.size <= 1) return [];
+      return [{
+        pillar: key,
+        label,
+        options: [...seen].map(([ganZhi, basis]) => ({ ganZhi, basis })),
+      }];
+    });
+
+    return {
+    module: 'bazi',
+    snapshotVersion: CHART_SNAPSHOT_VERSION,
+    generatedAt: generated,
+    engineVersion: ENGINE_VERSIONS.bazi,
+    calculationSettings: settings,
+    calculationEvidence: createBaziCalculationEvidence(
+      { ...profile, birthTime: '12:00' },
+      settings,
+      base.dayBoundaryResolution,
+      base.trueSolarResolution,
+      base.calendarResolution,
+      base.historicalDstResolution,
+    ),
+    normalizedChart,
+    evidenceGraph,
+    strengthAssessment: evidenceGraph.strengthAssessment!,
+    interpretation,
+    explanation,
+    inputSnapshot,
+    inputFingerprint: fingerprint,
+    completeness: 'partial',
+    missingPillars: ['hour'],
+    partialChart: {
+      policy: BAZI_PARTIAL_CHART_POLICY,
+      anchor: BAZI_PARTIAL_CHART_ANCHOR,
+      missingPillars: ['hour'],
+      candidates,
+      basis: BAZI_PARTIAL_CHART_DECISION,
+    },
+    caveats: [
+      '未知时辰部分盘：仅提供年、月、日三柱；时柱不补造，正午仅作计算锚点。',
+      '所有旺衰与主题判断仅基于三柱，应按资料不足对待。',
+      '大运与流年对照需要准确时辰，本部分盘暂不提供。',
+      ...(candidates.length
+        ? candidates.map((candidate) => `${candidate.label}在日内存在多种可能：${candidate.options.map((option) => `${option.ganZhi}（${option.basis}）`).join('；')}。`)
+        : ['本样例在 00:00/12:00/23:59 三个锚点下年月日柱保持稳定。']),
+      '基础版展示结构证据，不直接给出吉凶定论。',
+      ...(base.historicalDstResolution.applied ? [base.historicalDstResolution.note] : []),
+      ...(base.trueSolarResolution.applied ? [base.trueSolarResolution.note] : []),
+    ],
+    dayMaster: result.dayMaster,
+    pillars,
+    kongWang: `${result.kongWang.xun} · 空 ${result.kongWang.kongZhi.join('、')}`,
+    relations: normalizedChart.relations.slice(0, 6).map((relation) => relation.description),
+    focus: [
+      `日主为「${result.dayMaster}」，部分盘以日柱为观察中心；时柱未提供。`,
+      candidates.length
+        ? '出生日期落在节气或日界线敏感范围内，请查看年月日柱的候选与不确定范围。'
+        : '年月日柱在日内锚点变化下保持稳定。',
+      '大运与流年对照需要准确时辰，本部分盘暂不提供。',
+    ],
+    };
+  });
+}
+
 export function calculateBaziView(
   profile: BirthProfile,
   genderOverride?: Gender,
   options?: CalculationOptions,
 ): BaziChartView {
-  requireExactBirth(profile);
   const gender = requireGender(profile, genderOverride);
+  // Owner-approved partial-chart policy (bazi-partial-chart-policy.v1):
+  // unknown hour no longer blocks the Bazi module; it yields a year/month/day
+  // partial chart. Ziwei keeps the blocking policy via requireExactBirth.
+  if (!profile.timeKnown || !profile.birthTime) {
+    return calculatePartialBaziView(profile, gender, options);
+  }
   const settings = baziCalculationSettings(options);
   const calendarResolution = resolveBaziCalendar(profile);
   // The real solar/lunar validator runs first.  The owner policy then applies

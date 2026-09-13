@@ -243,7 +243,14 @@ test('六爻固定业务时区在 UTC 与 Asia/Shanghai 环境下完全一致', 
 
 test('输入边界不会把缺失时辰或未知城市伪装成精确结果', () => {
   const missingTime = { ...fixtureProfile, birthTime: undefined, timeKnown: false };
-  assert.throws(() => calculateBaziView(missingTime), /需要准确出生时辰/);
+  // bazi-partial-chart-policy.v1: the unknown hour yields an explicit partial
+  // chart instead of blocking; the hour pillar stays absent.
+  const baziPartial = calculateBaziView(missingTime, undefined, fixedCalculation);
+  assert.equal(baziPartial.completeness, 'partial');
+  assert.deepEqual(baziPartial.missingPillars, ['hour']);
+  assert.equal(baziPartial.pillars.length, 3);
+  assert.equal(baziPartial.timeLayer, undefined);
+  assert.ok(baziPartial.partialChart.policy.startsWith('bazi-partial-chart-policy'));
   assert.throws(() => calculateZiweiView(missingTime), /需要准确出生时辰/);
   const approximate = calculateAstrologyView(missingTime, fixedCalculation);
   assert.equal(approximate.calculationMode, 'approximate');
